@@ -60,20 +60,6 @@ func statusNotFound(w http.ResponseWriter, filePath string) error {
 	return nil
 }
 
-func statusForbidden(w http.ResponseWriter, filePath string) error {
-	fmt.Println("Client requested forbidden file " + filePath + ".")
-
-	w.WriteHeader(http.StatusForbidden)
-	w.Header().Set("Content-Type", "txt/plain")
-	htmlBody := "Access denied."
-	_, err := io.WriteString(w, htmlBody)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func serveStaticFile(w http.ResponseWriter, request string, paths []string) error {
 	filePath, err := url.QueryUnescape(request)
 	if err != nil {

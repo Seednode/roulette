@@ -12,7 +12,6 @@ import (
 
 var Port int
 var Recursive bool
-var Verbose bool
 
 var rootCmd = &cobra.Command{
 	Use:   "roulette <path1> [path2] ... [pathN]",
@@ -35,6 +34,5 @@ func Execute() {
 func init() {
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
-	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "also write output to stdout")
 	rootCmd.Flags().SetInterspersed(false)
 }
