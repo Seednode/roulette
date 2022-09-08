@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 )
@@ -123,7 +124,13 @@ func servePageHandler() http.HandlerFunc {
 
 func doNothing(http.ResponseWriter, *http.Request) {}
 
-func ServePage() {
+func ServePage(args []string) {
+
+	fileName, filePath := getFile(args)
+	fmt.Println(fileName)
+	fmt.Println(filePath)
+	os.Exit(0)
+
 	defer HandleExit()
 
 	http.HandleFunc("/", servePageHandler())
