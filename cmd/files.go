@@ -5,75 +5,66 @@ Copyright © 2022 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
 )
 
-func getRandomFile(fileList []os.DirEntry) string {
-	rand.Seed(time.Now().Unix())
+func getFiles(path string) ([]string, error) {
+	var paths []string
 
-	file := fileList[rand.Intn(len(fileList))].Name()
-
-	absolutePath, err := filepath.Abs(file)
+	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
+		if info.IsDir() && p != path {
+			return filepath.SkipDir
+		} else {
+			paths = append(paths, p)
+		}
+		return err
+	})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
-	return absolutePath
-}
-
-func getFiles(path string) ([]string, error) {
-	fileList, err := os.ReadDir(path)
-
-	return fileList, err
+	return paths, nil
 }
 
 func getFilesRecursive(path string) ([]string, error) {
 	var paths []string
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
-		//		if strings.HasPrefix(info.Name(), ".") {
-		//			if info.IsDir() {
-		//				return filepath.SkipDir
-		//			}
-		//			return err
-		//		}
 		if !info.IsDir() {
 			paths = append(paths, p)
 		}
 		return err
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	rand.Seed(time.Now().Unix())
-
-	file := paths[rand.Intn(len(paths))]
-	fmt.Println(file)
-	return paths, err
+	return paths, nil
 }
 
-func getFileList(args []string) []string {
+func getFileList(args []string) ([]string, error) {
 	fileList := []string{}
 
 	for i := 0; i < len(args); i++ {
 		if Recursive {
 			f, err := getFilesRecursive(args[i])
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			fileList = append(fileList, f...)
 		} else {
 			f, err := getFiles(args[i])
 			if err != nil {
-				panic(err)
+				return nil, err
 			}
 			fileList = append(fileList, f...)
 		}
 	}
 
-	return fileList
+	return fileList, nil
 }
 
 func pickFile(fileList []string) (string, string) {
