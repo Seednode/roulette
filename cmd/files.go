@@ -18,8 +18,13 @@ func getFiles(path string) ([]string, error) {
 		if info.IsDir() && p != path {
 			return filepath.SkipDir
 		} else {
-			paths = append(paths, p)
+			absolutePath, err := filepath.Abs(p)
+			if err != nil {
+				return err
+			}
+			paths = append(paths, absolutePath)
 		}
+
 		return err
 	})
 	if err != nil {
@@ -34,7 +39,11 @@ func getFilesRecursive(path string) ([]string, error) {
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if !info.IsDir() {
-			paths = append(paths, p)
+			absolutePath, err := filepath.Abs(p)
+			if err != nil {
+				return err
+			}
+			paths = append(paths, absolutePath)
 		}
 		return err
 	})
@@ -54,12 +63,14 @@ func getFileList(args []string) ([]string, error) {
 			if err != nil {
 				return nil, err
 			}
+
 			fileList = append(fileList, f...)
 		} else {
 			f, err := getFiles(args[i])
 			if err != nil {
 				return nil, err
 			}
+
 			fileList = append(fileList, f...)
 		}
 	}
@@ -68,10 +79,25 @@ func getFileList(args []string) ([]string, error) {
 }
 
 func pickFile(fileList []string) (string, string) {
-	rand.Seed(time.Now().Unix())
+	rand.Seed(time.Now().UnixMicro())
 
 	filePath := fileList[rand.Intn(len(fileList))]
 	fileName := filepath.Base(filePath)
 
-	return filePath, fileName
+	return fileName, filePath
+}
+
+func normalizePaths(args []string) []string {
+	var paths []string
+
+	for i := 0; i < len(args); i++ {
+		absolutePath, err := filepath.Abs(args[i])
+		if err != nil {
+			panic(err)
+		}
+
+		paths = append(paths, absolutePath)
+	}
+
+	return paths
 }

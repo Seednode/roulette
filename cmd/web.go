@@ -9,15 +9,18 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
-	"strings"
 )
 
-func generateHeader() string {
-	htmlHeader := `<html>
+func generateHeader(fileName string) string {
+	htmlHeader := `<html lang="en">
   <head>
-    <title>OUI Lookup</title>
+    <style>img{max-width:100%;max-height:97vh;height:auto;}</style>
+	<title>`
+	htmlHeader += fileName
+	htmlHeader += `</title>
   </head>
   <body>
 `
@@ -32,39 +35,26 @@ func generateFooter() string {
 	return htmlFooter
 }
 
-func generatePageRaw(w http.ResponseWriter, output []string) {
-	w.Header().Add("Content-Type", "text/plain")
-
-	for i := 0; i < len(output); i++ {
-		if Verbose {
-			fmt.Println(output[i])
-		}
-
-		_, err := io.WriteString(w, output[i]+"\n")
-		if err != nil {
-			fmt.Println(err)
-		}
+func generatePageHtml(w http.ResponseWriter, paths []string, output []string) {
+	fileList, err := getFileList(paths)
+	if err != nil {
+		panic(err)
 	}
-}
 
-func generatePageHtml(w http.ResponseWriter, output []string) {
+	fileName, filePath := pickFile(fileList)
+
 	w.Header().Add("Content-Type", "text/html")
 
-	_, err := io.WriteString(w, generateHeader())
+	_, err = io.WriteString(w, generateHeader(fileName))
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	for i := 0; i < len(output); i++ {
-		if Verbose {
-			fmt.Println(output[i])
-		}
-
-		_, err = io.WriteString(w, "    "+output[i]+"<br />\n")
-		if err != nil {
-			fmt.Println(err)
-		}
-	}
+	htmlBody := `    <a href="/"><img src="`
+	htmlBody += filePath
+	htmlBody += `"></img></a>
+`
+	_, err = io.WriteString(w, htmlBody)
 
 	_, err = io.WriteString(w, generateFooter())
 	if err != nil {
@@ -72,74 +62,37 @@ func generatePageHtml(w http.ResponseWriter, output []string) {
 	}
 }
 
-func generatePageHelp(r *http.Request, w http.ResponseWriter) {
-	w.Header().Add("Content-Type", "text/html")
-
-	_, err := io.WriteString(w, generateHeader())
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	exampleHtmlUrl := fmt.Sprintf("http://%v/7C:0E:CE:FE:FE:FE,10:FE:ED:AB:AB:AB", r.Host)
-	exampleRawUrl := fmt.Sprintf("http://%v/raw/7C:0E:CE:FE:FE:FE,10:FE:ED:AB:AB:AB", r.Host)
-	exampleJsonUrl := fmt.Sprintf("http://%v/json/7C:0E:CE:FE:FE:FE,10:FE:ED:AB:AB:AB", r.Host)
-
-	help := fmt.Sprintf("    Provide one or more MAC addresses, separated by commas.<br />\n    For example: <a href=%q>%v</a>", exampleHtmlUrl, exampleHtmlUrl)
-	help += fmt.Sprintf("<br /><br />\n    Also supports plain text responses.<br />\n    For example: <a href=%q>%v</a>", exampleRawUrl, exampleRawUrl)
-	help += fmt.Sprintf("<br /><br />\n    And JSON responses, of course.<br />\n    For example: <a href=%q>%v</a>", exampleJsonUrl, exampleJsonUrl)
-
-	_, err = io.WriteString(w, help)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	_, err = io.WriteString(w, generateFooter())
-	if err != nil {
-		fmt.Println(err)
-	}
-}
-
-func servePageHandler() http.HandlerFunc {
+func servePageHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var ouis []string
-
-		oui := r.RequestURI
-
-		if oui == "" {
-			generatePageHelp(r, w)
-
-			return
-		}
-
-		args := strings.Split(oui, ",")
-		for i := 0; i < len(args); i++ {
-			ouis = append(ouis, args[i])
-		}
-
 		var output []string
 
-		generatePageHtml(w, output)
+		request := r.RequestURI
+
+		if r.RequestURI == "/" {
+			generatePageHtml(w, paths, output)
+		} else {
+			f, err := url.QueryUnescape(request)
+			if err != nil {
+				log.Fatal(err)
+				return
+			}
+			buf, err := os.ReadFile(f)
+			if err != nil {
+				panic(err)
+			}
+			w.Write(buf)
+		}
 	}
 }
 
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) {
-
-	fileList, err := getFileList(args)
-	if err != nil {
-		panic(err)
-	}
-
-	fileName, filePath := pickFile(fileList)
-	fmt.Println(fileName)
-	fmt.Println(filePath)
-
-	os.Exit(0)
-
 	defer HandleExit()
 
-	http.HandleFunc("/", servePageHandler())
+	paths := normalizePaths(args)
+
+	http.HandleFunc("/", servePageHandler(paths))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	port := strconv.Itoa(Port)
