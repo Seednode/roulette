@@ -16,6 +16,17 @@ import (
 	"strings"
 )
 
+type Exit struct{ Code int }
+
+func HandleExit() {
+	if e := recover(); e != nil {
+		if exit, ok := e.(Exit); ok == true {
+			os.Exit(exit.Code)
+		}
+		panic(e)
+	}
+}
+
 func generatePageHtml(w http.ResponseWriter, paths []string) error {
 	fileList, err := getFileList(paths)
 	if err != nil {
