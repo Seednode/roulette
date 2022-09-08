@@ -126,9 +126,11 @@ func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) {
 
-	fileName, filePath := getFile(args)
+	fileList := getFileList(args)
+	fileName, filePath := pickFile(fileList)
 	fmt.Println(fileName)
 	fmt.Println(filePath)
+
 	os.Exit(0)
 
 	defer HandleExit()

@@ -5,31 +5,12 @@ Copyright © 2022 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"io/fs"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
 )
-
-func pickFile(fileList []fs.DirEntry) string {
-	rand.Seed(time.Now().Unix())
-
-	isFile := false
-
-	var fileName string
-
-	for isFile == false {
-		file := fileList[rand.Intn(len(fileList))]
-
-		if file.IsDir() == false {
-			isFile = true
-			fileName = file.Name()
-		}
-	}
-
-	return fileName
-}
 
 func getRandomFile(fileList []os.DirEntry) string {
 	rand.Seed(time.Now().Unix())
@@ -44,29 +25,62 @@ func getRandomFile(fileList []os.DirEntry) string {
 	return absolutePath
 }
 
-func getFiles(path string) []fs.DirEntry {
+func getFiles(path string) ([]string, error) {
 	fileList, err := os.ReadDir(path)
-	if err != nil {
-		panic(err)
+
+	return fileList, err
+}
+
+func getFilesRecursive(path string) ([]string, error) {
+	var paths []string
+
+	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
+		//		if strings.HasPrefix(info.Name(), ".") {
+		//			if info.IsDir() {
+		//				return filepath.SkipDir
+		//			}
+		//			return err
+		//		}
+		if !info.IsDir() {
+			paths = append(paths, p)
+		}
+		return err
+	})
+
+	rand.Seed(time.Now().Unix())
+
+	file := paths[rand.Intn(len(paths))]
+	fmt.Println(file)
+	return paths, err
+}
+
+func getFileList(args []string) []string {
+	fileList := []string{}
+
+	for i := 0; i < len(args); i++ {
+		if Recursive {
+			f, err := getFilesRecursive(args[i])
+			if err != nil {
+				panic(err)
+			}
+			fileList = append(fileList, f...)
+		} else {
+			f, err := getFiles(args[i])
+			if err != nil {
+				panic(err)
+			}
+			fileList = append(fileList, f...)
+		}
 	}
 
 	return fileList
 }
 
-func getFile(args []string) (string, string) {
-	fileList := []fs.DirEntry{}
+func pickFile(fileList []string) (string, string) {
+	rand.Seed(time.Now().Unix())
 
-	for i := 0; i < len(args); i++ {
-		f := getFiles(args[i])
-		fileList = append(fileList, f...)
-	}
+	filePath := fileList[rand.Intn(len(fileList))]
+	fileName := filepath.Base(filePath)
 
-	fileName := pickFile(fileList)
-
-	filePath, err := filepath.Abs(fileName)
-	if err != nil {
-		panic(err)
-	}
-
-	return fileName, filePath
+	return filePath, fileName
 }
