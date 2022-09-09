@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"errors"
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -48,35 +47,9 @@ func generatePageHtml(w http.ResponseWriter, paths []string) error {
 	return nil
 }
 
-func statusNotFound(w http.ResponseWriter, filePath string) error {
-	fmt.Println("Client requested non-existent file " + filePath + ".")
+func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
+	request := r.RequestURI
 
-	w.WriteHeader(http.StatusNotFound)
-	w.Header().Set("Content-Type", "txt/plain")
-	htmlBody := "File not found."
-	_, err := io.WriteString(w, htmlBody)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func statusForbidden(w http.ResponseWriter, filePath string) error {
-	fmt.Println("Client requested forbidden file " + filePath + ".")
-
-	w.WriteHeader(http.StatusForbidden)
-	w.Header().Set("Content-Type", "txt/plain")
-	htmlBody := "Access denied."
-	_, err := io.WriteString(w, htmlBody)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func serveStaticFile(w http.ResponseWriter, request string, paths []string) error {
 	filePath, err := url.QueryUnescape(request)
 	if err != nil {
 		return err
@@ -91,20 +64,14 @@ func serveStaticFile(w http.ResponseWriter, request string, paths []string) erro
 	}
 
 	if matchesPrefix == false {
-		err := statusNotFound(w, filePath)
-		if err != nil {
-			return err
-		}
+		http.NotFound(w, &r)
 
 		return nil
 	}
 
 	_, err = os.Stat(filePath)
 	if errors.Is(err, os.ErrNotExist) {
-		err := statusNotFound(w, filePath)
-		if err != nil {
-			return err
-		}
+		http.NotFound(w, &r)
 
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) && err != nil {
@@ -129,7 +96,7 @@ func servePageHandler(paths []string) http.HandlerFunc {
 				log.Fatal(err)
 			}
 		} else {
-			err := serveStaticFile(w, r.RequestURI, paths)
+			err := serveStaticFile(w, *r, paths)
 			if err != nil {
 				log.Fatal(err)
 			}
