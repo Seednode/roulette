@@ -109,7 +109,10 @@ func doNothing(http.ResponseWriter, *http.Request) {}
 func ServePage(args []string) {
 	defer HandleExit()
 
-	paths := normalizePaths(args)
+	paths, err := normalizePaths(args)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	http.HandleFunc("/", servePageHandler(paths))
 	http.HandleFunc("/favicon.ico", doNothing)

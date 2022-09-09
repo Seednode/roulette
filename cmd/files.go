@@ -87,17 +87,17 @@ func pickFile(fileList []string) (string, string) {
 	return fileName, filePath
 }
 
-func normalizePaths(args []string) []string {
+func normalizePaths(args []string) ([]string, error) {
 	var paths []string
 
 	for i := 0; i < len(args); i++ {
 		absolutePath, err := filepath.Abs(args[i])
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 
 		paths = append(paths, absolutePath)
 	}
 
-	return paths
+	return paths, nil
 }
