@@ -5,11 +5,39 @@ Copyright © 2022 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"bytes"
+	"errors"
+	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
 )
+
+func checkIfImage(path string) (bool, error) {
+	magicNumber := make([]byte, 3)
+
+	file, err := os.Open(path)
+	if err != nil {
+		return false, err
+	}
+
+	_, err = io.ReadFull(file, magicNumber)
+	if err != nil {
+		return false, err
+	}
+
+	switch {
+	case bytes.Compare(magicNumber, []byte{0xFF, 0xD8, 0xFF}) == 0: // JPG
+		return true, nil
+	case bytes.Compare(magicNumber, []byte{0x89, 0x50, 0x4E}) == 0: // PNG
+		return true, nil
+	case bytes.Compare(magicNumber, []byte{0x47, 0x49, 0x46}) == 0: // GIF
+		return true, nil
+	default:
+		return false, nil
+	}
+}
 
 func getFiles(path string) ([]string, error) {
 	var paths []string
@@ -78,13 +106,29 @@ func getFileList(args []string) ([]string, error) {
 	return fileList, nil
 }
 
-func pickFile(fileList []string) (string, string) {
-	rand.Seed(time.Now().UnixMicro())
+func pickFile(fileList []string) (string, string, error) {
+	rand.Seed(time.Now().UnixNano())
 
-	filePath := fileList[rand.Intn(len(fileList))]
-	fileName := filepath.Base(filePath)
+	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
-	return fileName, filePath
+	var filePath string
+	var fileName string
+
+	for i := 0; i < len(fileList); i++ {
+		filePath = fileList[i]
+		fileName = filepath.Base(filePath)
+		isImage, err := checkIfImage(filePath)
+		if err != nil {
+			return "", "", err
+		}
+		if isImage {
+			return fileName, filePath, nil
+		}
+	}
+
+	err := errors.New("no images found")
+
+	return "", "", err
 }
 
 func normalizePaths(args []string) ([]string, error) {

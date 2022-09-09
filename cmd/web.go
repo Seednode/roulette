@@ -15,13 +15,17 @@ import (
 	"strings"
 )
 
-func generatePageHtml(w http.ResponseWriter, paths []string) error {
+func generatePageHtml(w http.ResponseWriter, r http.Request, paths []string) error {
 	fileList, err := getFileList(paths)
 	if err != nil {
 		return err
 	}
 
-	fileName, filePath := pickFile(fileList)
+	fileName, filePath, err := pickFile(fileList)
+	if err != nil {
+		http.NotFound(w, &r)
+		return nil
+	}
 
 	w.Header().Add("Content-Type", "text/html")
 
@@ -91,7 +95,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 func servePageHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/" {
-			err := generatePageHtml(w, paths)
+			err := generatePageHtml(w, *r, paths)
 			if err != nil {
 				log.Fatal(err)
 			}
