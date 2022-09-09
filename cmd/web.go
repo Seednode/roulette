@@ -37,7 +37,9 @@ func generatePageHtml(w http.ResponseWriter, paths []string) error {
     <a href="/"><img src="`
 	htmlBody += filePath
 	htmlBody += `"></img></a>
-`
+  </body>
+</html>`
+
 	_, err = io.WriteString(w, htmlBody)
 	if err != nil {
 		return err
