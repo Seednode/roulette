@@ -16,17 +16,6 @@ import (
 	"strings"
 )
 
-type Exit struct{ Code int }
-
-func HandleExit() {
-	if e := recover(); e != nil {
-		if exit, ok := e.(Exit); ok == true {
-			os.Exit(exit.Code)
-		}
-		panic(e)
-	}
-}
-
 func generatePageHtml(w http.ResponseWriter, paths []string) error {
 	fileList, err := getFileList(paths)
 	if err != nil {
@@ -63,6 +52,20 @@ func statusNotFound(w http.ResponseWriter, filePath string) error {
 	w.WriteHeader(http.StatusNotFound)
 	w.Header().Set("Content-Type", "txt/plain")
 	htmlBody := "File not found."
+	_, err := io.WriteString(w, htmlBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func statusForbidden(w http.ResponseWriter, filePath string) error {
+	fmt.Println("Client requested forbidden file " + filePath + ".")
+
+	w.WriteHeader(http.StatusForbidden)
+	w.Header().Set("Content-Type", "txt/plain")
+	htmlBody := "Access denied."
 	_, err := io.WriteString(w, htmlBody)
 	if err != nil {
 		return err
