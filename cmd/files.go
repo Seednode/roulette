@@ -5,38 +5,29 @@ Copyright © 2022 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"bytes"
 	"errors"
-	"io"
 	"math/rand"
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/h2non/filetype"
 )
 
 func checkIfImage(path string) (bool, error) {
-	magicNumber := make([]byte, 3)
-
 	file, err := os.Open(path)
 	if err != nil {
 		return false, err
 	}
 
-	_, err = io.ReadFull(file, magicNumber)
-	if err != nil {
-		return false, err
+	head := make([]byte, 261)
+	file.Read(head)
+
+	if filetype.IsImage(head) {
+		return true, nil
 	}
 
-	switch {
-	case bytes.Compare(magicNumber, []byte{0xFF, 0xD8, 0xFF}) == 0: // JPG
-		return true, nil
-	case bytes.Compare(magicNumber, []byte{0x89, 0x50, 0x4E}) == 0: // PNG
-		return true, nil
-	case bytes.Compare(magicNumber, []byte{0x47, 0x49, 0x46}) == 0: // GIF
-		return true, nil
-	default:
-		return false, nil
-	}
+	return false, nil
 }
 
 func getFiles(path string) ([]string, error) {
