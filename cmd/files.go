@@ -19,6 +19,7 @@ func checkIfImage(path string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	defer file.Close()
 
 	head := make([]byte, 261)
 	file.Read(head)
@@ -102,17 +103,14 @@ func pickFile(fileList []string) (string, string, error) {
 
 	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
-	var filePath string
-	var fileName string
-
 	for i := 0; i < len(fileList); i++ {
-		filePath = fileList[i]
-		fileName = filepath.Base(filePath)
+		filePath := fileList[i]
 		isImage, err := checkIfImage(filePath)
 		if err != nil {
 			return "", "", err
 		}
 		if isImage {
+			fileName := filepath.Base(filePath)
 			return fileName, filePath, nil
 		}
 	}
