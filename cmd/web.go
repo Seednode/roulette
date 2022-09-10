@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -13,7 +14,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
+
+const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 
 func generatePageHtml(w http.ResponseWriter, r http.Request, paths []string) error {
 	fileList, err := getFileList(paths)
@@ -69,7 +73,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 
 	if matchesPrefix == false {
 		if Verbose {
-			log.Println("Failed to serve file outside specified path(s): " + filePath)
+			fmt.Printf("%v Failed to serve file outside specified path(s): %v", time.Now().Format(LOGDATE), filePath)
 		}
 
 		http.NotFound(w, &r)
@@ -80,7 +84,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	_, err = os.Stat(filePath)
 	if errors.Is(err, os.ErrNotExist) {
 		if Verbose {
-			log.Println("Failed to serve non-existent file: " + filePath)
+			fmt.Printf("%v Failed to serve non-existent file: %v", time.Now().Format(LOGDATE), filePath)
 		}
 
 		http.NotFound(w, &r)
@@ -88,6 +92,10 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 		return nil
 	} else if !errors.Is(err, os.ErrNotExist) && err != nil {
 		return err
+	}
+
+	if Verbose {
+		fmt.Printf("%v Serving file: %v", time.Now().Format(LOGDATE), filePath)
 	}
 
 	buf, err := os.ReadFile(filePath)
@@ -98,7 +106,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	w.Write(buf)
 
 	if Verbose {
-		log.Println("Served file: " + filePath)
+		fmt.Println(" - DONE")
 	}
 
 	return nil
