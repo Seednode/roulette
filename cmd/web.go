@@ -68,6 +68,10 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 
 	if matchesPrefix == false {
+		if Verbose {
+			log.Println("Failed to serve file outside specified path(s): " + filePath)
+		}
+
 		http.NotFound(w, &r)
 
 		return nil
@@ -75,6 +79,10 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 
 	_, err = os.Stat(filePath)
 	if errors.Is(err, os.ErrNotExist) {
+		if Verbose {
+			log.Println("Failed to serve non-existent file: " + filePath)
+		}
+
 		http.NotFound(w, &r)
 
 		return nil
@@ -88,6 +96,10 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 
 	w.Write(buf)
+
+	if Verbose {
+		log.Println("Served file: " + filePath)
+	}
 
 	return nil
 }
