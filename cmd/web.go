@@ -123,8 +123,6 @@ func servePageHandler(paths []string) http.HandlerFunc {
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) {
-	defer HandleExit()
-
 	paths, err := normalizePaths(args)
 	if err != nil {
 		log.Fatal(err)
