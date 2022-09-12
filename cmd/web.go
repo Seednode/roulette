@@ -95,11 +95,10 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 
 	var startTime time.Time
-	var stopTime time.Time
 
 	if Verbose {
-		fmt.Printf("%v Serving file: %v", time.Now().Format(LOGDATE), filePath)
 		startTime = time.Now()
+		fmt.Printf("%v Serving file: %v", startTime.Format(LOGDATE), filePath)
 	}
 
 	buf, err := os.ReadFile(filePath)
@@ -110,9 +109,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	w.Write(buf)
 
 	if Verbose {
-		stopTime = time.Now()
-		timeElapsed := stopTime.Sub(startTime).Round(time.Microsecond)
-		fmt.Printf("%v %v\n", " - Finished in", timeElapsed)
+		fmt.Printf("- Finished in %v\n", time.Now().Sub(startTime).Round(time.Microsecond))
 	}
 
 	return nil
