@@ -109,7 +109,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	w.Write(buf)
 
 	if Verbose {
-		fmt.Printf("- Finished in %v\n", time.Now().Sub(startTime).Round(time.Microsecond))
+		fmt.Printf(" (Finished in %v)\n", time.Now().Sub(startTime).Round(time.Microsecond))
 	}
 
 	return nil
