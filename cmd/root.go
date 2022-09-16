@@ -21,7 +21,6 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ServePage(args)
 	},
-	Version: Version,
 }
 
 func Execute() {
