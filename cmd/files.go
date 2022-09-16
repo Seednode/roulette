@@ -74,19 +74,19 @@ func getFilesRecursive(path string) ([]string, error) {
 	return paths, nil
 }
 
-func getFileList(args []string) ([]string, error) {
+func getFileList(paths []string) ([]string, error) {
 	fileList := []string{}
 
-	for i := 0; i < len(args); i++ {
+	for i := 0; i < len(paths); i++ {
 		if Recursive {
-			f, err := getFilesRecursive(args[i])
+			f, err := getFilesRecursive(paths[i])
 			if err != nil {
 				return nil, err
 			}
 
 			fileList = append(fileList, f...)
 		} else {
-			f, err := getFiles(args[i])
+			f, err := getFiles(paths[i])
 			if err != nil {
 				return nil, err
 			}
@@ -98,7 +98,12 @@ func getFileList(args []string) ([]string, error) {
 	return fileList, nil
 }
 
-func pickFile(fileList []string) (string, string, error) {
+func pickFile(args []string) (string, error) {
+	fileList, err := getFileList(args)
+	if err != nil {
+		return "", err
+	}
+
 	rand.Seed(time.Now().UnixNano())
 
 	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
@@ -107,17 +112,16 @@ func pickFile(fileList []string) (string, string, error) {
 		filePath := fileList[i]
 		isImage, err := checkIfImage(filePath)
 		if err != nil {
-			return "", "", err
+			return "", err
 		}
 		if isImage {
-			fileName := filepath.Base(filePath)
-			return fileName, filePath, nil
+			return filePath, nil
 		}
 	}
 
-	err := errors.New("no images found")
+	err = errors.New("no images found")
 
-	return "", "", err
+	return "", err
 }
 
 func normalizePaths(args []string) ([]string, error) {

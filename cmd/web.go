@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -19,17 +20,10 @@ import (
 
 const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 
-func generatePageHtml(w http.ResponseWriter, r http.Request, paths []string) error {
-	fileList, err := getFileList(paths)
-	if err != nil {
-		return err
-	}
+const PREFIX string = "/src"
 
-	fileName, filePath, err := pickFile(fileList)
-	if err != nil {
-		http.NotFound(w, &r)
-		return nil
-	}
+func generatePageHtml(w http.ResponseWriter, r http.Request, filePath string) error {
+	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
 
@@ -42,12 +36,12 @@ func generatePageHtml(w http.ResponseWriter, r http.Request, paths []string) err
   </head>
   <body>
     <a href="/"><img src="`
-	htmlBody += filePath
+	htmlBody += PREFIX + filePath
 	htmlBody += `"></img></a>
   </body>
 </html>`
 
-	_, err = io.WriteString(w, htmlBody)
+	_, err := io.WriteString(w, htmlBody)
 	if err != nil {
 		return err
 	}
@@ -58,10 +52,12 @@ func generatePageHtml(w http.ResponseWriter, r http.Request, paths []string) err
 func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
 	request := r.RequestURI
 
-	filePath, err := url.QueryUnescape(request)
+	prefixedFilePath, err := url.QueryUnescape(request)
 	if err != nil {
 		return err
 	}
+
+	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
 	var matchesPrefix = false
 
@@ -115,17 +111,42 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	return nil
 }
 
+func serveStaticFileHandler(paths []string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := serveStaticFile(w, *r, paths)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
 func servePageHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/" {
-			err := generatePageHtml(w, *r, paths)
+			filePath, err := pickFile(paths)
 			if err != nil {
 				log.Fatal(err)
 			}
+
+			newUrl := r.URL.Host + filePath
+			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		} else {
-			err := serveStaticFile(w, *r, paths)
+			filePath, err := url.QueryUnescape(r.RequestURI)
 			if err != nil {
 				log.Fatal(err)
+			}
+
+			isImage, err := checkIfImage(filePath)
+			if err != nil {
+				fmt.Println(err)
+				http.NotFound(w, r)
+			}
+
+			if isImage {
+				err := generatePageHtml(w, *r, filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
@@ -139,7 +160,11 @@ func ServePage(args []string) {
 		log.Fatal(err)
 	}
 
+	for _, i := range paths {
+		fmt.Println("Paths: " + i)
+	}
 	http.HandleFunc("/", servePageHandler(paths))
+	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	port := strconv.Itoa(Port)
