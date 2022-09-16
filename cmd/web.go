@@ -22,7 +22,7 @@ const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 
 const PREFIX string = "/src"
 
-func generatePageHtml(w http.ResponseWriter, r http.Request, filePath string) error {
+func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
@@ -120,7 +120,7 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 	}
 }
 
-func servePageHandler(paths []string) http.HandlerFunc {
+func serveHtmlHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/" {
 			filePath, err := pickFile(paths)
@@ -138,12 +138,11 @@ func servePageHandler(paths []string) http.HandlerFunc {
 
 			isImage, err := checkIfImage(filePath)
 			if err != nil {
-				fmt.Println(err)
 				http.NotFound(w, r)
 			}
 
 			if isImage {
-				err := generatePageHtml(w, *r, filePath)
+				err := serveHtml(w, *r, filePath)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -163,11 +162,14 @@ func ServePage(args []string) {
 	for _, i := range paths {
 		fmt.Println("Paths: " + i)
 	}
-	http.HandleFunc("/", servePageHandler(paths))
+	http.HandleFunc("/", serveHtmlHandler(paths))
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	port := strconv.Itoa(Port)
 
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	err = http.ListenAndServe(":"+port, nil)
+	if err != nil {
+		log.Fatal(err)
+	}
 }
