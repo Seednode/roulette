@@ -2,13 +2,11 @@
 
 ## About
 
-Sometimes, you just need a way to randomly display files from one or more directories in your browser.
+Sometimes, you just need a way to randomly display your files in the browser.
 
-This tool is here to help.
+Simply point this tool at one or more directories, and then open the specified port (default 8080) in your browser.
 
-Simply point the tool at one or more directories, and then open the specified port (default 8080) in your browser to show random files.
-
-A random file will be selected if you open the root URI directly (e.g. http://localhost:8080/), or if you click on any displayed image.
+A new file will be selected if you open the root URI directly, or if you click on any displayed image.
 
 Browser history is preserved, so you can always go back to any previously displayed image.
 
