@@ -1,5 +1,3 @@
-# Russian roulette for your media
-
 ## About
 
 Sometimes, you just need a way to randomly display your files in the browser.
