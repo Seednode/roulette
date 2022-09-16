@@ -15,7 +15,7 @@ Builds available [here](https://cdn.seedno.de/builds/roulette).
 ## Usage output
 ```
 Usage:
-  roulette <path1> [path2] ... [pathN] [flags]
+  roulette <path> [path2]... [flags]
   roulette [command]
 
 Available Commands:
@@ -28,7 +28,6 @@ Flags:
   -p, --port int    port to listen on (default 8080)
   -r, --recursive   recurse into subdirectories
   -v, --verbose     log accessed files to stdout
-      --version     version for roulette
 
 Use "roulette [command] --help" for more information about a command.
 ```

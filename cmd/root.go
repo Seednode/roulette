@@ -15,7 +15,7 @@ var Recursive bool
 var Verbose bool
 
 var rootCmd = &cobra.Command{
-	Use:   "roulette <path1> [path2] ... [pathN]",
+	Use:   "roulette <path> [path2]...",
 	Short: "Serves random images from the specified directories.",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
