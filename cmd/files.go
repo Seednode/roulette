@@ -22,10 +22,14 @@ func getNextFile(path string) (string, error) {
 
 	split := re.FindAllStringSubmatch(path, -1)
 
+	if len(split[0]) < 3 {
+		return "", nil
+	}
+
 	base := split[0][1]
 	number, err := strconv.Atoi(split[0][2])
 	if err != nil {
-		return "", nil
+		return "", err
 	}
 	extension := split[0][3]
 
