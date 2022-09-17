@@ -12,11 +12,15 @@ Builds available [here](https://cdn.seedno.de/builds/roulette).
 
 ## [-s, --successive]
 
-This option is tailored specifically for my own use case. When loading a new image, it checks for a successively-numbered file in the same path.
+This option is tailored specifically for my own use case.
 
-For example, if the file `/mnt/photos/MyVacation001.jpg` is being displayed, clicking on the image will search for a `/mnt/photos/MyVacation002.jpg`.
+When loading a new image, it checks for a successively-numbered file of the format `filename###.extension` in the same directory.
 
-If a matching file is not found, it will select a random file as usual.
+For example, let's say `/mnt/photos/MyVacation001.jpg` is being displayed.
+
+If you click on the image, `roulette` will attempt to display `/mnt/photos/MyVacation002.jpg`.
+
+If that matching file is not found, it will select a random file as usual.
 
 ## Usage output
 ```
