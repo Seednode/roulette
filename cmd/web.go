@@ -138,11 +138,11 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 
 			if Successive {
 				refererUri := refererToUri(r.Referer())
-				if refererUri != "" && Verbose {
-					fmt.Printf("Referer is %v\n", refererUri)
-				}
-
 				if refererUri != "" {
+					if Verbose {
+						fmt.Printf("Referer is %v\n", refererUri)
+					}
+
 					f, err := url.QueryUnescape(refererUri)
 					if err != nil {
 						log.Fatal(err)
