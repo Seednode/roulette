@@ -22,7 +22,7 @@ func getNextFile(path string) (string, error) {
 
 	split := re.FindAllStringSubmatch(path, -1)
 
-	if len(split[0]) < 3 {
+	if len(split) < 1 || len(split[0]) < 3 {
 		return "", nil
 	}
 
