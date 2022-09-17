@@ -6,13 +6,54 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
 	"math/rand"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"time"
 
 	"github.com/h2non/filetype"
 )
+
+func getNextFile(path string) (string, error) {
+	re := regexp.MustCompile("(.+)([0-9]{3})(\\..+)")
+
+	split := re.FindAllStringSubmatch(path, -1)
+
+	base := split[0][1]
+	number, err := strconv.Atoi(split[0][2])
+	if err != nil {
+		return "", nil
+	}
+	extension := split[0][3]
+
+	incremented := number + 1
+
+	fileName := fmt.Sprintf("%v%.3d%v", base, incremented, extension)
+
+	nextFile, err := checkNextFile(fileName)
+	if err != nil {
+		return "", err
+	}
+
+	if !nextFile {
+		return "", nil
+	}
+
+	return fileName, nil
+}
+
+func checkNextFile(path string) (bool, error) {
+	if _, err := os.Stat(path); err == nil {
+		return true, nil
+	} else if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else {
+		return false, err
+	}
+}
 
 func checkIfImage(path string) (bool, error) {
 	file, err := os.Open(path)

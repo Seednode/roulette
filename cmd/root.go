@@ -12,6 +12,7 @@ import (
 
 var Port int
 var Recursive bool
+var Successive bool
 var Verbose bool
 
 var rootCmd = &cobra.Command{
@@ -33,6 +34,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
+	rootCmd.Flags().BoolVarP(&Successive, "successive", "s", false, "load the next sequential file, if possible")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().SetInterspersed(true)
 }

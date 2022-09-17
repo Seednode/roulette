@@ -22,6 +22,16 @@ const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 
 const PREFIX string = "/src"
 
+func refererToUri(referer string) string {
+	parts := strings.SplitAfterN(referer, "/", 4)
+
+	if len(parts) < 4 {
+		return ""
+	}
+
+	return "/" + parts[3]
+}
+
 func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 	fileName := filepath.Base(filePath)
 
@@ -123,9 +133,33 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 func serveHtmlHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		if r.RequestURI == "/" {
-			filePath, err := pickFile(paths)
-			if err != nil {
-				log.Fatal(err)
+			var filePath string
+			var err error
+
+			if Successive {
+				refererUri := refererToUri(r.Referer())
+				if refererUri != "" && Verbose {
+					fmt.Printf("Referer is %v\n", refererUri)
+				}
+
+				if refererUri != "" {
+					f, err := url.QueryUnescape(refererUri)
+					if err != nil {
+						log.Fatal(err)
+					}
+
+					filePath, err = getNextFile(f)
+					if err != nil {
+						log.Fatal(err)
+					}
+				}
+			}
+
+			if filePath == "" {
+				filePath, err = pickFile(paths)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			newUrl := r.URL.Host + filePath
