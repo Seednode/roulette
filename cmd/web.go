@@ -60,9 +60,7 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 }
 
 func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
-	request := r.RequestURI
-
-	prefixedFilePath, err := url.QueryUnescape(request)
+	prefixedFilePath, err := url.QueryUnescape(r.RequestURI)
 	if err != nil {
 		return err
 	}
@@ -129,9 +127,6 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 
 func serveHtmlHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var filePath string
-		var err error
-
 		refererUri := refererToUri(r.Referer())
 
 		switch {
@@ -141,13 +136,13 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 				log.Fatal(err)
 			}
 
-			filePath, err = getNextFile(query)
+			filePath, err := getNextFile(query)
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths)
+				filePath, err := pickFile(paths)
 				if err != nil {
 					log.Fatal(err)
 				}
@@ -161,7 +156,7 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			newUrl := r.URL.Host + filePath
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		case r.RequestURI == "/" && Successive && refererUri == "":
-			filePath, err = pickFile(paths)
+			filePath, err := pickFile(paths)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -174,7 +169,7 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			newUrl := r.URL.Host + filePath
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		case r.RequestURI == "/":
-			filePath, err = pickFile(paths)
+			filePath, err := pickFile(paths)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -191,7 +186,6 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			if err != nil {
 				log.Fatal(err)
 			}
-
 			if !isImage {
 				http.NotFound(w, r)
 			}
@@ -215,6 +209,7 @@ func ServePage(args []string) {
 	for _, i := range paths {
 		fmt.Println("Paths: " + i)
 	}
+
 	http.HandleFunc("/", serveHtmlHandler(paths))
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
