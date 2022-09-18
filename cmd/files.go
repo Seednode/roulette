@@ -17,6 +17,33 @@ import (
 	"github.com/h2non/filetype"
 )
 
+func getFirstFile(path string) (string, error) {
+	re := regexp.MustCompile("(.+)([0-9]{3})(\\..+)")
+
+	split := re.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
+		return "", nil
+	}
+
+	base := split[0][1]
+	number := 1
+	extension := split[0][3]
+
+	fileName := fmt.Sprintf("%v%.3d%v", base, number, extension)
+
+	nextFile, err := checkNextFile(fileName)
+	if err != nil {
+		return "", err
+	}
+
+	if !nextFile {
+		return "", nil
+	}
+
+	return fileName, nil
+}
+
 func getNextFile(path string) (string, error) {
 	re := regexp.MustCompile("(.+)([0-9]{3})(\\..+)")
 

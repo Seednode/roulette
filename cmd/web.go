@@ -70,13 +70,11 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
 	var matchesPrefix = false
-
 	for i := 0; i < len(paths); i++ {
 		if strings.HasPrefix(filePath, paths[i]) {
 			matchesPrefix = true
 		}
 	}
-
 	if matchesPrefix == false {
 		if Verbose {
 			fmt.Printf("%v Failed to serve file outside specified path(s): %v", time.Now().Format(LOGDATE), filePath)
@@ -101,7 +99,6 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 
 	var startTime time.Time
-
 	if Verbose {
 		startTime = time.Now()
 		fmt.Printf("%v Serving file: %v", startTime.Format(LOGDATE), filePath)
@@ -132,27 +129,21 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 
 func serveHtmlHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if r.RequestURI == "/" {
-			var filePath string
-			var err error
+		var filePath string
+		var err error
 
-			if Successive {
-				refererUri := refererToUri(r.Referer())
-				if refererUri != "" {
-					if Verbose {
-						fmt.Printf("Referer is %v\n", refererUri)
-					}
+		refererUri := refererToUri(r.Referer())
 
-					f, err := url.QueryUnescape(refererUri)
-					if err != nil {
-						log.Fatal(err)
-					}
+		switch {
+		case r.RequestURI == "/" && Successive && refererUri != "":
+			f, err := url.QueryUnescape(refererUri)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-					filePath, err = getNextFile(f)
-					if err != nil {
-						log.Fatal(err)
-					}
-				}
+			filePath, err = getNextFile(f)
+			if err != nil {
+				log.Fatal(err)
 			}
 
 			if filePath == "" {
@@ -160,11 +151,37 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 				if err != nil {
 					log.Fatal(err)
 				}
+
+				filePath, err = getFirstFile(filePath)
+				if err != nil {
+					log.Fatal(err)
+				}
 			}
 
 			newUrl := r.URL.Host + filePath
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		} else {
+		case r.RequestURI == "/" && Successive && refererUri == "":
+			filePath, err = pickFile(paths)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			filePath, err = getFirstFile(filePath)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			newUrl := r.URL.Host + filePath
+			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+		case r.RequestURI == "/":
+			filePath, err = pickFile(paths)
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			newUrl := r.URL.Host + filePath
+			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+		default:
 			filePath, err := url.QueryUnescape(r.RequestURI)
 			if err != nil {
 				log.Fatal(err)
