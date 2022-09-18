@@ -136,12 +136,12 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 
 		switch {
 		case r.RequestURI == "/" && Successive && refererUri != "":
-			f, err := url.QueryUnescape(refererUri)
+			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			filePath, err = getNextFile(f)
+			filePath, err = getNextFile(query)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -189,14 +189,16 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 
 			isImage, err := checkIfImage(filePath)
 			if err != nil {
+				log.Fatal(err)
+			}
+
+			if !isImage {
 				http.NotFound(w, r)
 			}
 
-			if isImage {
-				err := serveHtml(w, *r, filePath)
-				if err != nil {
-					log.Fatal(err)
-				}
+			err = serveHtml(w, *r, filePath)
+			if err != nil {
+				log.Fatal(err)
 			}
 		}
 	}
