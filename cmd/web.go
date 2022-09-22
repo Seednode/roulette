@@ -73,7 +73,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 			matchesPrefix = true
 		}
 	}
-	if matchesPrefix == false {
+	if !matchesPrefix {
 		if Verbose {
 			fmt.Printf("%v Failed to serve file outside specified path(s): %v", time.Now().Format(LOGDATE), filePath)
 		}
@@ -110,7 +110,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	w.Write(buf)
 
 	if Verbose {
-		fmt.Printf(" (Finished in %v)\n", time.Now().Sub(startTime).Round(time.Microsecond))
+		fmt.Printf(" (Finished in %v)\n", time.Since(startTime).Round(time.Microsecond))
 	}
 
 	return nil
@@ -142,7 +142,7 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			}
 
 			if filePath == "" {
-				filePath, err := pickFile(paths)
+				filePath, err = pickFile(paths)
 				if err != nil {
 					log.Fatal(err)
 				}

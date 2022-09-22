@@ -18,7 +18,7 @@ import (
 )
 
 func getFirstFile(path string) (string, error) {
-	re := regexp.MustCompile("(.+)([0-9]{3})(\\..+)")
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
 	split := re.FindAllStringSubmatch(path, -1)
 
@@ -45,7 +45,7 @@ func getFirstFile(path string) (string, error) {
 }
 
 func getNextFile(path string) (string, error) {
-	re := regexp.MustCompile("(.+)([0-9]{3})(\\..+)")
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
 	split := re.FindAllStringSubmatch(path, -1)
 
