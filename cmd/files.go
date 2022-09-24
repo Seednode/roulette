@@ -18,11 +18,24 @@ import (
 	"github.com/h2non/filetype"
 )
 
-func containsCaseIntensitive(a string, b string) bool {
-	return strings.Contains(
-		strings.ToLower(a),
-		strings.ToLower(b),
-	)
+var (
+	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
+)
+
+func appendPaths(paths []string, path, filter string) ([]string, error) {
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return paths, err
+	}
+
+	switch {
+	case filter != "" && strings.Contains(path, filter):
+		paths = append(paths, absolutePath)
+	case filter == "":
+		paths = append(paths, absolutePath)
+	}
+
+	return paths, nil
 }
 
 func getFirstFile(path string) (string, error) {
@@ -111,28 +124,32 @@ func checkIfImage(path string) (bool, error) {
 	return false, nil
 }
 
-func getFiles(path string) ([]string, error) {
+func getFiles(path, filter string) ([]string, error) {
 	var paths []string
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
 		switch {
-		case info.IsDir() && p != path:
+		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
-		case Filter != "":
-			absolutePath, err := filepath.Abs(p)
+		case Filter != "" && !info.IsDir():
+			paths, err = appendPaths(paths, p, Filter)
 			if err != nil {
 				return err
 			}
-
-			if containsCaseIntensitive(p, Filter) {
-				paths = append(paths, absolutePath)
+		case filter != "" && !info.IsDir():
+			paths, err = appendPaths(paths, p, filter)
+			if err != nil {
+				return err
 			}
 		default:
-			absolutePath, err := filepath.Abs(p)
+			paths, err = appendPaths(paths, p, "")
 			if err != nil {
 				return err
 			}
-			paths = append(paths, absolutePath)
 		}
 
 		return err
@@ -144,64 +161,24 @@ func getFiles(path string) ([]string, error) {
 	return paths, nil
 }
 
-func getFilesRecursive(path string) ([]string, error) {
-	var paths []string
-
-	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
-		switch {
-		case Filter != "" && !info.IsDir():
-			absolutePath, err := filepath.Abs(p)
-			if err != nil {
-				return err
-			}
-
-			if containsCaseIntensitive(p, Filter) {
-				paths = append(paths, absolutePath)
-			}
-		case Filter == "" && !info.IsDir():
-			absolutePath, err := filepath.Abs(p)
-			if err != nil {
-				return err
-			}
-
-			paths = append(paths, absolutePath)
-		}
-
-		return err
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	return paths, nil
-}
-
-func getFileList(paths []string) ([]string, error) {
+func getFileList(paths []string, filter string) ([]string, error) {
 	fileList := []string{}
 
 	for i := 0; i < len(paths); i++ {
-		if Recursive {
-			f, err := getFilesRecursive(paths[i])
-			if err != nil {
-				return nil, err
-			}
 
-			fileList = append(fileList, f...)
-		} else {
-			f, err := getFiles(paths[i])
-			if err != nil {
-				return nil, err
-			}
-
-			fileList = append(fileList, f...)
+		f, err := getFiles(paths[i], filter)
+		if err != nil {
+			return nil, err
 		}
+
+		fileList = append(fileList, f...)
 	}
 
 	return fileList, nil
 }
 
-func pickFile(args []string) (string, error) {
-	fileList, err := getFileList(args)
+func pickFile(args []string, filter string) (string, error) {
+	fileList, err := getFileList(args, filter)
 	if err != nil {
 		return "", err
 	}
@@ -221,9 +198,7 @@ func pickFile(args []string) (string, error) {
 		}
 	}
 
-	err = errors.New("no images found")
-
-	return "", err
+	return "", ErrNoImagesFound
 }
 
 func normalizePaths(args []string) ([]string, error) {

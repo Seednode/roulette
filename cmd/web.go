@@ -22,6 +22,15 @@ const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 
 const PREFIX string = "/src"
 
+func stripQueryParam(inUrl string) string {
+	u, err := url.Parse(inUrl)
+	if err != nil {
+		panic(err)
+	}
+	u.RawQuery = ""
+	return u.String()
+}
+
 func refererToUri(referer string) string {
 	parts := strings.SplitAfterN(referer, "/", 4)
 
@@ -44,8 +53,8 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 	htmlBody += fileName
 	htmlBody += `</title>
   </head>
-  <body>
-    <a href="/"><img src="`
+  <body>`
+	htmlBody += fmt.Sprintf(`"<a href="/?filter=%v"><img src="`, r.URL.Query().Get("filter"))
 	htmlBody += PREFIX + filePath
 	htmlBody += `"></img></a>
   </body>
@@ -60,10 +69,12 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 }
 
 func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
-	prefixedFilePath, err := url.QueryUnescape(r.RequestURI)
+	prefixedFilePath, err := url.QueryUnescape(stripQueryParam(r.URL.Path))
 	if err != nil {
 		return err
 	}
+
+	fmt.Println("Prefixed file path is " + prefixedFilePath)
 
 	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
@@ -75,7 +86,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 	if !matchesPrefix {
 		if Verbose {
-			fmt.Printf("%v Failed to serve file outside specified path(s): %v", time.Now().Format(LOGDATE), filePath)
+			fmt.Printf("%v Failed to serve file outside specified path(s): %v\n", time.Now().Format(LOGDATE), filePath)
 		}
 
 		http.NotFound(w, &r)
@@ -86,7 +97,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	_, err = os.Stat(filePath)
 	if errors.Is(err, os.ErrNotExist) {
 		if Verbose {
-			fmt.Printf("%v Failed to serve non-existent file: %v", time.Now().Format(LOGDATE), filePath)
+			fmt.Printf("%v Failed to serve non-existent file: %v\n", time.Now().Format(LOGDATE), filePath)
 		}
 
 		http.NotFound(w, &r)
@@ -127,10 +138,12 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 
 func serveHtmlHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		refererUri := refererToUri(r.Referer())
+		refererUri := stripQueryParam(refererToUri(r.Referer()))
+
+		filter := r.URL.Query().Get("filter")
 
 		switch {
-		case r.RequestURI == "/" && Successive && refererUri != "":
+		case r.URL.Path == "/" && Successive && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
 				log.Fatal(err)
@@ -142,8 +155,12 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths)
-				if err != nil {
+				filePath, err = pickFile(paths, filter)
+				switch {
+				case err != nil && err == ErrNoImagesFound:
+					http.NotFound(w, r)
+					return
+				case err != nil:
 					log.Fatal(err)
 				}
 
@@ -153,11 +170,15 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 				}
 			}
 
-			newUrl := r.URL.Host + filePath
+			newUrl := fmt.Sprintf("%v%v?filter=%v", r.URL.Host, filePath, filter)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		case r.RequestURI == "/" && Successive && refererUri == "":
-			filePath, err := pickFile(paths)
-			if err != nil {
+		case r.URL.Path == "/" && Successive && refererUri == "":
+			filePath, err := pickFile(paths, filter)
+			switch {
+			case err != nil && err == ErrNoImagesFound:
+				http.NotFound(w, r)
+				return
+			case err != nil:
 				log.Fatal(err)
 			}
 
@@ -166,21 +187,22 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 				log.Fatal(err)
 			}
 
-			newUrl := r.URL.Host + filePath
+			newUrl := fmt.Sprintf("%v%v?filter=%v", r.URL.Host, filePath, filter)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		case r.RequestURI == "/":
-			filePath, err := pickFile(paths)
-			if err != nil {
+		case r.URL.Path == "/":
+			filePath, err := pickFile(paths, filter)
+			switch {
+			case err != nil && err == ErrNoImagesFound:
+				http.NotFound(w, r)
+				return
+			case err != nil:
 				log.Fatal(err)
 			}
 
-			newUrl := r.URL.Host + filePath
+			newUrl := fmt.Sprintf("%v%v?filter=%v", r.URL.Host, filePath, filter)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		default:
-			filePath, err := url.QueryUnescape(r.RequestURI)
-			if err != nil {
-				log.Fatal(err)
-			}
+			filePath := r.URL.Path
 
 			isImage, err := checkIfImage(filePath)
 			if err != nil {
