@@ -36,11 +36,12 @@ Available Commands:
   version     Print version
 
 Flags:
-  -h, --help         help for roulette
-  -p, --port int     port to listen on (default 8080)
-  -r, --recursive    recurse into subdirectories
-  -s, --successive   load the next sequential file, if possible
-  -v, --verbose      log accessed files to stdout
+  -f, --filter string   only display images matching specified pattern (case-insensitive)
+  -h, --help            help for roulette
+  -p, --port int        port to listen on (default 8080)
+  -r, --recursive       recurse into subdirectories
+  -s, --successive      load the next sequential file, if possible
+  -v, --verbose         log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.
 ```

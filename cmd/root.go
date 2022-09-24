@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Filter string
 var Port int
 var Recursive bool
 var Successive bool
@@ -32,6 +33,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().StringVarP(&Filter, "filter", "f", "", "only display images matching specified pattern (case-insensitive)")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().BoolVarP(&Successive, "successive", "s", false, "load the next sequential file, if possible")

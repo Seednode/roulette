@@ -12,10 +12,18 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/h2non/filetype"
 )
+
+func containsCaseIntensitive(a string, b string) bool {
+	return strings.Contains(
+		strings.ToLower(a),
+		strings.ToLower(b),
+	)
+}
 
 func getFirstFile(path string) (string, error) {
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
@@ -107,9 +115,19 @@ func getFiles(path string) ([]string, error) {
 	var paths []string
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
-		if info.IsDir() && p != path {
+		switch {
+		case info.IsDir() && p != path:
 			return filepath.SkipDir
-		} else {
+		case Filter != "":
+			absolutePath, err := filepath.Abs(p)
+			if err != nil {
+				return err
+			}
+
+			if containsCaseIntensitive(p, Filter) {
+				paths = append(paths, absolutePath)
+			}
+		default:
 			absolutePath, err := filepath.Abs(p)
 			if err != nil {
 				return err
@@ -130,13 +148,25 @@ func getFilesRecursive(path string) ([]string, error) {
 	var paths []string
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
-		if !info.IsDir() {
+		switch {
+		case Filter != "" && !info.IsDir():
 			absolutePath, err := filepath.Abs(p)
 			if err != nil {
 				return err
 			}
+
+			if containsCaseIntensitive(p, Filter) {
+				paths = append(paths, absolutePath)
+			}
+		case Filter == "" && !info.IsDir():
+			absolutePath, err := filepath.Abs(p)
+			if err != nil {
+				return err
+			}
+
 			paths = append(paths, absolutePath)
 		}
+
 		return err
 	})
 	if err != nil {
