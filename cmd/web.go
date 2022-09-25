@@ -54,7 +54,7 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 	htmlBody += `</title>
   </head>
   <body>`
-	htmlBody += fmt.Sprintf(`"<a href="/?f=%v&s=%v"><img src="`, r.URL.Query().Get("f"), r.URL.Query().Get("s"))
+	htmlBody += fmt.Sprintf(`<a href="/?f=%v&s=%v"><img src="`, r.URL.Query().Get("f"), r.URL.Query().Get("s"))
 	htmlBody += PREFIX + filePath
 	htmlBody += `"></img></a>
   </body>
