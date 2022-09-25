@@ -210,7 +210,6 @@ func prepareDirectories(m map[string][]string, successive string) []string {
 
 	switch {
 	case successive != "":
-		fmt.Println("Successive")
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, prepareDirectory(m[keys[i]])...)
 		}
