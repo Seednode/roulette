@@ -22,20 +22,22 @@ var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
 )
 
-func appendPaths(paths []string, path, filter string) ([]string, error) {
+func appendPaths(m map[string][]string, path, filter string) (map[string][]string, error) {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
-		return paths, err
+		return nil, err
 	}
+
+	directory, _ := filepath.Split(absolutePath)
 
 	switch {
 	case filter != "" && strings.Contains(path, filter):
-		paths = append(paths, absolutePath)
+		m[directory] = append(m[directory], path)
 	case filter == "":
-		paths = append(paths, absolutePath)
+		m[directory] = append(m[directory], path)
 	}
 
-	return paths, nil
+	return m, nil
 }
 
 func getFirstFile(path string) (string, error) {
@@ -98,11 +100,13 @@ func getNextFile(path string) (string, error) {
 }
 
 func checkNextFile(path string) (bool, error) {
-	if _, err := os.Stat(path); err == nil {
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
 		return true, nil
-	} else if errors.Is(err, os.ErrNotExist) {
+	case errors.Is(err, os.ErrNotExist):
 		return false, nil
-	} else {
+	default:
 		return false, err
 	}
 }
@@ -124,9 +128,7 @@ func checkIfImage(path string) (bool, error) {
 	return false, nil
 }
 
-func getFiles(path, filter string) ([]string, error) {
-	var paths []string
-
+func getFiles(m map[string][]string, path, filter string) (map[string][]string, error) {
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -136,17 +138,17 @@ func getFiles(path, filter string) ([]string, error) {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case Filter != "" && !info.IsDir():
-			paths, err = appendPaths(paths, p, Filter)
+			m, err = appendPaths(m, p, Filter)
 			if err != nil {
 				return err
 			}
 		case filter != "" && !info.IsDir():
-			paths, err = appendPaths(paths, p, filter)
+			m, err = appendPaths(m, p, filter)
 			if err != nil {
 				return err
 			}
 		default:
-			paths, err = appendPaths(paths, p, "")
+			m, err = appendPaths(m, p, "")
 			if err != nil {
 				return err
 			}
@@ -158,34 +160,78 @@ func getFiles(path, filter string) ([]string, error) {
 		return nil, err
 	}
 
-	return paths, nil
+	return m, nil
 }
 
-func getFileList(paths []string, filter string) ([]string, error) {
-	fileList := []string{}
+func getFileList(paths []string, filter string) (map[string][]string, error) {
+	fileMap := map[string][]string{}
+	var err error
 
 	for i := 0; i < len(paths); i++ {
-
-		f, err := getFiles(paths[i], filter)
+		fileMap, err = getFiles(fileMap, paths[i], filter)
 		if err != nil {
 			return nil, err
 		}
-
-		fileList = append(fileList, f...)
 	}
 
-	return fileList, nil
+	return fileMap, nil
+}
+
+func cleanFilename(filename string) string {
+	filename = filename[:len(filename)-(len(filepath.Ext(filename))+3)]
+
+	return filename
+}
+
+func prepareDirectory(directory []string) []string {
+	_, first := filepath.Split(directory[0])
+	first = cleanFilename(first)
+
+	_, last := filepath.Split(directory[len(directory)-1])
+	last = cleanFilename(last)
+
+	if first == last {
+		d := append([]string{}, directory[0])
+		return d
+	} else {
+		return directory
+	}
+}
+
+func prepareDirectories(m map[string][]string) []string {
+	rand.Seed(time.Now().UnixNano())
+
+	directories := []string{}
+
+	keys := make([]string, len(m))
+
+	i := 0
+	for k := range m {
+		keys[i] = k
+		i++
+	}
+
+	switch {
+	case Successive:
+		for i := 0; i < len(keys); i++ {
+			directories = append(directories, prepareDirectory(m[keys[i]])...)
+		}
+	default:
+		for i := 0; i < len(keys); i++ {
+			directories = append(directories, m[keys[i]]...)
+		}
+	}
+
+	return directories
 }
 
 func pickFile(args []string, filter string) (string, error) {
-	fileList, err := getFileList(args, filter)
+	fileMap, err := getFileList(args, filter)
 	if err != nil {
 		return "", err
 	}
 
-	rand.Seed(time.Now().UnixNano())
-
-	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
+	fileList := prepareDirectories(fileMap)
 
 	for i := 0; i < len(fileList); i++ {
 		filePath := fileList[i]

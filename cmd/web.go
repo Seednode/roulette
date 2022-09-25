@@ -74,8 +74,6 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 		return err
 	}
 
-	fmt.Println("Prefixed file path is " + prefixedFilePath)
-
 	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
 	var matchesPrefix = false
