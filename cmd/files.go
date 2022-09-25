@@ -137,17 +137,12 @@ func getFiles(m map[string][]string, path, filter string) (map[string][]string, 
 		switch {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
-		case Filter != "" && !info.IsDir():
-			m, err = appendPaths(m, p, Filter)
-			if err != nil {
-				return err
-			}
 		case filter != "" && !info.IsDir():
 			m, err = appendPaths(m, p, filter)
 			if err != nil {
 				return err
 			}
-		default:
+		case !info.IsDir():
 			m, err = appendPaths(m, p, "")
 			if err != nil {
 				return err
@@ -190,17 +185,19 @@ func prepareDirectory(directory []string) []string {
 	_, last := filepath.Split(directory[len(directory)-1])
 	last = cleanFilename(last)
 
+	fmt.Printf("Comparing %v to %v\n", first, last)
+
 	if first == last {
 		d := append([]string{}, directory[0])
+		fmt.Printf("Appending %v to empty directory\n", d)
 		return d
 	} else {
+		fmt.Printf("Returning directory as-is\n")
 		return directory
 	}
 }
 
-func prepareDirectories(m map[string][]string) []string {
-	rand.Seed(time.Now().UnixNano())
-
+func prepareDirectories(m map[string][]string, successive string) []string {
 	directories := []string{}
 
 	keys := make([]string, len(m))
@@ -212,7 +209,8 @@ func prepareDirectories(m map[string][]string) []string {
 	}
 
 	switch {
-	case Successive:
+	case successive != "":
+		fmt.Println("Successive")
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, prepareDirectory(m[keys[i]])...)
 		}
@@ -225,13 +223,17 @@ func prepareDirectories(m map[string][]string) []string {
 	return directories
 }
 
-func pickFile(args []string, filter string) (string, error) {
+func pickFile(args []string, filter, successive string) (string, error) {
 	fileMap, err := getFileList(args, filter)
 	if err != nil {
 		return "", err
 	}
 
-	fileList := prepareDirectories(fileMap)
+	rand.Seed(time.Now().UnixNano())
+
+	fileList := prepareDirectories(fileMap, successive)
+
+	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
 	for i := 0; i < len(fileList); i++ {
 		filePath := fileList[i]
