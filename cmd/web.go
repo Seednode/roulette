@@ -142,7 +142,7 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 		successive := r.URL.Query().Get("s")
 
 		switch {
-		case r.URL.Path == "/" && successive != "" && refererUri != "":
+		case r.URL.Path == "/" && successive == "true" && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
 				log.Fatal(err)
@@ -171,7 +171,7 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 
 			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		case r.URL.Path == "/" && successive != "" && refererUri == "":
+		case r.URL.Path == "/" && successive == "true" && refererUri == "":
 			filePath, err := pickFile(paths, filter, successive)
 			switch {
 			case err != nil && err == ErrNoImagesFound:
