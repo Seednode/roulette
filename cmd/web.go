@@ -5,10 +5,8 @@ Copyright © 2022 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,17 +16,26 @@ import (
 	"time"
 )
 
-const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
+type appHandler func(http.ResponseWriter, *http.Request) error
 
+func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		http.Error(w, err.Error(), 500)
+	}
+}
+
+const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
 const PREFIX string = "/src"
 
-func stripQueryParam(inUrl string) string {
-	u, err := url.Parse(inUrl)
+func stripQueryParam(inUrl string) (string, error) {
+	url, err := url.Parse(inUrl)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
-	u.RawQuery = ""
-	return u.String()
+
+	url.RawQuery = ""
+
+	return url.String(), nil
 }
 
 func refererToUri(referer string) string {
@@ -69,40 +76,29 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 }
 
 func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
-	prefixedFilePath, err := url.QueryUnescape(stripQueryParam(r.URL.Path))
+	strippedUrl, err := stripQueryParam(r.URL.Path)
+	if err != nil {
+		return err
+	}
+
+	prefixedFilePath, err := url.QueryUnescape(strippedUrl)
 	if err != nil {
 		return err
 	}
 
 	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
-	var matchesPrefix = false
-	for i := 0; i < len(paths); i++ {
-		if strings.HasPrefix(filePath, paths[i]) {
-			matchesPrefix = true
-		}
-	}
-	if !matchesPrefix {
-		if Verbose {
-			fmt.Printf("%v Failed to serve file outside specified path(s): %v\n", time.Now().Format(LOGDATE), filePath)
-		}
-
+	if !pathIsValid(filePath, paths) {
 		http.NotFound(w, &r)
-
-		return nil
 	}
 
-	_, err = os.Stat(filePath)
-	if errors.Is(err, os.ErrNotExist) {
-		if Verbose {
-			fmt.Printf("%v Failed to serve non-existent file: %v\n", time.Now().Format(LOGDATE), filePath)
-		}
-
-		http.NotFound(w, &r)
-
-		return nil
-	} else if !errors.Is(err, os.ErrNotExist) && err != nil {
+	exists, err := fileExists(filePath)
+	if err != nil {
 		return err
+	}
+
+	if !exists {
+		http.NotFound(w, &r)
 	}
 
 	var startTime time.Time
@@ -125,18 +121,23 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	return nil
 }
 
-func serveStaticFileHandler(paths []string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveStaticFileHandler(paths []string) appHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
 		err := serveStaticFile(w, *r, paths)
 		if err != nil {
-			log.Fatal(err)
+			return err
 		}
+
+		return nil
 	}
 }
 
-func serveHtmlHandler(paths []string) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		refererUri := stripQueryParam(refererToUri(r.Referer()))
+func serveHtmlHandler(paths []string) appHandler {
+	return func(w http.ResponseWriter, r *http.Request) error {
+		refererUri, err := stripQueryParam(refererToUri(r.Referer()))
+		if err != nil {
+			return err
+		}
 
 		filter := r.URL.Query().Get("f")
 		successive := r.URL.Query().Get("s")
@@ -145,12 +146,12 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 		case r.URL.Path == "/" && successive == "true" && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			filePath, err := getNextFile(query)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			if filePath == "" {
@@ -158,14 +159,14 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
-					return
+					return nil
 				case err != nil:
-					log.Fatal(err)
+					return err
 				}
 
 				filePath, err = getFirstFile(filePath)
 				if err != nil {
-					log.Fatal(err)
+					return err
 				}
 			}
 
@@ -173,29 +174,27 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		case r.URL.Path == "/" && successive == "true" && refererUri == "":
 			filePath, err := pickFile(paths, filter, successive)
-			switch {
-			case err != nil && err == ErrNoImagesFound:
+			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
-				return
-			case err != nil:
-				log.Fatal(err)
+				return nil
+			} else if err != nil {
+				return err
 			}
 
 			filePath, err = getFirstFile(filePath)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 
 			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, filter, successive)
-			switch {
-			case err != nil && err == ErrNoImagesFound:
+			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
-				return
-			case err != nil:
-				log.Fatal(err)
+				return nil
+			} else if err != nil {
+				return err
 			}
 
 			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
@@ -203,42 +202,44 @@ func serveHtmlHandler(paths []string) http.HandlerFunc {
 		default:
 			filePath := r.URL.Path
 
-			isImage, err := checkIfImage(filePath)
+			image, err := isImage(filePath)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
-			if !isImage {
+			if !image {
 				http.NotFound(w, r)
 			}
 
 			err = serveHtml(w, *r, filePath)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
 		}
+
+		return nil
 	}
 }
 
 func doNothing(http.ResponseWriter, *http.Request) {}
 
-func ServePage(args []string) {
+func ServePage(args []string) error {
 	paths, err := normalizePaths(args)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	for _, i := range paths {
 		fmt.Println("Paths: " + i)
 	}
 
-	http.HandleFunc("/", serveHtmlHandler(paths))
+	http.Handle("/", serveHtmlHandler(paths))
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
-	port := strconv.Itoa(Port)
-
-	err = http.ListenAndServe(":"+port, nil)
+	err = http.ListenAndServe(":"+strconv.Itoa(Port), nil)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
+
+	return nil
 }

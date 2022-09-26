@@ -30,10 +30,9 @@ func appendPaths(m map[string][]string, path, filter string) (map[string][]strin
 
 	directory, _ := filepath.Split(absolutePath)
 
-	switch {
-	case filter != "" && strings.Contains(path, filter):
+	if filter != "" && strings.Contains(path, filter) {
 		m[directory] = append(m[directory], path)
-	case filter == "":
+	} else if filter == "" {
 		m[directory] = append(m[directory], path)
 	}
 
@@ -55,7 +54,7 @@ func getFirstFile(path string) (string, error) {
 
 	fileName := fmt.Sprintf("%v%.3d%v", base, number, extension)
 
-	nextFile, err := checkNextFile(fileName)
+	nextFile, err := nextFileExists(fileName)
 	if err != nil {
 		return "", err
 	}
@@ -87,7 +86,7 @@ func getNextFile(path string) (string, error) {
 
 	fileName := fmt.Sprintf("%v%.3d%v", base, incremented, extension)
 
-	nextFile, err := checkNextFile(fileName)
+	nextFile, err := nextFileExists(fileName)
 	if err != nil {
 		return "", err
 	}
@@ -99,7 +98,40 @@ func getNextFile(path string) (string, error) {
 	return fileName, nil
 }
 
-func checkNextFile(path string) (bool, error) {
+func pathIsValid(filePath string, paths []string) bool {
+	var matchesPrefix = false
+	for i := 0; i < len(paths); i++ {
+		if strings.HasPrefix(filePath, paths[i]) {
+			matchesPrefix = true
+		}
+	}
+	if !matchesPrefix {
+		if Verbose {
+			fmt.Printf("%v Failed to serve file outside specified path(s): %v\n", time.Now().Format(LOGDATE), filePath)
+		}
+
+		return false
+	}
+
+	return true
+}
+
+func fileExists(filePath string) (bool, error) {
+	_, err := os.Stat(filePath)
+	if errors.Is(err, os.ErrNotExist) {
+		if Verbose {
+			fmt.Printf("%v Failed to serve non-existent file: %v\n", time.Now().Format(LOGDATE), filePath)
+		}
+
+		return false, nil
+	} else if !errors.Is(err, os.ErrNotExist) && err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
+func nextFileExists(path string) (bool, error) {
 	_, err := os.Stat(path)
 	switch {
 	case err == nil:
@@ -111,7 +143,7 @@ func checkNextFile(path string) (bool, error) {
 	}
 }
 
-func checkIfImage(path string) (bool, error) {
+func isImage(path string) (bool, error) {
 	file, err := os.Open(path)
 	if err != nil {
 		return false, err
@@ -121,11 +153,7 @@ func checkIfImage(path string) (bool, error) {
 	head := make([]byte, 261)
 	file.Read(head)
 
-	if filetype.IsImage(head) {
-		return true, nil
-	}
-
-	return false, nil
+	return filetype.IsImage(head), nil
 }
 
 func getFiles(m map[string][]string, path, filter string) (map[string][]string, error) {
@@ -173,9 +201,7 @@ func getFileList(paths []string, filter string) (map[string][]string, error) {
 }
 
 func cleanFilename(filename string) string {
-	filename = filename[:len(filename)-(len(filepath.Ext(filename))+3)]
-
-	return filename
+	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
 }
 
 func prepareDirectory(directory []string) []string {
@@ -189,10 +215,8 @@ func prepareDirectory(directory []string) []string {
 
 	if first == last {
 		d := append([]string{}, directory[0])
-		fmt.Printf("Appending %v to empty directory\n", d)
 		return d
 	} else {
-		fmt.Printf("Returning directory as-is\n")
 		return directory
 	}
 }
@@ -208,12 +232,11 @@ func prepareDirectories(m map[string][]string, successive string) []string {
 		i++
 	}
 
-	switch {
-	case successive != "":
+	if successive != "" {
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, prepareDirectory(m[keys[i]])...)
 		}
-	default:
+	} else {
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, m[keys[i]]...)
 		}
@@ -228,15 +251,15 @@ func pickFile(args []string, filter, successive string) (string, error) {
 		return "", err
 	}
 
-	rand.Seed(time.Now().UnixNano())
-
 	fileList := prepareDirectories(fileMap, successive)
+
+	rand.Seed(time.Now().UnixNano())
 
 	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
 	for i := 0; i < len(fileList); i++ {
 		filePath := fileList[i]
-		isImage, err := checkIfImage(filePath)
+		isImage, err := isImage(filePath)
 		if err != nil {
 			return "", err
 		}
