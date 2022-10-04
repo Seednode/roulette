@@ -24,7 +24,7 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-const LOGDATE string = "2006-01-02T15:04:05.000000000-07:00"
+const LOGDATE string = "2006-01-02T15:04:05.000-07:00"
 const PREFIX string = "/src"
 
 func stripQueryParam(inUrl string) (string, error) {
@@ -48,7 +48,7 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
-func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath string) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
@@ -75,7 +75,7 @@ func serveHtml(w http.ResponseWriter, r http.Request, filePath string) error {
 	return nil
 }
 
-func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) error {
+func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) error {
 	strippedUrl, err := stripQueryParam(r.URL.Path)
 	if err != nil {
 		return err
@@ -89,7 +89,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
 
 	if !pathIsValid(filePath, paths) {
-		http.NotFound(w, &r)
+		http.NotFound(w, r)
 	}
 
 	exists, err := fileExists(filePath)
@@ -98,7 +98,9 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 	}
 
 	if !exists {
-		http.NotFound(w, &r)
+		http.NotFound(w, r)
+
+		return nil
 	}
 
 	var startTime time.Time
@@ -123,7 +125,7 @@ func serveStaticFile(w http.ResponseWriter, r http.Request, paths []string) erro
 
 func serveStaticFileHandler(paths []string) appHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
-		err := serveStaticFile(w, *r, paths)
+		err := serveStaticFile(w, r, paths)
 		if err != nil {
 			return err
 		}
@@ -159,6 +161,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
+
 					return nil
 				case err != nil:
 					return err
@@ -176,6 +179,7 @@ func serveHtmlHandler(paths []string) appHandler {
 			filePath, err := pickFile(paths, filter, successive)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
+
 				return nil
 			} else if err != nil {
 				return err
@@ -192,6 +196,7 @@ func serveHtmlHandler(paths []string) appHandler {
 			filePath, err := pickFile(paths, filter, successive)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
+
 				return nil
 			} else if err != nil {
 				return err
@@ -208,9 +213,11 @@ func serveHtmlHandler(paths []string) appHandler {
 			}
 			if !image {
 				http.NotFound(w, r)
+
+				return nil
 			}
 
-			err = serveHtml(w, *r, filePath)
+			err = serveHtml(w, r, filePath)
 			if err != nil {
 				return err
 			}

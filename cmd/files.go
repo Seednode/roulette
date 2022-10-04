@@ -211,8 +211,6 @@ func prepareDirectory(directory []string) []string {
 	_, last := filepath.Split(directory[len(directory)-1])
 	last = cleanFilename(last)
 
-	fmt.Printf("Comparing %v to %v\n", first, last)
-
 	if first == last {
 		d := append([]string{}, directory[0])
 		return d
