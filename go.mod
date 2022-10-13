@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/h2non/filetype v1.1.3
-	github.com/spf13/cobra v1.5.0
+	github.com/spf13/cobra v1.6.0
 )
 
 require (
