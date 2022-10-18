@@ -10,20 +10,6 @@ Browser history is preserved, so you can always go back to any previously displa
 
 Builds available [here](https://cdn.seedno.de/builds/roulette).
 
-## [-s, --successive]
-
-This option is tailored specifically for my own use case.
-
-When loading a new image, it checks for a sequentially-numbered file in the same directory.
-
-For example, let's say `/mnt/photos/MyVacation001.jpg` is being displayed.
-
-If you click on the image, `roulette` will attempt to display `/mnt/photos/MyVacation002.jpg`.
-
-If that matching file is not found, it will select a random file as usual.
-
-The expected format is `filename###.extension`.
-
 ## Usage output
 ```
 Usage:
@@ -40,7 +26,6 @@ Flags:
   -h, --help            help for roulette
   -p, --port int        port to listen on (default 8080)
   -r, --recursive       recurse into subdirectories
-  -s, --successive      load the next sequential file, if possible
   -v, --verbose         log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.

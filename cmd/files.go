@@ -52,15 +52,43 @@ func getFirstFile(path string) (string, error) {
 	number := 1
 	extension := split[0][3]
 
-	fileName := fmt.Sprintf("%v%.3d%v", base, number, extension)
-
-	nextFile, err := nextFileExists(fileName)
+	fileName, err := tryExtensions(base, number, extension)
 	if err != nil {
 		return "", err
 	}
 
-	if !nextFile {
+	return fileName, nil
+}
+
+func getLastFile(path string) (string, error) {
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+
+	split := re.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
 		return "", nil
+	}
+
+	base := split[0][1]
+	number := 1
+	extension := split[0][3]
+
+	var fileName string
+	var err error
+
+	for {
+		fileName, err = tryExtensions(base, number, extension)
+		if err != nil {
+			return "", err
+		}
+
+		if fileName == "" {
+			fileName, err = tryExtensions(base, number-1, extension)
+
+			break
+		}
+
+		number = number + 1
 	}
 
 	return fileName, nil
@@ -82,20 +110,69 @@ func getNextFile(path string) (string, error) {
 	}
 	extension := split[0][3]
 
-	incremented := number + 1
-
-	fileName := fmt.Sprintf("%v%.3d%v", base, incremented, extension)
-
-	nextFile, err := nextFileExists(fileName)
+	fileName, err := tryExtensions(base, number+1, extension)
 	if err != nil {
 		return "", err
 	}
 
-	if !nextFile {
+	return fileName, err
+}
+
+func getPreviousFile(path string) (string, error) {
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+
+	split := re.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
 		return "", nil
 	}
 
-	return fileName, nil
+	base := split[0][1]
+	number, err := strconv.Atoi(split[0][2])
+	if err != nil {
+		return "", err
+	}
+	extension := split[0][3]
+
+	fileName, err := tryExtensions(base, number-1, extension)
+	if err != nil {
+		return "", err
+	}
+
+	return fileName, err
+}
+
+func tryExtensions(base string, number int, extension string) (string, error) {
+	extensions := [6]string{extension, ".jpg", ".jpeg", ".png", ".gif", ".webp"}
+
+	var fileName string
+
+	for _, i := range extensions {
+		fileName = fmt.Sprintf("%v%.3d%v", base, number, i)
+
+		exists, err := fileExists(fileName)
+		if err != nil {
+			return "", err
+		}
+
+		if exists {
+			return fileName, nil
+		}
+	}
+
+	return "", nil
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, os.ErrNotExist):
+		return false, nil
+	default:
+		return false, err
+	}
 }
 
 func pathIsValid(filePath string, paths []string) bool {
@@ -114,33 +191,6 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 
 	return true
-}
-
-func fileExists(filePath string) (bool, error) {
-	_, err := os.Stat(filePath)
-	if errors.Is(err, os.ErrNotExist) {
-		if Verbose {
-			fmt.Printf("%v Failed to serve non-existent file: %v\n", time.Now().Format(LOGDATE), filePath)
-		}
-
-		return false, nil
-	} else if !errors.Is(err, os.ErrNotExist) && err != nil {
-		return false, err
-	}
-
-	return true, nil
-}
-
-func nextFileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	switch {
-	case err == nil:
-		return true, nil
-	case errors.Is(err, os.ErrNotExist):
-		return false, nil
-	default:
-		return false, err
-	}
 }
 
 func isImage(path string) (bool, error) {
@@ -219,7 +269,7 @@ func prepareDirectory(directory []string) []string {
 	}
 }
 
-func prepareDirectories(m map[string][]string, successive string) []string {
+func prepareDirectories(m map[string][]string, sorting string) []string {
 	directories := []string{}
 
 	keys := make([]string, len(m))
@@ -230,7 +280,7 @@ func prepareDirectories(m map[string][]string, successive string) []string {
 		i++
 	}
 
-	if successive != "" {
+	if sorting == "asc" || sorting == "desc" {
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, prepareDirectory(m[keys[i]])...)
 		}
@@ -243,13 +293,13 @@ func prepareDirectories(m map[string][]string, successive string) []string {
 	return directories
 }
 
-func pickFile(args []string, filter, successive string) (string, error) {
+func pickFile(args []string, filter, sorting string) (string, error) {
 	fileMap, err := getFileList(args, filter)
 	if err != nil {
 		return "", err
 	}
 
-	fileList := prepareDirectories(fileMap, successive)
+	fileList := prepareDirectories(fileMap, sorting)
 
 	rand.Seed(time.Now().UnixNano())
 

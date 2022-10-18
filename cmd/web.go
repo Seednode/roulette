@@ -142,10 +142,10 @@ func serveHtmlHandler(paths []string) appHandler {
 		}
 
 		filter := r.URL.Query().Get("f")
-		successive := r.URL.Query().Get("s")
+		sorting := r.URL.Query().Get("s")
 
 		switch {
-		case r.URL.Path == "/" && successive == "true" && refererUri != "":
+		case r.URL.Path == "/" && sorting == "asc" && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
 				return err
@@ -157,7 +157,7 @@ func serveHtmlHandler(paths []string) appHandler {
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths, filter, successive)
+				filePath, err = pickFile(paths, filter, sorting)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
@@ -173,10 +173,10 @@ func serveHtmlHandler(paths []string) appHandler {
 				}
 			}
 
-			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
+			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, sorting)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		case r.URL.Path == "/" && successive == "true" && refererUri == "":
-			filePath, err := pickFile(paths, filter, successive)
+		case r.URL.Path == "/" && sorting == "asc" && refererUri == "":
+			filePath, err := pickFile(paths, filter, sorting)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
 
@@ -190,10 +190,40 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
+			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, sorting)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
-		case r.URL.Path == "/":
-			filePath, err := pickFile(paths, filter, successive)
+		case r.URL.Path == "/" && sorting == "desc" && refererUri != "":
+			query, err := url.QueryUnescape(refererUri)
+			if err != nil {
+				return err
+			}
+
+			filePath, err := getPreviousFile(query)
+			if err != nil {
+				return err
+			}
+
+			if filePath == "" {
+				filePath, err = pickFile(paths, filter, sorting)
+				switch {
+				case err != nil && err == ErrNoImagesFound:
+					http.NotFound(w, r)
+
+					return nil
+				case err != nil:
+					return err
+				}
+
+				filePath, err = getLastFile(filePath)
+				if err != nil {
+					return err
+				}
+			}
+
+			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, sorting)
+			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+		case r.URL.Path == "/" && sorting == "desc" && refererUri == "":
+			filePath, err := pickFile(paths, filter, sorting)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
 
@@ -202,7 +232,24 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, successive)
+			filePath, err = getLastFile(filePath)
+			if err != nil {
+				return err
+			}
+
+			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, sorting)
+			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+		case r.URL.Path == "/":
+			filePath, err := pickFile(paths, filter, sorting)
+			if err != nil && err == ErrNoImagesFound {
+				http.NotFound(w, r)
+
+				return nil
+			} else if err != nil {
+				return err
+			}
+
+			newUrl := fmt.Sprintf("%v%v?f=%v&s=%v", r.URL.Host, filePath, filter, sorting)
 			http.Redirect(w, r, newUrl, http.StatusSeeOther)
 		default:
 			filePath := r.URL.Path
