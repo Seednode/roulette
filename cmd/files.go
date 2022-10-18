@@ -82,6 +82,9 @@ func getLastFile(p Path) (string, error) {
 			p.Decrement()
 
 			fileName, err = tryExtensions(p)
+			if err != nil {
+				return "", err
+			}
 
 			break
 		}
@@ -113,6 +116,9 @@ func getPreviousFile(p Path) (string, error) {
 }
 
 func splitPath(path string) (Path, error) {
+	p := Path{}
+	var err error
+
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
 	split := re.FindAllStringSubmatch(path, -1)
@@ -121,14 +127,13 @@ func splitPath(path string) (Path, error) {
 		return Path{}, nil
 	}
 
-	p := Path{}
-	var err error
-
 	p.Base = split[0][1]
+
 	p.Number, err = strconv.Atoi(split[0][2])
 	if err != nil {
 		return Path{}, err
 	}
+
 	p.Extension = split[0][3]
 
 	return p, nil
@@ -303,6 +308,7 @@ func pickFile(args []string, filter, sorting string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+
 		if isImage {
 			return filePath, nil
 		}
