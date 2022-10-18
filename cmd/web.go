@@ -86,7 +86,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 		return err
 	}
 
-	filePath := strings.TrimPrefix(prefixedFilePath, PREFIX)
+	filePath := filepath.Clean(strings.TrimPrefix(prefixedFilePath, PREFIX))
 
 	if !pathIsValid(filePath, paths) {
 		http.NotFound(w, r)
