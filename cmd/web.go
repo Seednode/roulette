@@ -320,7 +320,7 @@ func ServePage(args []string) error {
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
-	err = http.ListenAndServe(":"+strconv.Itoa(Port), nil)
+	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)
 	if err != nil {
 		return err
 	}

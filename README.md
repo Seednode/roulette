@@ -22,11 +22,10 @@ Available Commands:
   version     Print version
 
 Flags:
-  -f, --filter string   only display images matching specified pattern (case-insensitive)
-  -h, --help            help for roulette
-  -p, --port int        port to listen on (default 8080)
-  -r, --recursive       recurse into subdirectories
-  -v, --verbose         log accessed files to stdout
+  -h, --help          help for roulette
+  -p, --port uint16   port to listen on (default 8080)
+  -r, --recursive     recurse into subdirectories
+  -v, --verbose       log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.
 ```

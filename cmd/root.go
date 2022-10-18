@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Port int
+var Port uint16
 var Recursive bool
 var Verbose bool
 
@@ -31,7 +31,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
+	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().SetInterspersed(true)
