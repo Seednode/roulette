@@ -151,7 +151,12 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			filePath, err := getNextFile(query)
+			path, err := splitPath(query)
+			if err != nil {
+				return err
+			}
+
+			filePath, err := getNextFile(path)
 			if err != nil {
 				return err
 			}
@@ -167,7 +172,12 @@ func serveHtmlHandler(paths []string) appHandler {
 					return err
 				}
 
-				filePath, err = getFirstFile(filePath)
+				path, err := splitPath(filePath)
+				if err != nil {
+					return err
+				}
+
+				filePath, err = getFirstFile(path)
 				if err != nil {
 					return err
 				}
@@ -185,7 +195,12 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			filePath, err = getFirstFile(filePath)
+			path, err := splitPath(filePath)
+			if err != nil {
+				return err
+			}
+
+			filePath, err = getFirstFile(path)
 			if err != nil {
 				return err
 			}
@@ -198,7 +213,12 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			filePath, err := getPreviousFile(query)
+			path, err := splitPath(query)
+			if err != nil {
+				return err
+			}
+
+			filePath, err := getPreviousFile(path)
 			if err != nil {
 				return err
 			}
@@ -214,7 +234,12 @@ func serveHtmlHandler(paths []string) appHandler {
 					return err
 				}
 
-				filePath, err = getLastFile(filePath)
+				path, err := splitPath(filePath)
+				if err != nil {
+					return err
+				}
+
+				filePath, err = getLastFile(path)
 				if err != nil {
 					return err
 				}
@@ -232,7 +257,12 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			filePath, err = getLastFile(filePath)
+			path, err := splitPath(filePath)
+			if err != nil {
+				return err
+			}
+
+			filePath, err = getLastFile(path)
 			if err != nil {
 				return err
 			}

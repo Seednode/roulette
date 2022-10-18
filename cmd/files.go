@@ -18,6 +18,20 @@ import (
 	"github.com/h2non/filetype"
 )
 
+type Path struct {
+	Base      string
+	Number    int
+	Extension string
+}
+
+func (p *Path) Increment() {
+	p.Number = p.Number + 1
+}
+
+func (p *Path) Decrement() {
+	p.Number = p.Number - 1
+}
+
 var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
 )
@@ -39,20 +53,10 @@ func appendPaths(m map[string][]string, path, filter string) (map[string][]strin
 	return m, nil
 }
 
-func getFirstFile(path string) (string, error) {
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+func getFirstFile(p Path) (string, error) {
+	p.Number = 1
 
-	split := re.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return "", nil
-	}
-
-	base := split[0][1]
-	number := 1
-	extension := split[0][3]
-
-	fileName, err := tryExtensions(base, number, extension)
+	fileName, err := tryExtensions(p)
 	if err != nil {
 		return "", err
 	}
@@ -60,57 +64,36 @@ func getFirstFile(path string) (string, error) {
 	return fileName, nil
 }
 
-func getLastFile(path string) (string, error) {
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
-
-	split := re.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return "", nil
-	}
-
-	base := split[0][1]
-	number := 1
-	extension := split[0][3]
-
+func getLastFile(p Path) (string, error) {
 	var fileName string
 	var err error
 
+	p.Number = 1
+
 	for {
-		fileName, err = tryExtensions(base, number, extension)
+		p.Increment()
+
+		fileName, err = tryExtensions(p)
 		if err != nil {
 			return "", err
 		}
 
 		if fileName == "" {
-			fileName, err = tryExtensions(base, number-1, extension)
+			p.Decrement()
+
+			fileName, err = tryExtensions(p)
 
 			break
 		}
-
-		number = number + 1
 	}
 
 	return fileName, nil
 }
 
-func getNextFile(path string) (string, error) {
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+func getNextFile(p Path) (string, error) {
+	p.Increment()
 
-	split := re.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return "", nil
-	}
-
-	base := split[0][1]
-	number, err := strconv.Atoi(split[0][2])
-	if err != nil {
-		return "", err
-	}
-	extension := split[0][3]
-
-	fileName, err := tryExtensions(base, number+1, extension)
+	fileName, err := tryExtensions(p)
 	if err != nil {
 		return "", err
 	}
@@ -118,23 +101,10 @@ func getNextFile(path string) (string, error) {
 	return fileName, err
 }
 
-func getPreviousFile(path string) (string, error) {
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+func getPreviousFile(p Path) (string, error) {
+	p.Decrement()
 
-	split := re.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return "", nil
-	}
-
-	base := split[0][1]
-	number, err := strconv.Atoi(split[0][2])
-	if err != nil {
-		return "", err
-	}
-	extension := split[0][3]
-
-	fileName, err := tryExtensions(base, number-1, extension)
+	fileName, err := tryExtensions(p)
 	if err != nil {
 		return "", err
 	}
@@ -142,13 +112,35 @@ func getPreviousFile(path string) (string, error) {
 	return fileName, err
 }
 
-func tryExtensions(base string, number int, extension string) (string, error) {
-	extensions := [6]string{extension, ".jpg", ".jpeg", ".png", ".gif", ".webp"}
+func splitPath(path string) (Path, error) {
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+
+	split := re.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
+		return Path{}, nil
+	}
+
+	p := Path{}
+	var err error
+
+	p.Base = split[0][1]
+	p.Number, err = strconv.Atoi(split[0][2])
+	if err != nil {
+		return Path{}, err
+	}
+	p.Extension = split[0][3]
+
+	return p, nil
+}
+
+func tryExtensions(p Path) (string, error) {
+	extensions := [6]string{p.Extension, ".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 	var fileName string
 
 	for _, i := range extensions {
-		fileName = fmt.Sprintf("%v%.3d%v", base, number, i)
+		fileName = fmt.Sprintf("%v%.3d%v", p.Base, p.Number, i)
 
 		exists, err := fileExists(fileName)
 		if err != nil {
