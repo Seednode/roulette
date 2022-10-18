@@ -1,12 +1,14 @@
 ## About
 
-Sometimes, you just need a way to randomly display your files in the browser.
+Sometimes, you just need a way to randomly display images from your filesystem.
 
-Simply point this tool at one or more directories, and then open the specified port (default 8080) in your browser.
+Simply point this tool at one or more directories, and then open the specified port (default `8080`) in your browser.
 
-A new file will be selected if you open the root URI directly, or if you click on any displayed image.
+A new image will be selected if you open `/` directly, or if you click on any displayed image.
 
 Browser history is preserved, so you can always go back to any previously displayed image.
+
+Supported file types and extensions are `jp[e]g`, `png`, `gif`, and `webp`.
 
 Builds available [here](https://cdn.seedno.de/builds/roulette).
 
