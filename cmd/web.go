@@ -208,10 +208,15 @@ func serveHtmlHandler(paths []string) appHandler {
 		}
 
 		filters := Filters{}
-		filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
-		filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
+		if Filter {
+			filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
+			filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
+		}
 
-		sortOrder := r.URL.Query().Get("sort")
+		sortOrder := ""
+		if Sort {
+			sortOrder = r.URL.Query().Get("sort")
+		}
 
 		switch {
 		case r.URL.Path == "/" && sortOrder == "asc" && refererUri != "":
