@@ -12,6 +12,40 @@ Supported file types and extensions are `jp[e]g`, `png`, `gif`, and `webp`.
 
 Builds available [here](https://cdn.seedno.de/builds/roulette).
 
+## Filtering
+
+You can provide a comma-delimited string of patterns to match via the `include=` query parameter.
+
+Only filenames matching one or more of the patterns will be served.
+
+You can also provide a comma-delimited string of patterns to exclude, via the `exclude=` query parameter.
+
+Filenames matching any of these patterns will not be served.
+
+You can combine these two parameters. Exclusions take priority over inclusions.
+
+Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
+
+## Sorting
+
+You can specify a sorting pattern via the `sort=` query parameter.
+
+A value of `asc` means files will be served in ascending order (lowest-numbered to highest).
+
+If a file exists with a numbered suffix one higher than the currently displayed file, it will be served next.
+
+A value of `desc` means files will be serve in descending order (highest-numbered to lowest).
+
+If a file exists with a numbered suffix one lower than the currently displayed file, it will be served next.
+
+In either case, if no sequential file is found, a new random one will be chosen.
+
+For `asc`, the lowest-numbered file matching a given name will be served.
+
+For `desc`, the highest-numbered file will be served instead.
+
+These patterns require a sequentially-numbered files matching the following pattern: `filename###.extension`.
+
 ## Usage output
 ```
 Usage:
