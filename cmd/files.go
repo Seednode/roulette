@@ -35,6 +35,10 @@ type Stats struct {
 	DirectoriesMatched uint64
 }
 
+func (s *Stats) GetFilesTotal() uint64 {
+	return atomic.LoadUint64(&s.FilesMatched) + atomic.LoadUint64(&s.FilesSkipped)
+}
+
 func (s *Stats) IncrementFilesMatched() {
 	atomic.AddUint64(&s.FilesMatched, 1)
 }
@@ -283,10 +287,12 @@ func pathIsValid(filePath string, paths []string) bool {
 			matchesPrefix = true
 		}
 	}
-	if !matchesPrefix {
-		if Verbose {
-			fmt.Printf("%v Failed to serve file outside specified path(s): %v\n", time.Now().Format(LOGDATE), filePath)
-		}
+
+	if Verbose && !matchesPrefix {
+		fmt.Printf("%v | Error: Failed to serve file outside specified path(s): %v\n",
+			time.Now().Format(LOGDATE),
+			filePath,
+		)
 
 		return false
 	}
@@ -428,10 +434,11 @@ func pickFile(args []string, filters *Filters, sort string) (string, error) {
 	getFileList(args, &files, filters, &stats, &concurrency)
 	runTime := time.Since(startTime)
 
-	if Count {
-		fmt.Printf("Scanned %v files (skipped %v) across %v directories in %v\n",
+	if Verbose {
+		fmt.Printf("%v | Scanned %v/%v files across %v directories in %v\n",
+			time.Now().Format(LOGDATE),
 			stats.GetFilesMatched(),
-			stats.GetFilesSkipped(),
+			stats.GetFilesTotal(),
 			stats.GetDirectoriesMatched(),
 			runTime,
 		)

@@ -195,11 +195,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 		return nil
 	}
 
-	var startTime time.Time
-	if Verbose {
-		startTime = time.Now()
-		fmt.Printf("%v Serving file: %v", startTime.Format(LOGDATE), filePath)
-	}
+	startTime := time.Now()
 
 	buf, err := os.ReadFile(filePath)
 	if err != nil {
@@ -209,7 +205,12 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	w.Write(buf)
 
 	if Verbose {
-		fmt.Printf(" (Finished in %v)\n", time.Since(startTime).Round(time.Microsecond))
+		fmt.Printf("%v | Served \"%v\" to %v in %v\n",
+			startTime.Format(LOGDATE),
+			filePath,
+			r.RemoteAddr,
+			time.Since(startTime).Round(time.Microsecond),
+		)
 	}
 
 	return nil
@@ -405,6 +406,17 @@ func serveHtmlHandler(paths []string) appHandler {
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		default:
 			filePath := r.URL.Path
+
+			exists, err := fileExists(filePath)
+			if err != nil {
+				return err
+			}
+
+			if !exists {
+				http.NotFound(w, r)
+
+				return nil
+			}
 
 			image, err := isImage(filePath)
 			if err != nil {
