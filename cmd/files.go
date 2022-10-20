@@ -18,6 +18,13 @@ import (
 	"github.com/h2non/filetype"
 )
 
+type Stats struct {
+	FilesMatched       uint64
+	FilesSkipped       uint64
+	DirectoriesMatched uint64
+	DirectoriesSkipped uint64
+}
+
 type Path struct {
 	Base      string
 	Number    int
@@ -36,7 +43,7 @@ var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
 )
 
-func appendPaths(m map[string][]string, path string, filters *Filters) (map[string][]string, error) {
+func appendPaths(m map[string][]string, path string, filters *Filters, stats *Stats) (map[string][]string, error) {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
@@ -54,10 +61,13 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 				filters.Includes[i],
 			) {
 				m[directory] = append(m[directory], path)
+				stats.FilesMatched += 1
 
 				return m, nil
 			}
 		}
+
+		stats.FilesSkipped += 1
 
 		return m, nil
 	case !filters.HasIncludes() && filters.HasExcludes():
@@ -66,11 +76,14 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 				filename,
 				filters.Excludes[i],
 			) {
+				stats.FilesSkipped += 1
+
 				return m, nil
 			}
 		}
 
 		m[directory] = append(m[directory], path)
+		stats.FilesMatched += 1
 
 		return m, nil
 	case filters.HasIncludes() && filters.HasExcludes():
@@ -79,6 +92,8 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 				filename,
 				filters.Excludes[i],
 			) {
+				stats.FilesSkipped += 1
+
 				return m, nil
 			}
 		}
@@ -89,14 +104,18 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 				filters.Includes[i],
 			) {
 				m[directory] = append(m[directory], path)
+				stats.FilesMatched += 1
 
 				return m, nil
 			}
 		}
 
+		stats.FilesSkipped += 1
+
 		return m, nil
 	default:
 		m[directory] = append(m[directory], path)
+		stats.FilesMatched += 1
 
 		return m, nil
 	}
@@ -252,18 +271,20 @@ func isImage(path string) (bool, error) {
 	return filetype.IsImage(head), nil
 }
 
-func getFiles(m map[string][]string, path string, filters *Filters) (map[string][]string, error) {
+func getFiles(m map[string][]string, path string, filters *Filters, stats *Stats) (map[string][]string, error) {
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if Filter && filters.HasExcludes() {
+		if info.IsDir() && Filter && filters.HasExcludes() {
 			for i := 0; i < len(filters.Excludes); i++ {
 				if strings.Contains(
 					strings.ToLower(p),
 					strings.ToLower(filters.Excludes[i]),
 				) {
+					stats.DirectoriesSkipped += 1
+
 					return filepath.SkipDir
 				}
 			}
@@ -271,17 +292,16 @@ func getFiles(m map[string][]string, path string, filters *Filters) (map[string]
 
 		switch {
 		case !Recursive && info.IsDir() && p != path:
+			stats.DirectoriesSkipped += 1
+
 			return filepath.SkipDir
-		case !filters.IsEmpty() && !info.IsDir():
-			m, err = appendPaths(m, p, filters)
-			if err != nil {
-				return err
-			}
 		case !info.IsDir():
-			m, err = appendPaths(m, p, filters)
+			m, err = appendPaths(m, p, filters, stats)
 			if err != nil {
 				return err
 			}
+		case info.IsDir():
+			stats.DirectoriesMatched += 1
 		}
 
 		return err
@@ -293,12 +313,12 @@ func getFiles(m map[string][]string, path string, filters *Filters) (map[string]
 	return m, nil
 }
 
-func getFileList(paths []string, filters *Filters) (map[string][]string, error) {
+func getFileList(paths []string, filters *Filters, stats *Stats) (map[string][]string, error) {
 	fileMap := map[string][]string{}
 	var err error
 
 	for i := 0; i < len(paths); i++ {
-		fileMap, err = getFiles(fileMap, paths[i], filters)
+		fileMap, err = getFiles(fileMap, paths[i], filters, stats)
 		if err != nil {
 			return nil, err
 		}
@@ -350,9 +370,20 @@ func prepareDirectories(m map[string][]string, sort string) []string {
 }
 
 func pickFile(args []string, filters *Filters, sort string) (string, error) {
-	fileMap, err := getFileList(args, filters)
+	stats := Stats{}
+
+	fileMap, err := getFileList(args, filters, &stats)
 	if err != nil {
 		return "", err
+	}
+
+	if Count {
+		fmt.Printf("Choosing from %v files (skipped %v) out of %v directories (skipped %v)\n",
+			stats.FilesMatched,
+			stats.FilesSkipped,
+			stats.DirectoriesMatched,
+			stats.DirectoriesSkipped,
+		)
 	}
 
 	fileList := prepareDirectories(fileMap, sort)
