@@ -19,6 +19,11 @@ const (
 	maxFileScans      MaxConcurrency = 256
 )
 
+type Concurrency struct {
+	DirectoryScans chan int
+	FileScans      chan int
+}
+
 var Count bool
 var Filter bool
 var Port uint16

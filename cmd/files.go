@@ -24,11 +24,6 @@ var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
 )
 
-type Concurrency struct {
-	DirectoryScans chan int
-	FileScans      chan int
-}
-
 type Files struct {
 	Mutex sync.Mutex
 	List  map[string][]string
@@ -237,6 +232,7 @@ func splitPath(path string) (*Path, error) {
 	p.Base = split[0][1]
 
 	p.Number, err = strconv.Atoi(split[0][2])
+
 	if err != nil {
 		return &Path{}, err
 	}
@@ -419,6 +415,7 @@ func prepareDirectories(files *Files, sort string) []string {
 
 func pickFile(args []string, filters *Filters, sort string) (string, error) {
 	stats := Stats{}
+
 	files := Files{}
 	files.List = make(map[string][]string)
 
@@ -426,20 +423,22 @@ func pickFile(args []string, filters *Filters, sort string) (string, error) {
 	concurrency.DirectoryScans = make(chan int, maxDirectoryScans)
 	concurrency.FileScans = make(chan int, maxFileScans)
 
+	startTime := time.Now()
 	getFileList(args, &files, filters, &stats, &concurrency)
+	runTime := time.Since(startTime)
 
 	if Count {
-		fmt.Printf("Choosing from %v files (skipped %v) in %v directories\n",
+		fmt.Printf("Scanned %v files (skipped %v) across %v directories in %v\n",
 			stats.GetFilesMatched(),
 			stats.GetFilesSkipped(),
 			stats.GetDirectoriesMatched(),
+			runTime,
 		)
 	}
 
 	fileList := prepareDirectories(&files, sort)
 
 	rand.Seed(time.Now().UnixNano())
-
 	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
 	for i := 0; i < len(fileList); i++ {
