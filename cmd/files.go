@@ -44,13 +44,40 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 
 	directory, filename := filepath.Split(absolutePath)
 
-	if filters.IsEmpty() {
-		m[directory] = append(m[directory], path)
-	} else {
+	filename = strings.ToLower(filename)
+
+	switch {
+	case filters.HasIncludes() && !filters.HasExcludes():
+		for i := 0; i < len(filters.Includes); i++ {
+			if strings.Contains(
+				filename,
+				filters.Includes[i],
+			) {
+				m[directory] = append(m[directory], path)
+
+				return m, nil
+			}
+		}
+
+		return m, nil
+	case !filters.HasIncludes() && filters.HasExcludes():
 		for i := 0; i < len(filters.Excludes); i++ {
 			if strings.Contains(
-				strings.ToLower(filename),
-				strings.ToLower(filters.Excludes[i]),
+				filename,
+				filters.Excludes[i],
+			) {
+				return m, nil
+			}
+		}
+
+		m[directory] = append(m[directory], path)
+
+		return m, nil
+	case filters.HasIncludes() && filters.HasExcludes():
+		for i := 0; i < len(filters.Excludes); i++ {
+			if strings.Contains(
+				filename,
+				filters.Excludes[i],
 			) {
 				return m, nil
 			}
@@ -58,17 +85,21 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 
 		for i := 0; i < len(filters.Includes); i++ {
 			if strings.Contains(
-				strings.ToLower(filename),
-				strings.ToLower(filters.Includes[i]),
+				filename,
+				filters.Includes[i],
 			) {
 				m[directory] = append(m[directory], path)
 
-				break
+				return m, nil
 			}
 		}
-	}
 
-	return m, nil
+		return m, nil
+	default:
+		m[directory] = append(m[directory], path)
+
+		return m, nil
+	}
 }
 
 func getFirstFile(p *Path) (string, error) {
@@ -225,6 +256,17 @@ func getFiles(m map[string][]string, path string, filters *Filters) (map[string]
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
+		}
+
+		if Filter && filters.HasExcludes() {
+			for i := 0; i < len(filters.Excludes); i++ {
+				if strings.Contains(
+					strings.ToLower(p),
+					strings.ToLower(filters.Excludes[i]),
+				) {
+					return filepath.SkipDir
+				}
+			}
 		}
 
 		switch {

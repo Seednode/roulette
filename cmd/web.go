@@ -22,15 +22,31 @@ type Filters struct {
 }
 
 func (f *Filters) IsEmpty() bool {
-	if len(f.Includes) == 0 && len(f.Excludes) == 0 {
+	if !f.HasIncludes() && !f.HasExcludes() {
 		return true
 	}
 
 	return false
 }
 
+func (f *Filters) HasIncludes() bool {
+	if len(f.Includes) == 0 {
+		return false
+	}
+
+	return true
+}
+
 func (f *Filters) GetIncludes() string {
 	return strings.Join(f.Includes, ",")
+}
+
+func (f *Filters) HasExcludes() bool {
+	if len(f.Excludes) == 0 {
+		return false
+	}
+
+	return true
 }
 
 func (f *Filters) GetExcludes() string {
@@ -53,7 +69,13 @@ func splitQueryParams(query string) []string {
 		return []string{}
 	}
 
-	return strings.Split(query, ",")
+	params := strings.Split(query, ",")
+
+	for i := 0; i < len(params); i++ {
+		params[i] = strings.ToLower(params[i])
+	}
+
+	return params
 }
 
 func generateQueryParams(filters *Filters, sort string) string {
@@ -114,7 +136,8 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string) error {
 	case Filter && Sort:
 		htmlBody += fmt.Sprintf(`<a href="/?include=%v&exclude=%v&sort=%v"><img src="`,
 			r.URL.Query().Get("include"),
-			r.URL.Query().Get("exclude"), r.URL.Query().Get("sort"),
+			r.URL.Query().Get("exclude"),
+			r.URL.Query().Get("sort"),
 		)
 	case Filter && !Sort:
 		htmlBody += fmt.Sprintf(`<a href="/?include=%v&exclude=%v"><img src="`,
@@ -211,6 +234,8 @@ func serveHtmlHandler(paths []string) appHandler {
 		if Filter {
 			filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
 			filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
+		} else {
+			fmt.Println("Filters disabled")
 		}
 
 		sortOrder := ""
@@ -262,7 +287,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
 		case r.URL.Path == "/" && sortOrder == "asc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -288,7 +313,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
@@ -332,7 +357,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -358,7 +383,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -374,7 +399,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusSeeOther)
+			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
 		default:
 			filePath := r.URL.Path
 
