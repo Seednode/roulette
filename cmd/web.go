@@ -173,6 +173,7 @@ func serveHtmlHandler(paths []string) appHandler {
 		filters := Filters{}
 		filters.Includes = parseQueryParams(r.URL.Query().Get("include"))
 		filters.Excludes = parseQueryParams(r.URL.Query().Get("exclude"))
+
 		sort := r.URL.Query().Get("sort")
 
 		switch {

@@ -71,7 +71,7 @@ func appendPaths(m map[string][]string, path string, filters *Filters) (map[stri
 	return m, nil
 }
 
-func getFirstFile(p Path) (string, error) {
+func getFirstFile(p *Path) (string, error) {
 	p.Number = 1
 
 	fileName, err := tryExtensions(p)
@@ -82,7 +82,7 @@ func getFirstFile(p Path) (string, error) {
 	return fileName, nil
 }
 
-func getLastFile(p Path) (string, error) {
+func getLastFile(p *Path) (string, error) {
 	var fileName string
 	var err error
 
@@ -111,7 +111,7 @@ func getLastFile(p Path) (string, error) {
 	return fileName, nil
 }
 
-func getNextFile(p Path) (string, error) {
+func getNextFile(p *Path) (string, error) {
 	p.Increment()
 
 	fileName, err := tryExtensions(p)
@@ -122,7 +122,7 @@ func getNextFile(p Path) (string, error) {
 	return fileName, err
 }
 
-func getPreviousFile(p Path) (string, error) {
+func getPreviousFile(p *Path) (string, error) {
 	p.Decrement()
 
 	fileName, err := tryExtensions(p)
@@ -133,7 +133,7 @@ func getPreviousFile(p Path) (string, error) {
 	return fileName, err
 }
 
-func splitPath(path string) (Path, error) {
+func splitPath(path string) (*Path, error) {
 	p := Path{}
 	var err error
 
@@ -142,22 +142,22 @@ func splitPath(path string) (Path, error) {
 	split := re.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
-		return Path{}, nil
+		return &Path{}, nil
 	}
 
 	p.Base = split[0][1]
 
 	p.Number, err = strconv.Atoi(split[0][2])
 	if err != nil {
-		return Path{}, err
+		return &Path{}, err
 	}
 
 	p.Extension = split[0][3]
 
-	return p, nil
+	return &p, nil
 }
 
-func tryExtensions(p Path) (string, error) {
+func tryExtensions(p *Path) (string, error) {
 	extensions := [6]string{p.Extension, ".jpg", ".jpeg", ".png", ".gif", ".webp"}
 
 	var fileName string
