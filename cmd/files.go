@@ -36,18 +36,36 @@ var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
 )
 
-func appendPaths(m map[string][]string, path, filter string) (map[string][]string, error) {
+func appendPaths(m map[string][]string, path string, filters *Filters) (map[string][]string, error) {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
 		return nil, err
 	}
 
-	directory, _ := filepath.Split(absolutePath)
+	directory, filename := filepath.Split(absolutePath)
 
-	if filter != "" && strings.Contains(path, filter) {
+	if filters.IsEmpty() {
 		m[directory] = append(m[directory], path)
-	} else if filter == "" {
-		m[directory] = append(m[directory], path)
+	} else {
+		for i := 0; i < len(filters.Excludes); i++ {
+			if strings.Contains(
+				strings.ToLower(filename),
+				strings.ToLower(filters.Excludes[i]),
+			) {
+				return m, nil
+			}
+		}
+
+		for i := 0; i < len(filters.Includes); i++ {
+			if strings.Contains(
+				strings.ToLower(filename),
+				strings.ToLower(filters.Includes[i]),
+			) {
+				m[directory] = append(m[directory], path)
+
+				break
+			}
+		}
 	}
 
 	return m, nil
@@ -203,7 +221,7 @@ func isImage(path string) (bool, error) {
 	return filetype.IsImage(head), nil
 }
 
-func getFiles(m map[string][]string, path, filter string) (map[string][]string, error) {
+func getFiles(m map[string][]string, path string, filters *Filters) (map[string][]string, error) {
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -212,13 +230,13 @@ func getFiles(m map[string][]string, path, filter string) (map[string][]string, 
 		switch {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
-		case filter != "" && !info.IsDir():
-			m, err = appendPaths(m, p, filter)
+		case !filters.IsEmpty() && !info.IsDir():
+			m, err = appendPaths(m, p, filters)
 			if err != nil {
 				return err
 			}
 		case !info.IsDir():
-			m, err = appendPaths(m, p, "")
+			m, err = appendPaths(m, p, filters)
 			if err != nil {
 				return err
 			}
@@ -233,12 +251,12 @@ func getFiles(m map[string][]string, path, filter string) (map[string][]string, 
 	return m, nil
 }
 
-func getFileList(paths []string, filter string) (map[string][]string, error) {
+func getFileList(paths []string, filters *Filters) (map[string][]string, error) {
 	fileMap := map[string][]string{}
 	var err error
 
 	for i := 0; i < len(paths); i++ {
-		fileMap, err = getFiles(fileMap, paths[i], filter)
+		fileMap, err = getFiles(fileMap, paths[i], filters)
 		if err != nil {
 			return nil, err
 		}
@@ -259,14 +277,13 @@ func prepareDirectory(directory []string) []string {
 	last = cleanFilename(last)
 
 	if first == last {
-		d := append([]string{}, directory[0])
-		return d
+		return append([]string{}, directory[0])
 	} else {
 		return directory
 	}
 }
 
-func prepareDirectories(m map[string][]string, sorting string) []string {
+func prepareDirectories(m map[string][]string, sort string) []string {
 	directories := []string{}
 
 	keys := make([]string, len(m))
@@ -277,7 +294,7 @@ func prepareDirectories(m map[string][]string, sorting string) []string {
 		i++
 	}
 
-	if sorting == "asc" || sorting == "desc" {
+	if sort == "asc" || sort == "desc" {
 		for i := 0; i < len(keys); i++ {
 			directories = append(directories, prepareDirectory(m[keys[i]])...)
 		}
@@ -290,13 +307,13 @@ func prepareDirectories(m map[string][]string, sorting string) []string {
 	return directories
 }
 
-func pickFile(args []string, filter, sorting string) (string, error) {
-	fileMap, err := getFileList(args, filter)
+func pickFile(args []string, filters *Filters, sort string) (string, error) {
+	fileMap, err := getFileList(args, filters)
 	if err != nil {
 		return "", err
 	}
 
-	fileList := prepareDirectories(fileMap, sorting)
+	fileList := prepareDirectories(fileMap, sort)
 
 	rand.Seed(time.Now().UnixNano())
 
