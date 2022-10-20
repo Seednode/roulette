@@ -16,8 +16,11 @@ import (
 	"time"
 )
 
-const LOGDATE string = "2006-01-02T15:04:05.000-07:00"
-const PREFIX string = "/src"
+const (
+	LOGDATE            string = "2006-01-02T15:04:05.000-07:00"
+	PREFIX             string = "/src"
+	RedirectStatusCode int    = http.StatusSeeOther
+)
 
 type Filters struct {
 	Includes []string
@@ -287,7 +290,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/" && sortOrder == "asc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -313,7 +316,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri != "":
 			query, err := url.QueryUnescape(refererUri)
 			if err != nil {
@@ -357,7 +360,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -383,7 +386,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, &filters, sortOrder)
 			if err != nil && err == ErrNoImagesFound {
@@ -399,7 +402,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				filePath,
 				generateQueryParams(&filters, sortOrder),
 			)
-			http.Redirect(w, r, newUrl, http.StatusTemporaryRedirect)
+			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		default:
 			filePath := r.URL.Path
 
