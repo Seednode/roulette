@@ -11,6 +11,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type MaxConcurrency int
+
+const (
+	// avoid hitting default open file descriptor limits (1024)
+	maxDirectoryScans MaxConcurrency = 32
+	maxFileScans      MaxConcurrency = 256
+)
+
 var Count bool
 var Filter bool
 var Port uint16

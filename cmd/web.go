@@ -16,13 +16,16 @@ import (
 	"time"
 )
 
+const LOGDATE string = "2006-01-02T15:04:05.000-07:00"
+const PREFIX string = "/src"
+
 type Filters struct {
 	Includes []string
 	Excludes []string
 }
 
 func (f *Filters) IsEmpty() bool {
-	if !f.HasIncludes() && !f.HasExcludes() {
+	if !(f.HasIncludes() && f.HasExcludes()) {
 		return true
 	}
 
@@ -60,9 +63,6 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 	}
 }
-
-const LOGDATE string = "2006-01-02T15:04:05.000-07:00"
-const PREFIX string = "/src"
 
 func splitQueryParams(query string) []string {
 	if query == "" {
