@@ -22,7 +22,7 @@ You can also provide a comma-delimited string of patterns to exclude, via the `e
 
 Filenames matching any of these patterns will not be served.
 
-You can combine these two parameters. Exclusions take priority over inclusions.
+You can also combine these two parameters, with exclusions take priority over inclusions.
 
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
@@ -30,21 +30,23 @@ Both filtering parameters ignore the file extension and full path; they only com
 
 You can specify a sorting pattern via the `sort=` query parameter, assuming the `-s|--sort` flag is enabled.
 
-A value of `asc` means files will be served in ascending order (lowest-numbered to highest).
+A value of `sort=asc` means files will be served in ascending order (lowest-numbered to highest).
 
 If a file exists with a numbered suffix one higher than the currently displayed file, it will be served next.
 
-A value of `desc` means files will be serve in descending order (highest-numbered to lowest).
+A value of `sort=desc` means files will be serve in descending order (highest-numbered to lowest).
 
 If a file exists with a numbered suffix one lower than the currently displayed file, it will be served next.
 
 In either case, if no sequential file is found, a new random one will be chosen.
 
-For `asc`, the lowest-numbered file matching a given name will be served first.
+For `sort=asc`, the lowest-numbered file matching a given name will be served first.
 
-For `desc`, the highest-numbered file will be served instead.
+For `sort=desc`, the highest-numbered file will be served instead.
 
-These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
+If any other (or no) value is provided, the selected file will be random.
+
+Note: These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
 
 ## Usage output
 ```
