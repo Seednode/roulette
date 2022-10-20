@@ -40,11 +40,11 @@ If a file exists with a numbered suffix one lower than the currently displayed f
 
 In either case, if no sequential file is found, a new random one will be chosen.
 
-For `asc`, the lowest-numbered file matching a given name will be served.
+For `asc`, the lowest-numbered file matching a given name will be served first.
 
 For `desc`, the highest-numbered file will be served instead.
 
-These patterns require a sequentially-numbered files matching the following pattern: `filename###.extension`.
+These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
 
 ## Usage output
 ```
