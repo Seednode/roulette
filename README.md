@@ -60,6 +60,7 @@ Available Commands:
   version     Print version
 
 Flags:
+  -c, --count         display number of files/directories matched/skipped
   -f, --filter        enable filtering via query parameters
   -h, --help          help for roulette
   -p, --port uint16   port to listen on (default 8080)
