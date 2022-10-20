@@ -14,7 +14,7 @@ Builds available [here](https://cdn.seedno.de/builds/roulette).
 
 ## Filtering
 
-You can provide a comma-delimited string of patterns to match via the `include=` query parameter.
+You can provide a comma-delimited string of patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
 Only filenames matching one or more of the patterns will be served.
 
@@ -28,7 +28,7 @@ Both filtering parameters ignore the file extension and full path; they only com
 
 ## Sorting
 
-You can specify a sorting pattern via the `sort=` query parameter.
+You can specify a sorting pattern via the `sort=` query parameter, assuming the `-s|--sort` flag is enabled.
 
 A value of `asc` means files will be served in ascending order (lowest-numbered to highest).
 
@@ -58,9 +58,11 @@ Available Commands:
   version     Print version
 
 Flags:
+  -f, --filter        enable filtering via query parameters
   -h, --help          help for roulette
   -p, --port uint16   port to listen on (default 8080)
   -r, --recursive     recurse into subdirectories
+  -s, --sort          enable sorting via query parameters
   -v, --verbose       log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.

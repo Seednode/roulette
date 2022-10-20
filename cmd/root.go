@@ -11,8 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var Filter bool
 var Port uint16
 var Recursive bool
+var Sort bool
 var Verbose bool
 
 var rootCmd = &cobra.Command{
@@ -36,8 +38,10 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().BoolVarP(&Filter, "filter", "f", false, "enable filtering via query parameters")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
+	rootCmd.Flags().BoolVarP(&Sort, "sort", "s", false, "enable sorting via query parameters")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().SetInterspersed(true)
 }
