@@ -77,6 +77,13 @@ func (p *Path) Decrement() {
 	p.Number = p.Number - 1
 }
 
+func preparePath(path string) string {
+	path = filepath.Clean(path)
+	path = filepath.ToSlash(path)
+
+	return path
+}
+
 func appendPath(directory, path string, files *Files, stats *Stats) {
 	files.Mutex.Lock()
 	files.List[directory] = append(files.List[directory], path)
