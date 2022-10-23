@@ -95,8 +95,20 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 
 	filename = strings.ToLower(filename)
 
-	switch {
-	case filters.HasIncludes() && !filters.HasExcludes():
+	if filters.HasExcludes() {
+		for i := 0; i < len(filters.Excludes); i++ {
+			if strings.Contains(
+				filename,
+				filters.Excludes[i],
+			) {
+				stats.IncrementFilesSkipped()
+
+				return nil
+			}
+		}
+	}
+
+	if filters.HasIncludes() {
 		for i := 0; i < len(filters.Includes); i++ {
 			if strings.Contains(
 				filename,
@@ -109,54 +121,13 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 		}
 
 		stats.IncrementFilesSkipped()
-
-		return nil
-	case !filters.HasIncludes() && filters.HasExcludes():
-		for i := 0; i < len(filters.Excludes); i++ {
-			if strings.Contains(
-				filename,
-				filters.Excludes[i],
-			) {
-				stats.IncrementFilesSkipped()
-
-				return nil
-			}
-		}
-
-		appendPath(directory, path, files, stats)
-
-		return nil
-	case filters.HasIncludes() && filters.HasExcludes():
-		for i := 0; i < len(filters.Excludes); i++ {
-			if strings.Contains(
-				filename,
-				filters.Excludes[i],
-			) {
-				stats.IncrementFilesSkipped()
-
-				return nil
-			}
-		}
-
-		for i := 0; i < len(filters.Includes); i++ {
-			if strings.Contains(
-				filename,
-				filters.Includes[i],
-			) {
-				appendPath(directory, path, files, stats)
-
-				return nil
-			}
-		}
-
-		stats.IncrementFilesSkipped()
-
-		return nil
-	default:
-		appendPath(directory, path, files, stats)
 
 		return nil
 	}
+
+	appendPath(directory, path, files, stats)
+
+	return nil
 }
 
 func getFirstFile(p *Path) (string, error) {
