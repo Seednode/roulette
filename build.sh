@@ -10,6 +10,8 @@ platforms=(
   "linux/amd64"
   "linux/arm"
   "linux/arm64"
+  "windows/386"
+  "windows/amd64"
 )
 
 for platform in "${platforms[@]}"; do
@@ -18,7 +20,9 @@ for platform in "${platforms[@]}"; do
   GOARCH="${platform_split[1]}"
   output_name="${package_name}-${GOOS}-${GOARCH}"
   ld_flags='-s -w'
-  if [ "${GOOS}" == "linux" ] && [ "${GOARCH}" == "amd64" ]; then
+  if [ "${GOOS}" == "windows" ]; then
+    output_name+=".exe"
+  elif [ "${GOOS}" == "linux" ] && [ "${GOARCH}" == "amd64" ]; then
     ld_flags+=' -linkmode external -extldflags "-static"'
   fi
   env GOOS="${GOOS}" GOARCH="${GOARCH}" CC="musl-gcc" go build -ldflags "${ld_flags}" -o "builds/${output_name}"
