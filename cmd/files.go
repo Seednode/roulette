@@ -192,11 +192,9 @@ func getPreviousFile(p *Path) (string, error) {
 	return fileName, err
 }
 
-func splitPath(path string) (*Path, error) {
+func splitPath(path string, re regexp.Regexp) (*Path, error) {
 	p := Path{}
 	var err error
-
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
 	split := re.FindAllStringSubmatch(path, -1)
 

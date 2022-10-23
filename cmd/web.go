@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -227,7 +228,7 @@ func serveStaticFileHandler(paths []string) appHandler {
 	}
 }
 
-func serveHtmlHandler(paths []string) appHandler {
+func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -254,7 +255,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			path, err := splitPath(query)
+			path, err := splitPath(query, re)
 			if err != nil {
 				return err
 			}
@@ -275,7 +276,7 @@ func serveHtmlHandler(paths []string) appHandler {
 					return err
 				}
 
-				path, err := splitPath(filePath)
+				path, err := splitPath(filePath, re)
 				if err != nil {
 					return err
 				}
@@ -302,7 +303,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			path, err := splitPath(filePath)
+			path, err := splitPath(filePath, re)
 			if err != nil {
 				return err
 			}
@@ -324,7 +325,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			path, err := splitPath(query)
+			path, err := splitPath(query, re)
 			if err != nil {
 				return err
 			}
@@ -345,7 +346,7 @@ func serveHtmlHandler(paths []string) appHandler {
 					return err
 				}
 
-				path, err := splitPath(filePath)
+				path, err := splitPath(filePath, re)
 				if err != nil {
 					return err
 				}
@@ -372,7 +373,7 @@ func serveHtmlHandler(paths []string) appHandler {
 				return err
 			}
 
-			path, err := splitPath(filePath)
+			path, err := splitPath(filePath, re)
 			if err != nil {
 				return err
 			}
@@ -450,7 +451,9 @@ func ServePage(args []string) error {
 		fmt.Println("Paths: " + i)
 	}
 
-	http.Handle("/", serveHtmlHandler(paths))
+	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+
+	http.Handle("/", serveHtmlHandler(paths, *re))
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
