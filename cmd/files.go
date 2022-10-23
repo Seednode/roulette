@@ -82,7 +82,7 @@ func preparePath(path string) string {
 	path = filepath.Clean(path)
 
 	if runtime.GOOS == "windows" {
-		path = filepath.ToSlash(path)
+		path = fmt.Sprintf("/%v", filepath.ToSlash(path))
 	}
 
 	return path

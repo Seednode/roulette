@@ -296,7 +296,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				}
 			}
 
-			newUrl := fmt.Sprintf("http://%v/%v%v",
+			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
@@ -322,7 +322,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("http://%v/%v%v",
+			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
@@ -366,7 +366,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				}
 			}
 
-			newUrl := fmt.Sprintf("http://%v/%v%v",
+			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
@@ -392,11 +392,12 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("http://%v/%v%v",
+			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
+			fmt.Printf("New URL is %v\n", newUrl)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, &filters, sortOrder)
@@ -408,14 +409,18 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("http://%v/%v%v",
+			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		default:
-			filePath := strings.TrimPrefix(r.URL.Path, "/")
+			filePath := r.URL.Path
+
+			if runtime.GOOS == "windows" {
+				filePath = strings.TrimPrefix(filePath, "/")
+			}
 
 			exists, err := fileExists(filePath)
 			if err != nil {
