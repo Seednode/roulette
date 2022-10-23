@@ -456,6 +456,8 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) error {
+	fmt.Printf("roulette v%v\n", Version)
+
 	paths, err := normalizePaths(args)
 	if err != nil {
 		return err
