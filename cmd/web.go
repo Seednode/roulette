@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -110,7 +111,11 @@ func stripQueryParams(inUrl string) (string, error) {
 
 	url.RawQuery = ""
 
-	return strings.TrimPrefix(url.String(), "/"), nil
+	if runtime.GOOS == "windows" {
+		return strings.TrimPrefix(url.String(), "/"), nil
+	}
+
+	return url.String(), nil
 }
 
 func refererToUri(referer string) string {
@@ -155,7 +160,11 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string) error {
 	default:
 		htmlBody += `<a href="/"><img src="`
 	}
-	htmlBody += PREFIX + "/" + filePath
+	htmlBody += PREFIX
+	if runtime.GOOS == "windows" {
+		htmlBody += "/"
+	}
+	htmlBody += filePath
 	htmlBody += `"></img></a>
   </body>
 </html>`
@@ -287,9 +296,9 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				}
 			}
 
-			newUrl := fmt.Sprintf("%v%v%v",
-				r.URL.Host,
-				url.PathEscape(filepath.Clean(filePath)),
+			newUrl := fmt.Sprintf("http://%v/%v%v",
+				r.Host,
+				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
@@ -313,9 +322,9 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("%v%v%v",
-				r.URL.Host,
-				url.PathEscape(filepath.Clean(filePath)),
+			newUrl := fmt.Sprintf("http://%v/%v%v",
+				r.Host,
+				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
@@ -357,9 +366,9 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				}
 			}
 
-			newUrl := fmt.Sprintf("%v%v%v",
-				r.URL.Host,
-				url.PathEscape(filepath.Clean(filePath)),
+			newUrl := fmt.Sprintf("http://%v/%v%v",
+				r.Host,
+				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
@@ -383,9 +392,9 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 				return err
 			}
 
-			newUrl := fmt.Sprintf("%v%v%v",
-				r.URL.Host,
-				url.PathEscape(filepath.Clean(filePath)),
+			newUrl := fmt.Sprintf("http://%v/%v%v",
+				r.Host,
+				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
@@ -453,8 +462,8 @@ func ServePage(args []string) error {
 
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
-	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.Handle("/", serveHtmlHandler(paths, *re))
+	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)

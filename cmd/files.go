@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -79,7 +80,10 @@ func (p *Path) Decrement() {
 
 func preparePath(path string) string {
 	path = filepath.Clean(path)
-	path = filepath.ToSlash(path)
+
+	if runtime.GOOS == "windows" {
+		path = filepath.ToSlash(path)
+	}
 
 	return path
 }
