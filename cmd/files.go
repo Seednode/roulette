@@ -23,6 +23,7 @@ import (
 
 var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
+	extensions       = [5]string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
 )
 
 type Files struct {
@@ -79,8 +80,6 @@ func (p *Path) Decrement() {
 }
 
 func preparePath(path string) string {
-	path = filepath.Clean(path)
-
 	if runtime.GOOS == "windows" {
 		path = fmt.Sprintf("/%v", filepath.ToSlash(path))
 	}
@@ -227,12 +226,10 @@ func splitPath(path string, re regexp.Regexp) (*Path, error) {
 }
 
 func tryExtensions(p *Path) (string, error) {
-	extensions := [6]string{p.Extension, ".jpg", ".jpeg", ".png", ".gif", ".webp"}
-
 	var fileName string
 
-	for _, i := range extensions {
-		fileName = fmt.Sprintf("%v%.3d%v", p.Base, p.Number, i)
+	for _, extension := range extensions {
+		fileName = fmt.Sprintf("%v%.3d%v", p.Base, p.Number, extension)
 
 		exists, err := fileExists(fileName)
 		if err != nil {
@@ -268,16 +265,19 @@ func pathIsValid(filePath string, paths []string) bool {
 		}
 	}
 
-	if Verbose && !matchesPrefix {
+	switch {
+	case Verbose && !matchesPrefix:
 		fmt.Printf("%v | Error: Failed to serve file outside specified path(s): %v\n",
 			time.Now().Format(LOGDATE),
 			filePath,
 		)
 
 		return false
+	case !matchesPrefix:
+		return false
+	default:
+		return true
 	}
-
-	return true
 }
 
 func isImage(path string) (bool, error) {
@@ -447,14 +447,29 @@ func pickFile(args []string, filters *Filters, sort string) (string, error) {
 func normalizePaths(args []string) ([]string, error) {
 	var paths []string
 
+	fmt.Println("Paths:")
+
 	for i := 0; i < len(args); i++ {
-		absolutePath, err := filepath.Abs(args[i])
+		path, err := filepath.EvalSymlinks(args[i])
 		if err != nil {
 			return nil, err
 		}
 
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
+		}
+
+		if (args[i]) != absolutePath {
+			fmt.Printf("%v (resolved to %v)\n", args[i], absolutePath)
+		} else {
+			fmt.Printf("%v\n", args[i])
+		}
+
 		paths = append(paths, absolutePath)
 	}
+
+	fmt.Println()
 
 	return paths, nil
 }

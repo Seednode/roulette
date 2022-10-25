@@ -188,7 +188,10 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 		return err
 	}
 
-	filePath := filepath.Clean(strings.TrimPrefix(prefixedFilePath, PREFIX))
+	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, PREFIX))
+	if err != nil {
+		return err
+	}
 
 	if !pathIsValid(filePath, paths) {
 		http.NotFound(w, r)
@@ -456,15 +459,11 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) error {
-	fmt.Printf("roulette v%v\n", Version)
+	fmt.Printf("roulette v%v\n\n", Version)
 
 	paths, err := normalizePaths(args)
 	if err != nil {
 		return err
-	}
-
-	for _, i := range paths {
-		fmt.Println("Paths: " + i)
 	}
 
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
