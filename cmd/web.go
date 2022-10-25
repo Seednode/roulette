@@ -218,9 +218,10 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	w.Write(buf)
 
 	if Verbose {
-		fmt.Printf("%v | Served \"%v\" to %v in %v\n",
+		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
 			startTime.Format(LOGDATE),
 			filePath,
+			humanReadableSize(len(buf)),
 			r.RemoteAddr,
 			time.Since(startTime).Round(time.Microsecond),
 		)
