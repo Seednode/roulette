@@ -419,10 +419,10 @@ func prepareDirectories(files *Files, sort string) []string {
 }
 
 func pickFile(args []string, filters *Filters, sort string) (string, error) {
-	stats := Stats{}
-
 	files := Files{}
 	files.List = make(map[string][]string)
+
+	stats := Stats{}
 
 	concurrency := Concurrency{}
 	concurrency.DirectoryScans = make(chan int, maxDirectoryScans)
