@@ -105,12 +105,26 @@ func preparePath(path string) string {
 	return path
 }
 
-func appendPath(directory, path string, files *Files, stats *Stats) {
+func appendPath(directory, path string, files *Files, stats *Stats) error {
+	// If caching, check for valid images here, to speed up future pickFile() calls
+	if Cache {
+		image, err := isImage(path)
+		if err != nil {
+			return err
+		}
+
+		if !image {
+			return nil
+		}
+	}
+
 	files.Mutex.Lock()
 	files.List[directory] = append(files.List[directory], path)
 	files.Mutex.Unlock()
 
 	stats.IncrementFilesMatched()
+
+	return nil
 }
 
 func appendPaths(path string, files *Files, filters *Filters, stats *Stats) error {
@@ -142,7 +156,10 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 				filename,
 				filters.Includes[i],
 			) {
-				appendPath(directory, path, files, stats)
+				err := appendPath(directory, path, files, stats)
+				if err != nil {
+					return err
+				}
 
 				return nil
 			}
@@ -153,7 +170,10 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 		return nil
 	}
 
-	appendPath(directory, path, files, stats)
+	err = appendPath(directory, path, files, stats)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -418,45 +438,61 @@ func prepareDirectories(files *Files, sort string) []string {
 	return directories
 }
 
-func pickFile(args []string, filters *Filters, sort string) (string, error) {
-	files := Files{}
-	files.List = make(map[string][]string)
+func pickFile(args []string, filters *Filters, sort string, fileCache *[]string) (string, error) {
+	var fileList []string
 
-	stats := Stats{}
+	if Cache && len(*fileCache) != 0 {
+		fileList = *fileCache
+	} else {
+		files := Files{}
+		files.List = make(map[string][]string)
 
-	concurrency := Concurrency{}
-	concurrency.DirectoryScans = make(chan int, maxDirectoryScans)
-	concurrency.FileScans = make(chan int, maxFileScans)
+		stats := Stats{}
 
-	startTime := time.Now()
-	getFileList(args, &files, filters, &stats, &concurrency)
-	runTime := time.Since(startTime)
+		concurrency := Concurrency{}
+		concurrency.DirectoryScans = make(chan int, maxDirectoryScans)
+		concurrency.FileScans = make(chan int, maxFileScans)
 
-	if Verbose {
-		fmt.Printf("%v | Scanned %v/%v files across %v directories in %v\n",
-			time.Now().Format(LOGDATE),
-			stats.GetFilesMatched(),
-			stats.GetFilesTotal(),
-			stats.GetDirectoriesMatched(),
-			runTime,
-		)
+		startTime := time.Now()
+		getFileList(args, &files, filters, &stats, &concurrency)
+		runTime := time.Since(startTime)
+
+		if Verbose {
+			fmt.Printf("%v | Scanned %v/%v files across %v directories in %v\n",
+				time.Now().Format(LOGDATE),
+				stats.GetFilesMatched(),
+				stats.GetFilesTotal(),
+				stats.GetDirectoriesMatched(),
+				runTime,
+			)
+		}
+
+		fileList = prepareDirectories(&files, sort)
+
+		if Cache {
+			*fileCache = append(*fileCache, fileList...)
+		}
 	}
-
-	fileList := prepareDirectories(&files, sort)
 
 	rand.Seed(time.Now().UnixNano())
 	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
 
 	for i := 0; i < len(fileList); i++ {
 		filePath := fileList[i]
-		isImage, err := isImage(filePath)
-		if err != nil {
-			return "", err
+
+		// If not caching, check for valid images just before serving, to speed up scanning
+		if !Cache {
+			isImage, err := isImage(filePath)
+			if err != nil {
+				return "", err
+			}
+
+			if isImage {
+				return filePath, nil
+			}
 		}
 
-		if isImage {
-			return filePath, nil
-		}
+		return filePath, nil
 	}
 
 	return "", ErrNoImagesFound

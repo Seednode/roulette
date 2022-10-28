@@ -241,7 +241,7 @@ func serveStaticFileHandler(paths []string) appHandler {
 	}
 }
 
-func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
+func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) appHandler {
 	return func(w http.ResponseWriter, r *http.Request) error {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -279,7 +279,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths, &filters, sortOrder)
+				filePath, err = pickFile(paths, &filters, sortOrder, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
@@ -307,7 +307,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/" && sortOrder == "asc" && refererUri == "":
-			filePath, err := pickFile(paths, &filters, sortOrder)
+			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
 
@@ -349,7 +349,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths, &filters, sortOrder)
+				filePath, err = pickFile(paths, &filters, sortOrder, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
@@ -377,7 +377,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri == "":
-			filePath, err := pickFile(paths, &filters, sortOrder)
+			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
 
@@ -404,7 +404,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp) appHandler {
 			fmt.Printf("New URL is %v\n", newUrl)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/":
-			filePath, err := pickFile(paths, &filters, sortOrder)
+			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
 				http.NotFound(w, r)
 
@@ -469,7 +469,9 @@ func ServePage(args []string) error {
 
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
 
-	http.Handle("/", serveHtmlHandler(paths, *re))
+	fileCache := []string{}
+
+	http.Handle("/", serveHtmlHandler(paths, *re, &fileCache))
 	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
