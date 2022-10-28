@@ -252,8 +252,6 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 		if Filter {
 			filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
 			filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
-		} else {
-			fmt.Println("Filters disabled")
 		}
 
 		sortOrder := ""
@@ -401,7 +399,6 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				preparePath(filePath),
 				generateQueryParams(&filters, sortOrder),
 			)
-			fmt.Printf("New URL is %v\n", newUrl)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
