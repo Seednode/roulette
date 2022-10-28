@@ -7,6 +7,11 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
+
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -17,6 +22,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	_ "golang.org/x/image/webp"
 
 	"github.com/h2non/filetype"
 )
@@ -95,6 +102,24 @@ func humanReadableSize(bytes int) string {
 
 	return fmt.Sprintf("%.1f %cB",
 		float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func getImageDimensions(path string) (string, error) {
+	fmt.Println("Opening path " + path)
+	file, err := os.Open(path)
+	defer file.Close()
+
+	fmt.Println("Getting file dimensions")
+
+	myImage, _, err := image.DecodeConfig(file)
+	if errors.Is(err, image.ErrFormat) {
+		fmt.Println("File not image")
+		return "", nil
+	} else if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("%vx%v", myImage.Width, myImage.Height), nil
 }
 
 func preparePath(path string) string {

@@ -128,7 +128,7 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath string) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions string) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
@@ -137,7 +137,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string) error {
   <head>
     <style>img{max-width:100%;max-height:97vh;height:auto;}</style>
 	<title>`
-	htmlBody += fileName
+	htmlBody += fmt.Sprintf("%v (%v)", fileName, dimensions)
 	htmlBody += `</title>
   </head>
   <body>`
@@ -444,7 +444,12 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				return nil
 			}
 
-			err = serveHtml(w, r, filePath)
+			dimensions, err := getImageDimensions(filePath)
+			if err != nil {
+				return err
+			}
+
+			err = serveHtml(w, r, filePath, dimensions)
 			if err != nil {
 				return err
 			}
