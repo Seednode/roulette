@@ -496,12 +496,12 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 		}
 	}
 
-	fileCount := len(fileList) - 1
+	fileCount := len(fileList)
 
-	r := rand.Intn(fileCount)
+	r := rand.Intn(fileCount - 1)
 
 	for i := 0; i < fileCount; i++ {
-		if r > fileCount {
+		if r >= (fileCount - 1) {
 			r = 0
 		} else {
 			r++
@@ -518,6 +518,8 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 			if isImage {
 				return filePath, nil
 			}
+
+			continue
 		}
 
 		return filePath, nil
