@@ -23,6 +23,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 
 	"github.com/h2non/filetype"
@@ -30,7 +31,7 @@ import (
 
 var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
-	extensions       = [5]string{".jpg", ".jpeg", ".png", ".gif", ".webp"}
+	extensions       = [7]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
 type Files struct {
