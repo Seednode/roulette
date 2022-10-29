@@ -495,10 +495,18 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 		}
 	}
 
-	for i := 0; i < maxRetries; i++ {
-		i := rand.Intn(len(fileList))
+	fileCount := len(fileList) - 1
 
-		filePath := fileList[i]
+	r := rand.Intn(fileCount)
+
+	for i := 0; i < fileCount; i++ {
+		if r > fileCount {
+			r = 0
+		} else {
+			r++
+		}
+
+		filePath := fileList[r]
 
 		if !Cache {
 			isImage, err := isImage(filePath)
