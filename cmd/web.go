@@ -69,6 +69,32 @@ func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func notFound(w http.ResponseWriter, r *http.Request) error {
+	w.WriteHeader(404)
+	w.Header().Add("Content-Type", "text/html")
+
+	htmlBody := `<html lang="en">
+  <head>
+    <style>
+	  a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}
+	</style>
+	<title>
+      Not Found
+	</title>
+  </head>
+  <body>
+    <a href="/">404 page not found</a>
+  </body>
+</html>`
+
+	_, err := io.WriteString(w, htmlBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func splitQueryParams(query string) []string {
 	if query == "" {
 		return []string{}
@@ -194,7 +220,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	}
 
 	if !pathIsValid(filePath, paths) {
-		http.NotFound(w, r)
+		notFound(w, r)
 	}
 
 	exists, err := fileExists(filePath)
@@ -203,7 +229,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	}
 
 	if !exists {
-		http.NotFound(w, r)
+		notFound(w, r)
 
 		return nil
 	}
@@ -307,7 +333,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 		case r.URL.Path == "/" && sortOrder == "asc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
-				http.NotFound(w, r)
+				notFound(w, r)
 
 				return nil
 			} else if err != nil {
@@ -350,7 +376,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				filePath, err = pickFile(paths, &filters, sortOrder, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
-					http.NotFound(w, r)
+					notFound(w, r)
 
 					return nil
 				case err != nil:
@@ -377,7 +403,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 		case r.URL.Path == "/" && sortOrder == "desc" && refererUri == "":
 			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
-				http.NotFound(w, r)
+				notFound(w, r)
 
 				return nil
 			} else if err != nil {
@@ -403,7 +429,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 		case r.URL.Path == "/":
 			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
 			if err != nil && err == ErrNoImagesFound {
-				http.NotFound(w, r)
+				notFound(w, r)
 
 				return nil
 			} else if err != nil {
@@ -429,7 +455,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			}
 
 			if !exists {
-				http.NotFound(w, r)
+				notFound(w, r)
 
 				return nil
 			}
@@ -439,7 +465,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				return err
 			}
 			if !image {
-				http.NotFound(w, r)
+				notFound(w, r)
 
 				return nil
 			}

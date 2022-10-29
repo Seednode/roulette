@@ -105,15 +105,11 @@ func humanReadableSize(bytes int) string {
 }
 
 func getImageDimensions(path string) (string, error) {
-	fmt.Println("Opening path " + path)
 	file, err := os.Open(path)
 	defer file.Close()
 
-	fmt.Println("Getting file dimensions")
-
 	myImage, _, err := image.DecodeConfig(file)
 	if errors.Is(err, image.ErrFormat) {
-		fmt.Println("File not image")
 		return "", nil
 	} else if err != nil {
 		return "", err
