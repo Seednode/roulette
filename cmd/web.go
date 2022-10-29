@@ -162,8 +162,11 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 
 	htmlBody := `<html lang="en">
   <head>
-    <style>img{max-width:100%;max-height:97vh;height:auto;}</style>
-	<title>`
+    <style>
+      a{display:block;height:100%;width:100%;text-decoration:none}
+      img{max-width:100%;max-height:97vh;height:auto;}
+    </style>
+    <title>`
 	htmlBody += fmt.Sprintf("%v (%v)", fileName, dimensions)
 	htmlBody += `</title>
   </head>
