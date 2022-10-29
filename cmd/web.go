@@ -7,6 +7,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
@@ -497,6 +498,8 @@ func ServePage(args []string) error {
 	}
 
 	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+
+	rand.Seed(time.Now().UnixNano())
 
 	fileCache := []string{}
 

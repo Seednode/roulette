@@ -495,13 +495,11 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 		}
 	}
 
-	rand.Seed(time.Now().UnixNano())
-	rand.Shuffle(len(fileList), func(i, j int) { fileList[i], fileList[j] = fileList[j], fileList[i] })
+	for true {
+		i := rand.Intn(len(fileList))
 
-	for i := 0; i < len(fileList); i++ {
 		filePath := fileList[i]
 
-		// If not caching, check for valid images just before serving, to speed up scanning
 		if !Cache {
 			isImage, err := isImage(filePath)
 			if err != nil {
