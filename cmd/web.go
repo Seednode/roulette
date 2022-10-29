@@ -76,11 +76,11 @@ func notFound(w http.ResponseWriter, r *http.Request) error {
 	htmlBody := `<html lang="en">
   <head>
     <style>
-	  a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}
-	</style>
-	<title>
+      a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}
+    </style>
+    <title>
       Not Found
-	</title>
+    </title>
   </head>
   <body>
     <a href="/">404 page not found</a>
@@ -166,25 +166,26 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 	htmlBody += fmt.Sprintf("%v (%v)", fileName, dimensions)
 	htmlBody += `</title>
   </head>
-  <body>`
+  <body>
+`
 	switch {
 	case Filter && Sort:
-		htmlBody += fmt.Sprintf(`<a href="/?include=%v&exclude=%v&sort=%v"><img src="`,
+		htmlBody += fmt.Sprintf(`    <a href="/?include=%v&exclude=%v&sort=%v"><img src="`,
 			r.URL.Query().Get("include"),
 			r.URL.Query().Get("exclude"),
 			r.URL.Query().Get("sort"),
 		)
 	case Filter && !Sort:
-		htmlBody += fmt.Sprintf(`<a href="/?include=%v&exclude=%v"><img src="`,
+		htmlBody += fmt.Sprintf(`    <a href="/?include=%v&exclude=%v"><img src="`,
 			r.URL.Query().Get("include"),
 			r.URL.Query().Get("exclude"),
 		)
 	case !Filter && Sort:
-		htmlBody += fmt.Sprintf(`<a href="/?sort=%v"><img src="`,
+		htmlBody += fmt.Sprintf(`    <a href="/?sort=%v"><img src="`,
 			r.URL.Query().Get("sort"),
 		)
 	default:
-		htmlBody += `<a href="/"><img src="`
+		htmlBody += `    <a href="/"><img src="`
 	}
 	htmlBody += PREFIX
 	if runtime.GOOS == "windows" {
