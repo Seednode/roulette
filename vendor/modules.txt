@@ -16,10 +16,7 @@ github.com/spf13/pflag
 # golang.org/x/image v0.1.0
 ## explicit; go 1.12
 golang.org/x/image/bmp
-golang.org/x/image/ccitt
 golang.org/x/image/riff
-golang.org/x/image/tiff
-golang.org/x/image/tiff/lzw
 golang.org/x/image/vp8
 golang.org/x/image/vp8l
 golang.org/x/image/webp
