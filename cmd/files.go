@@ -495,7 +495,7 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 		}
 	}
 
-	for true {
+	for i := 0; i < maxRetries; i++ {
 		i := rand.Intn(len(fileList))
 
 		filePath := fileList[i]

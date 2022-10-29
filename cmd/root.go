@@ -17,6 +17,9 @@ const (
 	// avoid hitting default open file descriptor limits (1024)
 	maxDirectoryScans MaxConcurrency = 32
 	maxFileScans      MaxConcurrency = 256
+
+	// number of times pickFile() will check for a valid file
+	maxRetries int = 10
 )
 
 type Concurrency struct {
