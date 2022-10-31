@@ -8,7 +8,7 @@ A new image will be selected if you open `/` directly, or if you click on any di
 
 Browser history is preserved, so you can always go back to any previously displayed image.
 
-Supported file types and extensions are `jp[e]g`, `png`, `gif`, and `webp`.
+Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp`.
 
 Builds available [here](https://cdn.seedno.de/builds/roulette).
 

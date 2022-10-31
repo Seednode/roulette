@@ -31,7 +31,7 @@ import (
 
 var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
-	extensions       = [7]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
 type Files struct {
@@ -128,7 +128,7 @@ func preparePath(path string) string {
 }
 
 func appendPath(directory, path string, files *Files, stats *Stats) error {
-	// If caching, check for valid images here, to speed up future pickFile() calls
+	// If caching, only check image types once, during the initial scan, to speed up future pickFile() calls
 	if Cache {
 		image, err := isImage(path)
 		if err != nil {
