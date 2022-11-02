@@ -142,9 +142,8 @@ func appendPath(directory, path string, files *Files, stats *Stats) error {
 
 	files.Mutex.Lock()
 	files.List[directory] = append(files.List[directory], path)
-	files.Mutex.Unlock()
-
 	stats.IncrementFilesMatched()
+	files.Mutex.Unlock()
 
 	return nil
 }
@@ -489,7 +488,11 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 			)
 		}
 
+		fmt.Printf("Directory count is %v\n", len(files.List))
+
 		fileList = prepareDirectories(&files, sort)
+
+		fmt.Printf("File count is %v\n", len(fileList))
 
 		if Cache {
 			*fileCache = append(*fileCache, fileList...)
