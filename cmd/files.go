@@ -247,17 +247,22 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, re regexp.Re
 	return filePath, nil
 }
 
-func getNextFile(p *Path, sortOrder string) (string, error) {
+func getNextFile(filePath, sortOrder string, re regexp.Regexp) (string, error) {
+	path, err := splitPath(filePath, re)
+	if err != nil {
+		return "", err
+	}
+
 	switch {
 	case sortOrder == "asc":
-		p.Increment()
+		path.Increment()
 	case sortOrder == "desc":
-		p.Decrement()
+		path.Decrement()
 	default:
 		return "", nil
 	}
 
-	fileName, err := tryExtensions(p)
+	fileName, err := tryExtensions(path)
 	if err != nil {
 		return "", err
 	}

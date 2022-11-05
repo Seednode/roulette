@@ -98,7 +98,7 @@ func splitQueryParams(query string) []string {
 	return params
 }
 
-func generateQueryParams(filters *Filters, sort string) string {
+func generateQueryParams(filters *Filters, sortOrder string) string {
 	switch {
 	case Filter && !Sort:
 		return fmt.Sprintf("?include=%v&exclude=%v",
@@ -106,12 +106,12 @@ func generateQueryParams(filters *Filters, sort string) string {
 			filters.GetExcludes(),
 		)
 	case !Filter && Sort:
-		return fmt.Sprintf("?sort=%v", sort)
+		return fmt.Sprintf("?sort=%v", sortOrder)
 	case Filter && Sort:
 		return fmt.Sprintf("?include=%v&exclude=%v&sort=%v",
 			filters.GetIncludes(),
 			filters.GetExcludes(),
-			sort,
+			sortOrder,
 		)
 	}
 
@@ -138,17 +138,6 @@ func stripQueryParams(u string) (string, error) {
 	return escapedUri, nil
 }
 
-func createFilters(includes, excludes []string) Filters {
-	filters := Filters{}
-
-	if Filter {
-		filters.Includes = includes
-		filters.Excludes = excludes
-	}
-
-	return filters
-}
-
 func generateFilePath(filePath string) string {
 	htmlBody := PREFIX
 	if runtime.GOOS == "windows" {
@@ -169,15 +158,10 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions string) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions string, filters *Filters) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
-
-	filters := Filters{}
-	if Filter {
-		filters = createFilters(splitQueryParams(r.URL.Query().Get("include")), splitQueryParams(r.URL.Query().Get("exclude")))
-	}
 
 	htmlBody := `<html lang="en">
   <head>
@@ -191,7 +175,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
   </head>
   <body>
     <a href="/`
-	htmlBody += generateQueryParams(&filters, r.URL.Query().Get("sort"))
+	htmlBody += generateQueryParams(filters, r.URL.Query().Get("sort"))
 	htmlBody += `"><img src="`
 	htmlBody += generateFilePath(filePath)
 	htmlBody += `"></img></a>
@@ -272,20 +256,21 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			return err
 		}
 
-		filters := createFilters(splitQueryParams(r.URL.Query().Get("include")), splitQueryParams(r.URL.Query().Get("exclude")))
+		filters := Filters{}
+		filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
+		filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
 
 		sortOrder := r.URL.Query().Get("sort")
 
-		switch {
-		case r.URL.Path == "/" && refererUri != "":
-			path, err := splitPath(refererUri, re)
-			if err != nil {
-				return err
-			}
+		if r.URL.Path == "/" {
+			var filePath string
+			var err error
 
-			filePath, err := getNextFile(path, sortOrder)
-			if err != nil {
-				return err
+			if refererUri != "" {
+				filePath, err = getNextFile(refererUri, sortOrder, re)
+				if err != nil {
+					return err
+				}
 			}
 
 			if filePath == "" {
@@ -304,22 +289,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		case r.URL.Path == "/" && refererUri == "":
-			filePath, err := getNewFile(paths, &filters, sortOrder, re, fileCache)
-			switch {
-			case err != nil && err == ErrNoImagesFound:
-				http.NotFound(w, r)
-			case err != nil:
-				return err
-			}
-
-			newUrl := fmt.Sprintf("http://%v%v%v",
-				r.Host,
-				preparePath(filePath),
-				generateQueryParams(&filters, sortOrder),
-			)
-			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		default:
+		} else {
 			filePath := r.URL.Path
 
 			if runtime.GOOS == "windows" {
@@ -330,7 +300,6 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			if err != nil {
 				return err
 			}
-
 			if !exists {
 				notFound(w, r)
 			}
@@ -348,7 +317,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				return err
 			}
 
-			err = serveHtml(w, r, filePath, dimensions)
+			err = serveHtml(w, r, filePath, dimensions, &filters)
 			if err != nil {
 				return err
 			}
