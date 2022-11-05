@@ -30,7 +30,7 @@ import (
 )
 
 var (
-	ErrNoImagesFound = fmt.Errorf("no supported image formats found")
+	ErrNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
 	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
@@ -107,6 +107,9 @@ func humanReadableSize(bytes int) string {
 
 func getImageDimensions(path string) (string, error) {
 	file, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
 	defer file.Close()
 
 	myImage, _, err := image.DecodeConfig(file)
@@ -200,59 +203,59 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 	return nil
 }
 
-func getFirstFile(p *Path) (string, error) {
-	p.Number = 1
+func getNewFile(paths []string, filters *Filters, sortOrder string, re regexp.Regexp, fileCache *[]string) (string, error) {
+	filePath, err := pickFile(paths, filters, sortOrder, fileCache)
+	if err != nil {
+		return "", nil
+	}
 
-	fileName, err := tryExtensions(p)
+	path, err := splitPath(filePath, re)
 	if err != nil {
 		return "", err
 	}
 
-	return fileName, nil
-}
+	path.Number = 1
 
-func getLastFile(p *Path) (string, error) {
-	var fileName string
-	var err error
-
-	p.Number = 1
-
-	for {
-		p.Increment()
-
-		fileName, err = tryExtensions(p)
+	switch {
+	case sortOrder == "asc":
+		filePath, err = tryExtensions(path)
 		if err != nil {
 			return "", err
 		}
+	case sortOrder == "desc":
+		for {
+			path.Increment()
 
-		if fileName == "" {
-			p.Decrement()
-
-			fileName, err = tryExtensions(p)
+			filePath, err = tryExtensions(path)
 			if err != nil {
 				return "", err
 			}
 
-			break
+			if filePath == "" {
+				path.Decrement()
+
+				filePath, err = tryExtensions(path)
+				if err != nil {
+					return "", err
+				}
+
+				break
+			}
 		}
 	}
 
-	return fileName, nil
+	return filePath, nil
 }
 
-func getNextFile(p *Path) (string, error) {
-	p.Increment()
-
-	fileName, err := tryExtensions(p)
-	if err != nil {
-		return "", err
+func getNextFile(p *Path, sortOrder string) (string, error) {
+	switch {
+	case sortOrder == "asc":
+		p.Increment()
+	case sortOrder == "desc":
+		p.Decrement()
+	default:
+		return "", nil
 	}
-
-	return fileName, err
-}
-
-func getPreviousFile(p *Path) (string, error) {
-	p.Decrement()
 
 	fileName, err := tryExtensions(p)
 	if err != nil {
@@ -497,6 +500,9 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 	}
 
 	fileCount := len(fileList)
+	if fileCount == 0 {
+		return "", ErrNoImagesFound
+	}
 
 	r := rand.Intn(fileCount - 1)
 

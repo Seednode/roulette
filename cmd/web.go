@@ -31,19 +31,11 @@ type Filters struct {
 }
 
 func (f *Filters) IsEmpty() bool {
-	if !(f.HasIncludes() && f.HasExcludes()) {
-		return true
-	}
-
-	return false
+	return !(f.HasIncludes() && f.HasExcludes())
 }
 
 func (f *Filters) HasIncludes() bool {
-	if len(f.Includes) == 0 {
-		return false
-	}
-
-	return true
+	return len(f.Includes) != 0
 }
 
 func (f *Filters) GetIncludes() string {
@@ -51,11 +43,7 @@ func (f *Filters) GetIncludes() string {
 }
 
 func (f *Filters) HasExcludes() bool {
-	if len(f.Excludes) == 0 {
-		return false
-	}
-
-	return true
+	return len(f.Excludes) != 0
 }
 
 func (f *Filters) GetExcludes() string {
@@ -130,19 +118,45 @@ func generateQueryParams(filters *Filters, sort string) string {
 	return ""
 }
 
-func stripQueryParams(inUrl string) (string, error) {
-	url, err := url.Parse(inUrl)
+func stripQueryParams(u string) (string, error) {
+	uri, err := url.Parse(u)
 	if err != nil {
 		return "", err
 	}
 
-	url.RawQuery = ""
+	uri.RawQuery = ""
 
-	if runtime.GOOS == "windows" {
-		return strings.TrimPrefix(url.String(), "/"), nil
+	escapedUri, err := url.QueryUnescape(uri.String())
+	if err != nil {
+		return "", err
 	}
 
-	return url.String(), nil
+	if runtime.GOOS == "windows" {
+		return strings.TrimPrefix(escapedUri, "/"), nil
+	}
+
+	return escapedUri, nil
+}
+
+func createFilters(includes, excludes []string) Filters {
+	filters := Filters{}
+
+	if Filter {
+		filters.Includes = includes
+		filters.Excludes = excludes
+	}
+
+	return filters
+}
+
+func generateFilePath(filePath string) string {
+	htmlBody := PREFIX
+	if runtime.GOOS == "windows" {
+		htmlBody += "/"
+	}
+	htmlBody += filePath
+
+	return htmlBody
 }
 
 func refererToUri(referer string) string {
@@ -160,6 +174,11 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 
 	w.Header().Add("Content-Type", "text/html")
 
+	filters := Filters{}
+	if Filter {
+		filters = createFilters(splitQueryParams(r.URL.Query().Get("include")), splitQueryParams(r.URL.Query().Get("exclude")))
+	}
+
 	htmlBody := `<html lang="en">
   <head>
     <style>
@@ -171,31 +190,10 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 	htmlBody += `</title>
   </head>
   <body>
-`
-	switch {
-	case Filter && Sort:
-		htmlBody += fmt.Sprintf(`    <a href="/?include=%v&exclude=%v&sort=%v"><img src="`,
-			r.URL.Query().Get("include"),
-			r.URL.Query().Get("exclude"),
-			r.URL.Query().Get("sort"),
-		)
-	case Filter && !Sort:
-		htmlBody += fmt.Sprintf(`    <a href="/?include=%v&exclude=%v"><img src="`,
-			r.URL.Query().Get("include"),
-			r.URL.Query().Get("exclude"),
-		)
-	case !Filter && Sort:
-		htmlBody += fmt.Sprintf(`    <a href="/?sort=%v"><img src="`,
-			r.URL.Query().Get("sort"),
-		)
-	default:
-		htmlBody += `    <a href="/"><img src="`
-	}
-	htmlBody += PREFIX
-	if runtime.GOOS == "windows" {
-		htmlBody += "/"
-	}
-	htmlBody += filePath
+    <a href="/`
+	htmlBody += generateQueryParams(&filters, r.URL.Query().Get("sort"))
+	htmlBody += `"><img src="`
+	htmlBody += generateFilePath(filePath)
 	htmlBody += `"></img></a>
   </body>
 </html>`
@@ -209,12 +207,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) error {
-	strippedUrl, err := stripQueryParams(r.URL.Path)
-	if err != nil {
-		return err
-	}
-
-	prefixedFilePath, err := url.QueryUnescape(strippedUrl)
+	prefixedFilePath, err := stripQueryParams(r.URL.Path)
 	if err != nil {
 		return err
 	}
@@ -279,54 +272,30 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			return err
 		}
 
-		filters := Filters{}
-		if Filter {
-			filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
-			filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
-		}
+		filters := createFilters(splitQueryParams(r.URL.Query().Get("include")), splitQueryParams(r.URL.Query().Get("exclude")))
 
-		sortOrder := ""
-		if Sort {
-			sortOrder = r.URL.Query().Get("sort")
-		}
+		sortOrder := r.URL.Query().Get("sort")
 
 		switch {
-		case r.URL.Path == "/" && sortOrder == "asc" && refererUri != "":
-			query, err := url.QueryUnescape(refererUri)
+		case r.URL.Path == "/" && refererUri != "":
+			path, err := splitPath(refererUri, re)
 			if err != nil {
 				return err
 			}
 
-			path, err := splitPath(query, re)
-			if err != nil {
-				return err
-			}
-
-			filePath, err := getNextFile(path)
+			filePath, err := getNextFile(path, sortOrder)
 			if err != nil {
 				return err
 			}
 
 			if filePath == "" {
-				filePath, err = pickFile(paths, &filters, sortOrder, fileCache)
+				filePath, err = getNewFile(paths, &filters, sortOrder, re, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					http.NotFound(w, r)
-
-					return nil
 				case err != nil:
 					return err
 				}
-
-				path, err := splitPath(filePath, re)
-				if err != nil {
-					return err
-				}
-
-				filePath, err = getFirstFile(path)
-				if err != nil {
-					return err
-				}
 			}
 
 			newUrl := fmt.Sprintf("http://%v%v%v",
@@ -335,109 +304,12 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				generateQueryParams(&filters, sortOrder),
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		case r.URL.Path == "/" && sortOrder == "asc" && refererUri == "":
-			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
-			if err != nil && err == ErrNoImagesFound {
-				notFound(w, r)
-
-				return nil
-			} else if err != nil {
-				return err
-			}
-
-			path, err := splitPath(filePath, re)
-			if err != nil {
-				return err
-			}
-
-			filePath, err = getFirstFile(path)
-			if err != nil {
-				return err
-			}
-
-			newUrl := fmt.Sprintf("http://%v%v%v",
-				r.Host,
-				preparePath(filePath),
-				generateQueryParams(&filters, sortOrder),
-			)
-			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		case r.URL.Path == "/" && sortOrder == "desc" && refererUri != "":
-			query, err := url.QueryUnescape(refererUri)
-			if err != nil {
-				return err
-			}
-
-			path, err := splitPath(query, re)
-			if err != nil {
-				return err
-			}
-
-			filePath, err := getPreviousFile(path)
-			if err != nil {
-				return err
-			}
-
-			if filePath == "" {
-				filePath, err = pickFile(paths, &filters, sortOrder, fileCache)
-				switch {
-				case err != nil && err == ErrNoImagesFound:
-					notFound(w, r)
-
-					return nil
-				case err != nil:
-					return err
-				}
-
-				path, err := splitPath(filePath, re)
-				if err != nil {
-					return err
-				}
-
-				filePath, err = getLastFile(path)
-				if err != nil {
-					return err
-				}
-			}
-
-			newUrl := fmt.Sprintf("http://%v%v%v",
-				r.Host,
-				preparePath(filePath),
-				generateQueryParams(&filters, sortOrder),
-			)
-			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		case r.URL.Path == "/" && sortOrder == "desc" && refererUri == "":
-			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
-			if err != nil && err == ErrNoImagesFound {
-				notFound(w, r)
-
-				return nil
-			} else if err != nil {
-				return err
-			}
-
-			path, err := splitPath(filePath, re)
-			if err != nil {
-				return err
-			}
-
-			filePath, err = getLastFile(path)
-			if err != nil {
-				return err
-			}
-
-			newUrl := fmt.Sprintf("http://%v%v%v",
-				r.Host,
-				preparePath(filePath),
-				generateQueryParams(&filters, sortOrder),
-			)
-			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		case r.URL.Path == "/":
-			filePath, err := pickFile(paths, &filters, sortOrder, fileCache)
-			if err != nil && err == ErrNoImagesFound {
-				notFound(w, r)
-
-				return nil
-			} else if err != nil {
+		case r.URL.Path == "/" && refererUri == "":
+			filePath, err := getNewFile(paths, &filters, sortOrder, re, fileCache)
+			switch {
+			case err != nil && err == ErrNoImagesFound:
+				http.NotFound(w, r)
+			case err != nil:
 				return err
 			}
 
@@ -461,8 +333,6 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 
 			if !exists {
 				notFound(w, r)
-
-				return nil
 			}
 
 			image, err := isImage(filePath)
@@ -471,8 +341,6 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			}
 			if !image {
 				notFound(w, r)
-
-				return nil
 			}
 
 			dimensions, err := getImageDimensions(filePath)
