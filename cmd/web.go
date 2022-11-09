@@ -192,6 +192,9 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 	w.Header().Add("Content-Type", "text/html")
 
 	refreshInterval := r.URL.Query().Get("refresh")
+	if refreshInterval == "" {
+		refreshInterval = "0"
+	}
 
 	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
 
