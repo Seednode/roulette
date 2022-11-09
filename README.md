@@ -48,6 +48,12 @@ If any other (or no) value is provided, the selected file will be random.
 
 Note: These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
 
+## Refresh
+
+If a `refresh=<time in seconds>` query parameter is provided, the page will reload after that interval.
+
+This can be used to generate a sort of slideshow of images.
+
 ## Usage output
 ```
 Usage:

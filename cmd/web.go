@@ -98,24 +98,52 @@ func splitQueryParams(query string) []string {
 	return params
 }
 
-func generateQueryParams(filters *Filters, sortOrder string) string {
-	switch {
-	case Filter && !Sort:
-		return fmt.Sprintf("?include=%v&exclude=%v",
-			filters.GetIncludes(),
-			filters.GetExcludes(),
-		)
-	case !Filter && Sort:
-		return fmt.Sprintf("?sort=%v", sortOrder)
-	case Filter && Sort:
-		return fmt.Sprintf("?include=%v&exclude=%v&sort=%v",
-			filters.GetIncludes(),
-			filters.GetExcludes(),
-			sortOrder,
-		)
+func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) (string, error) {
+	refresh, err := strconv.Atoi(refreshInterval)
+	if err != nil {
+		return "", err
 	}
 
-	return ""
+	var hasParams bool
+
+	var queryParams string
+	if Filter || Sort || (refresh != 0) {
+		queryParams += "?"
+	}
+
+	if Filter {
+		queryParams += "include="
+		if filters.HasIncludes() {
+			queryParams += filters.GetIncludes()
+
+		}
+
+		queryParams += "&exclude="
+		if filters.HasExcludes() {
+			queryParams += filters.GetExcludes()
+		}
+
+		hasParams = true
+	}
+
+	if Sort {
+		if hasParams {
+			queryParams += "&"
+		}
+
+		queryParams += fmt.Sprintf("sort=%v", sortOrder)
+
+		hasParams = true
+	}
+
+	if refresh != 0 {
+		if hasParams {
+			queryParams += "&"
+		}
+		queryParams += fmt.Sprintf("refresh=%v", refresh)
+	}
+
+	return queryParams, nil
 }
 
 func stripQueryParams(u string) (string, error) {
@@ -163,6 +191,10 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 
 	w.Header().Add("Content-Type", "text/html")
 
+	refreshInterval := r.URL.Query().Get("refresh")
+
+	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
+
 	htmlBody := `<html lang="en">
   <head>
     <style>
@@ -174,15 +206,32 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 	htmlBody += `</title>
   </head>
   <body>
-    <a href="/`
-	htmlBody += generateQueryParams(filters, r.URL.Query().Get("sort"))
+`
+	if refreshInterval != "0" {
+		r, err := strconv.Atoi(refreshInterval)
+		if err != nil {
+			return err
+		}
+		refreshTimer := strconv.Itoa(r * 1000)
+		htmlBody += `    <script>
+      setTimeout(function(){
+        window.location.href = '`
+		htmlBody += fmt.Sprintf("/%v", queryParams)
+		htmlBody += `';
+      },`
+		htmlBody += fmt.Sprintf("%v);\n", refreshTimer)
+		htmlBody += `    </script>
+`
+	}
+	htmlBody += `    <a href="/`
+	htmlBody += queryParams
 	htmlBody += `"><img src="`
 	htmlBody += generateFilePath(filePath)
 	htmlBody += `"></img></a>
   </body>
 </html>`
 
-	_, err := io.WriteString(w, htmlBody)
+	_, err = io.WriteString(w, htmlBody)
 	if err != nil {
 		return err
 	}
@@ -262,6 +311,11 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 
 		sortOrder := r.URL.Query().Get("sort")
 
+		refreshInterval := r.URL.Query().Get("refresh")
+		if refreshInterval == "" {
+			refreshInterval = "0"
+		}
+
 		if r.URL.Path == "/" {
 			var filePath string
 			var err error
@@ -283,10 +337,15 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				}
 			}
 
+			queryParams, err := generateQueryParams(&filters, sortOrder, refreshInterval)
+			if err != nil {
+				return err
+			}
+
 			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
 				preparePath(filePath),
-				generateQueryParams(&filters, sortOrder),
+				queryParams,
 			)
 			http.Redirect(w, r, newUrl, RedirectStatusCode)
 		} else {
