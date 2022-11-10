@@ -201,7 +201,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
 
 	var htmlBody strings.Builder
-	htmlBody.WriteString(`<html lang="en"><head>`)
+	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;}`)
 	htmlBody.WriteString(`img{max-width:100%;max-height:97vh;object-fit:contain;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf(`<title>%v (%vx%v)</title>`,
@@ -209,7 +209,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 		dimensions.Width,
 		dimensions.Height))
 	htmlBody.WriteString(`</head><body>`)
-	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></img></a>`,
+	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></a>`,
 		queryParams,
 		generateFilePath(filePath),
 		dimensions.Width,
