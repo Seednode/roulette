@@ -14,11 +14,11 @@ Builds available [here](https://cdn.seedno.de/builds/roulette).
 
 ## Filtering
 
-You can provide a comma-delimited string of patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
+You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
 Only filenames matching one or more of the patterns will be served.
 
-You can also provide a comma-delimited string of patterns to exclude, via the `exclude=` query parameter.
+You can also provide a comma-delimited string of alphanumeric patterns to exclude, via the `exclude=` query parameter.
 
 Filenames matching any of these patterns will not be served.
 
@@ -34,7 +34,7 @@ A value of `sort=asc` means files will be served in ascending order (lowest-numb
 
 If a file exists with a numbered suffix one higher than the currently displayed file, it will be served next.
 
-A value of `sort=desc` means files will be serve in descending order (highest-numbered to lowest).
+A value of `sort=desc` means files will be served in descending order (highest-numbered to lowest).
 
 If a file exists with a numbered suffix one lower than the currently displayed file, it will be served next.
 
