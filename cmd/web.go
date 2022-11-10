@@ -7,6 +7,7 @@ package cmd
 import (
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -52,33 +53,27 @@ func (f *Filters) GetExcludes() string {
 	return strings.Join(f.Excludes, ",")
 }
 
-type appHandler func(http.ResponseWriter, *http.Request) error
+func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
+	startTime := time.Now()
 
-func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	if err := fn(w, r); err != nil {
-		http.Error(w, err.Error(), 500)
+	if Verbose {
+		fmt.Printf("%v | Unavailable file %v requested by %v\n",
+			startTime.Format(LogDate),
+			filePath,
+			r.RemoteAddr,
+		)
 	}
-}
 
-func notFound(w http.ResponseWriter, r *http.Request) error {
 	w.WriteHeader(404)
 	w.Header().Add("Content-Type", "text/html")
 
-	htmlBody := `<html lang="en">
-  <head>
-    <style>
-      a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}
-    </style>
-    <title>
-      Not Found
-    </title>
-  </head>
-  <body>
-    <a href="/">404 page not found</a>
-  </body>
-</html>`
+	var htmlBody strings.Builder
+	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(`<title>Not Found</title></head>`)
+	htmlBody.WriteString(`<body><a href="/">404 page not found</a></body></html>`)
 
-	_, err := io.WriteString(w, htmlBody)
+	_, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
 	if err != nil {
 		return err
 	}
@@ -238,7 +233,9 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	}
 
 	if !pathIsValid(filePath, paths) {
-		notFound(w, r)
+		notFound(w, r, filePath)
+
+		return nil
 	}
 
 	exists, err := fileExists(filePath)
@@ -247,7 +244,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	}
 
 	if !exists {
-		notFound(w, r)
+		notFound(w, r, filePath)
 
 		return nil
 	}
@@ -274,22 +271,20 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	return nil
 }
 
-func serveStaticFileHandler(paths []string) appHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
+func serveStaticFileHandler(paths []string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		err := serveStaticFile(w, r, paths)
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
-
-		return nil
 	}
 }
 
-func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) appHandler {
-	return func(w http.ResponseWriter, r *http.Request) error {
+func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
-			return err
+			log.Fatal(err)
 		}
 
 		filters := Filters{}
@@ -310,7 +305,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 			if refererUri != "" {
 				filePath, err = getNextFile(refererUri, sortOrder, re)
 				if err != nil {
-					return err
+					log.Fatal(err)
 				}
 			}
 
@@ -318,9 +313,11 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				filePath, err = getNewFile(paths, &filters, sortOrder, re, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
-					http.NotFound(w, r)
+					notFound(w, r, filePath)
+
+					return
 				case err != nil:
-					return err
+					log.Fatal(err)
 				}
 			}
 
@@ -341,32 +338,34 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 
 			exists, err := fileExists(filePath)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 			if !exists {
-				notFound(w, r)
+				notFound(w, r, filePath)
+
+				return
 			}
 
 			image, err := isImage(filePath)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 			if !image {
-				notFound(w, r)
+				notFound(w, r, filePath)
+
+				return
 			}
 
 			dimensions, err := getImageDimensions(filePath)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 
 			err = serveHtml(w, r, filePath, dimensions, &filters)
 			if err != nil {
-				return err
+				log.Fatal(err)
 			}
 		}
-
-		return nil
 	}
 }
 

@@ -112,7 +112,9 @@ func humanReadableSize(bytes int) string {
 
 func getImageDimensions(path string) (*Dimensions, error) {
 	file, err := os.Open(path)
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
+		return &Dimensions{}, nil
+	} else if err != nil {
 		return &Dimensions{}, err
 	}
 	defer file.Close()
@@ -355,7 +357,9 @@ func pathIsValid(filePath string, paths []string) bool {
 
 func isImage(path string) (bool, error) {
 	file, err := os.Open(path)
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	} else if err != nil {
 		return false, err
 	}
 	defer file.Close()
