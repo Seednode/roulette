@@ -209,28 +209,28 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 	htmlBody += `</title>
   </head>
   <body>
-`
+    <a href="/`
+	htmlBody += queryParams
+	htmlBody += `"><img src="`
+	htmlBody += generateFilePath(filePath)
+	htmlBody += `"></img></a>`
 	if refreshInterval != "0" {
 		r, err := strconv.Atoi(refreshInterval)
 		if err != nil {
 			return err
 		}
 		refreshTimer := strconv.Itoa(r * 1000)
-		htmlBody += `    <script>
+		htmlBody += `    
+    <script>
       setTimeout(function(){
         window.location.href = '`
 		htmlBody += fmt.Sprintf("/%v", queryParams)
 		htmlBody += `';
       },`
 		htmlBody += fmt.Sprintf("%v);\n", refreshTimer)
-		htmlBody += `    </script>
-`
+		htmlBody += `    </script>`
 	}
-	htmlBody += `    <a href="/`
-	htmlBody += queryParams
-	htmlBody += `"><img src="`
-	htmlBody += generateFilePath(filePath)
-	htmlBody += `"></img></a>
+	htmlBody += `
   </body>
 </html>`
 
