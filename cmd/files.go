@@ -15,7 +15,6 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -212,13 +211,13 @@ func appendPaths(path string, files *Files, filters *Filters, stats *Stats) erro
 	return nil
 }
 
-func getNewFile(paths []string, filters *Filters, sortOrder string, re regexp.Regexp, fileCache *[]string) (string, error) {
+func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, fileCache *[]string) (string, error) {
 	filePath, err := pickFile(paths, filters, sortOrder, fileCache)
 	if err != nil {
 		return "", nil
 	}
 
-	path, err := splitPath(filePath, re)
+	path, err := splitPath(filePath, regexes)
 	if err != nil {
 		return "", err
 	}
@@ -256,8 +255,8 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, re regexp.Re
 	return filePath, nil
 }
 
-func getNextFile(filePath, sortOrder string, re regexp.Regexp) (string, error) {
-	path, err := splitPath(filePath, re)
+func getNextFile(filePath, sortOrder string, regexes *Regexes) (string, error) {
+	path, err := splitPath(filePath, regexes)
 	if err != nil {
 		return "", err
 	}
@@ -279,11 +278,11 @@ func getNextFile(filePath, sortOrder string, re regexp.Regexp) (string, error) {
 	return fileName, err
 }
 
-func splitPath(path string, re regexp.Regexp) (*Path, error) {
+func splitPath(path string, regexes *Regexes) (*Path, error) {
 	p := Path{}
 	var err error
 
-	split := re.FindAllStringSubmatch(path, -1)
+	split := regexes.Filename.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
 		return &Path{}, nil

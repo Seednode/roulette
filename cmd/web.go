@@ -28,6 +28,11 @@ const (
 	RedirectStatusCode int    = http.StatusSeeOther
 )
 
+type Regexes struct {
+	Alphanumeric *regexp.Regexp
+	Filename     *regexp.Regexp
+}
+
 type Filters struct {
 	Includes []string
 	Excludes []string
@@ -81,7 +86,31 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func splitQueryParams(query string) []string {
+func getRefreshInterval(r *http.Request) string {
+	refreshInterval := r.URL.Query().Get("refresh")
+
+	if refreshInterval == "" {
+		refreshInterval = "0"
+	}
+
+	num, err := strconv.Atoi(refreshInterval)
+	if err != nil || num < 0 {
+		refreshInterval = "0"
+	}
+
+	return refreshInterval
+}
+
+func getSortOrder(r *http.Request) string {
+	sortOrder := r.URL.Query().Get("sort")
+	if !(sortOrder == "asc" || sortOrder == "desc") {
+		sortOrder = ""
+	}
+
+	return sortOrder
+}
+
+func splitQueryParams(query string, regexes *Regexes) []string {
 	if query == "" {
 		return []string{}
 	}
@@ -89,7 +118,11 @@ func splitQueryParams(query string) []string {
 	params := strings.Split(query, ",")
 
 	for i := 0; i < len(params); i++ {
-		params[i] = strings.ToLower(params[i])
+		isAlphanumeric := regexes.Alphanumeric.MatchString(params[i])
+
+		if isAlphanumeric {
+			params[i] = strings.ToLower(params[i])
+		}
 	}
 
 	return params
@@ -179,12 +212,11 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 
 	w.Header().Add("Content-Type", "text/html")
 
-	refreshInterval := r.URL.Query().Get("refresh")
-	if refreshInterval == "" {
-		refreshInterval = "0"
-	}
+	refreshInterval := getRefreshInterval(r)
 
-	queryParams := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
+	sortOrder := getSortOrder(r)
+
+	queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
 	var htmlBody strings.Builder
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
@@ -281,7 +313,7 @@ func serveStaticFileHandler(paths []string) http.HandlerFunc {
 	}
 }
 
-func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) http.HandlerFunc {
+func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -289,29 +321,26 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) htt
 		}
 
 		filters := Filters{}
-		filters.Includes = splitQueryParams(r.URL.Query().Get("include"))
-		filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"))
+		filters.Includes = splitQueryParams(r.URL.Query().Get("include"), regexes)
+		filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"), regexes)
 
-		sortOrder := r.URL.Query().Get("sort")
+		sortOrder := getSortOrder(r)
 
-		refreshInterval := r.URL.Query().Get("refresh")
-		if refreshInterval == "" {
-			refreshInterval = "0"
-		}
+		refreshInterval := getRefreshInterval(r)
 
 		if r.URL.Path == "/" {
 			var filePath string
 			var err error
 
 			if refererUri != "" {
-				filePath, err = getNextFile(refererUri, sortOrder, re)
+				filePath, err = getNextFile(refererUri, sortOrder, regexes)
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
 
 			if filePath == "" {
-				filePath, err = getNewFile(paths, &filters, sortOrder, re, fileCache)
+				filePath, err = getNewFile(paths, &filters, sortOrder, regexes, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					notFound(w, r, filePath)
@@ -372,6 +401,15 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) htt
 
 func doNothing(http.ResponseWriter, *http.Request) {}
 
+func generateRegularExpressions() *Regexes {
+	r := Regexes{}
+
+	r.Filename = regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+	r.Alphanumeric = regexp.MustCompile(`^[a-zA-Z0-9]*$`)
+
+	return &r
+}
+
 func ServePage(args []string) error {
 	fmt.Printf("roulette v%v\n\n", Version)
 
@@ -380,13 +418,13 @@ func ServePage(args []string) error {
 		return err
 	}
 
-	re := regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
+	regexes := generateRegularExpressions()
 
 	rand.Seed(time.Now().UnixNano())
 
 	fileCache := []string{}
 
-	http.Handle("/", serveHtmlHandler(paths, *re, &fileCache))
+	http.Handle("/", serveHtmlHandler(paths, regexes, &fileCache))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
