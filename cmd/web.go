@@ -111,21 +111,21 @@ func getSortOrder(r *http.Request) string {
 }
 
 func splitQueryParams(query string, regexes *Regexes) []string {
+	results := []string{}
+
 	if query == "" {
-		return []string{}
+		return results
 	}
 
 	params := strings.Split(query, ",")
 
 	for i := 0; i < len(params); i++ {
-		isAlphanumeric := regexes.Alphanumeric.MatchString(params[i])
-
-		if isAlphanumeric {
-			params[i] = strings.ToLower(params[i])
+		if regexes.Alphanumeric.MatchString(params[i]) {
+			results = append(results, strings.ToLower(params[i]))
 		}
 	}
 
-	return params
+	return results
 }
 
 func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) string {
@@ -212,9 +212,9 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 
 	w.Header().Add("Content-Type", "text/html")
 
-	refreshInterval := getRefreshInterval(r)
-
 	sortOrder := getSortOrder(r)
+
+	refreshInterval := getRefreshInterval(r)
 
 	queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
