@@ -100,29 +100,22 @@ func splitQueryParams(query string) []string {
 	return params
 }
 
-func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) (string, error) {
-	refresh, err := strconv.Atoi(refreshInterval)
-	if err != nil {
-		return "", err
-	}
-
+func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) string {
 	var hasParams bool
 
-	var queryParams string
-	if Filter || Sort || (refresh != 0) {
-		queryParams += "?"
-	}
+	var queryParams strings.Builder
+
+	queryParams.WriteString("?")
 
 	if Filter {
-		queryParams += "include="
+		queryParams.WriteString("include=")
 		if filters.HasIncludes() {
-			queryParams += filters.GetIncludes()
-
+			queryParams.WriteString(filters.GetIncludes())
 		}
 
-		queryParams += "&exclude="
+		queryParams.WriteString("&exclude=")
 		if filters.HasExcludes() {
-			queryParams += filters.GetExcludes()
+			queryParams.WriteString(filters.GetExcludes())
 		}
 
 		hasParams = true
@@ -130,22 +123,20 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) (s
 
 	if Sort {
 		if hasParams {
-			queryParams += "&"
+			queryParams.WriteString("&")
 		}
 
-		queryParams += fmt.Sprintf("sort=%v", sortOrder)
+		queryParams.WriteString(fmt.Sprintf("sort=%v", sortOrder))
 
 		hasParams = true
 	}
 
-	if refresh != 0 {
-		if hasParams {
-			queryParams += "&"
-		}
-		queryParams += fmt.Sprintf("refresh=%v", refresh)
+	if hasParams {
+		queryParams.WriteString("&")
 	}
+	queryParams.WriteString(fmt.Sprintf("refresh=%v", refreshInterval))
 
-	return queryParams, nil
+	return queryParams.String()
 }
 
 func stripQueryParams(u string) (string, error) {
@@ -198,7 +189,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 		refreshInterval = "0"
 	}
 
-	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
+	queryParams := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
 
 	var htmlBody strings.Builder
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
@@ -227,7 +218,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 	}
 	htmlBody.WriteString(`</body></html>`)
 
-	_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
+	_, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
 	if err != nil {
 		return err
 	}
@@ -333,10 +324,7 @@ func serveHtmlHandler(paths []string, re regexp.Regexp, fileCache *[]string) app
 				}
 			}
 
-			queryParams, err := generateQueryParams(&filters, sortOrder, refreshInterval)
-			if err != nil {
-				return err
-			}
+			queryParams := generateQueryParams(&filters, sortOrder, refreshInterval)
 
 			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
