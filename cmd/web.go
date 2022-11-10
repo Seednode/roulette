@@ -25,10 +25,6 @@ const (
 	LogDate            string = `2006-01-02T15:04:05.000-07:00`
 	Prefix             string = `/src`
 	RedirectStatusCode int    = http.StatusSeeOther
-
-	// You may not like it, but this is what peak string generation looks like.
-	RefreshScriptTemplate string = `<script>setTimeout(function(){window.location.href = '/%v';},%v);</script>`
-	HtmlTemplate          string = `<html lang="en"><head><style>a{display:block;height:100%%;width:100%%;text-decoration:none;}img{max-width:100%%;max-height:97vh;object-fit:contain;}</style><title>%v (%vx%v)</title></head><body><a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></img></a>%v</body></html>`
 )
 
 type Filters struct {
@@ -204,33 +200,34 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 
 	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
 
-	refreshScript := ""
+	var htmlBody strings.Builder
+	htmlBody.WriteString(`<html lang="en"><head>`)
+	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;}`)
+	htmlBody.WriteString(`img{max-width:100%;max-height:97vh;object-fit:contain;}</style>`)
+	htmlBody.WriteString(fmt.Sprintf(`<title>%v (%vx%v)</title>`,
+		fileName,
+		dimensions.Width,
+		dimensions.Height))
+	htmlBody.WriteString(`</head><body>`)
+	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></img></a>`,
+		queryParams,
+		generateFilePath(filePath),
+		dimensions.Width,
+		dimensions.Height,
+		fileName))
 	if refreshInterval != "0" {
 		r, err := strconv.Atoi(refreshInterval)
 		if err != nil {
 			return err
 		}
 		refreshTimer := strconv.Itoa(r * 1000)
-		refreshScript = fmt.Sprintf(RefreshScriptTemplate,
+		htmlBody.WriteString(fmt.Sprintf(`<script>setTimeout(function(){window.location.href = '/%v';},%v);</script>`,
 			queryParams,
-			refreshTimer)
+			refreshTimer))
 	}
+	htmlBody.WriteString(`</body></html>`)
 
-	htmlBody := fmt.Sprintf(HtmlTemplate,
-		fileName,
-		dimensions.Width,
-		dimensions.Height,
-		queryParams,
-		generateFilePath(filePath),
-		dimensions.Width,
-		dimensions.Height,
-		fileName,
-		refreshScript,
-	)
-
-	formattedBody := gohtml.Format(htmlBody)
-
-	_, err = io.WriteString(w, formattedBody)
+	_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 	if err != nil {
 		return err
 	}
