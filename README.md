@@ -14,7 +14,7 @@ Builds available [here](https://cdn.seedno.de/builds/roulette).
 
 ## Filtering
 
-You can provide a comma-delimited string of alphanumeric-only patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
+You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
 Only filenames matching one or more of the patterns will be served.
 
