@@ -195,22 +195,23 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 		dimensions.Width,
 		dimensions.Height))
 	htmlBody.WriteString(`</head><body>`)
-	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></a>`,
-		queryParams,
-		generateFilePath(filePath),
-		dimensions.Width,
-		dimensions.Height,
-		fileName))
 	if refreshInterval != "0" {
 		r, err := strconv.Atoi(refreshInterval)
 		if err != nil {
 			return err
 		}
 		refreshTimer := strconv.Itoa(r * 1000)
-		htmlBody.WriteString(fmt.Sprintf(`<script>setTimeout(function(){window.location.href = '/%v';},%v);</script>`,
+
+		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%v';}, %v);};</script>",
 			queryParams,
 			refreshTimer))
 	}
+	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></a>`,
+		queryParams,
+		generateFilePath(filePath),
+		dimensions.Width,
+		dimensions.Height,
+		fileName))
 	htmlBody.WriteString(`</body></html>`)
 
 	_, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
