@@ -255,12 +255,12 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) error {
-	PrefixedFilePath, err := stripQueryParams(r.URL.Path)
+	prefixedFilePath, err := stripQueryParams(r.URL.Path)
 	if err != nil {
 		return err
 	}
 
-	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(PrefixedFilePath, Prefix))
+	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, Prefix))
 	if err != nil {
 		return err
 	}
