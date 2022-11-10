@@ -34,6 +34,11 @@ var (
 	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
+type Dimensions struct {
+	Width  int
+	Height int
+}
+
 type Files struct {
 	Mutex sync.Mutex
 	List  map[string][]string
@@ -105,21 +110,21 @@ func humanReadableSize(bytes int) string {
 		float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-func getImageDimensions(path string) (string, error) {
+func getImageDimensions(path string) (*Dimensions, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return "", err
+		return &Dimensions{}, err
 	}
 	defer file.Close()
 
 	myImage, _, err := image.DecodeConfig(file)
 	if errors.Is(err, image.ErrFormat) {
-		return "", nil
+		return &Dimensions{Width: 0, Height: 0}, nil
 	} else if err != nil {
-		return "", err
+		return &Dimensions{}, err
 	}
 
-	return fmt.Sprintf("%vx%v", myImage.Width, myImage.Height), nil
+	return &Dimensions{Width: myImage.Width, Height: myImage.Height}, nil
 }
 
 func preparePath(path string) string {
@@ -336,7 +341,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	switch {
 	case Verbose && !matchesPrefix:
 		fmt.Printf("%v | Error: Failed to serve file outside specified path(s): %v\n",
-			time.Now().Format(LOGDATE),
+			time.Now().Format(LogDate),
 			filePath,
 		)
 
@@ -489,7 +494,7 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 
 		if Verbose {
 			fmt.Printf("%v | Scanned %v/%v files across %v directories in %v\n",
-				time.Now().Format(LOGDATE),
+				time.Now().Format(LogDate),
 				stats.GetFilesMatched(),
 				stats.GetFilesTotal(),
 				stats.GetDirectoriesMatched(),

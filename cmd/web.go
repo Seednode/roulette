@@ -17,12 +17,18 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/yosssi/gohtml"
 )
 
 const (
-	LOGDATE            string = "2006-01-02T15:04:05.000-07:00"
-	PREFIX             string = "/src"
+	LogDate            string = `2006-01-02T15:04:05.000-07:00`
+	Prefix             string = `/src`
 	RedirectStatusCode int    = http.StatusSeeOther
+
+	// You may not like it, but this is what peak string generation looks like.
+	RefreshScriptTemplate string = `<script>setTimeout(function(){window.location.href = '/%v';},%v);</script>`
+	HtmlTemplate          string = `<html lang="en"><head><style>a{display:block;height:100%%;width:100%%;text-decoration:none;}img{max-width:100%%;max-height:97vh;object-fit:contain;}</style><title>%v (%vx%v)</title></head><body><a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></img></a>%v</body></html>`
 )
 
 type Filters struct {
@@ -167,7 +173,7 @@ func stripQueryParams(u string) (string, error) {
 }
 
 func generateFilePath(filePath string) string {
-	htmlBody := PREFIX
+	htmlBody := Prefix
 	if runtime.GOOS == "windows" {
 		htmlBody += "/"
 	}
@@ -186,7 +192,7 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions string, filters *Filters) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
@@ -198,43 +204,33 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 
 	queryParams, err := generateQueryParams(filters, r.URL.Query().Get("sort"), refreshInterval)
 
-	htmlBody := `<html lang="en">
-  <head>
-    <style>
-      a{display:block;height:100%;width:100%;text-decoration:none}
-      img{max-width:100%;max-height:97vh;height:auto;}
-    </style>
-    <title>`
-	htmlBody += fmt.Sprintf("%v (%v)", fileName, dimensions)
-	htmlBody += `</title>
-  </head>
-  <body>
-    <a href="/`
-	htmlBody += queryParams
-	htmlBody += `"><img src="`
-	htmlBody += generateFilePath(filePath)
-	htmlBody += `"></img></a>`
+	refreshScript := ""
 	if refreshInterval != "0" {
 		r, err := strconv.Atoi(refreshInterval)
 		if err != nil {
 			return err
 		}
 		refreshTimer := strconv.Itoa(r * 1000)
-		htmlBody += `    
-    <script>
-      setTimeout(function(){
-        window.location.href = '`
-		htmlBody += fmt.Sprintf("/%v", queryParams)
-		htmlBody += `';
-      },`
-		htmlBody += fmt.Sprintf("%v);\n", refreshTimer)
-		htmlBody += `    </script>`
+		refreshScript = fmt.Sprintf(RefreshScriptTemplate,
+			queryParams,
+			refreshTimer)
 	}
-	htmlBody += `
-  </body>
-</html>`
 
-	_, err = io.WriteString(w, htmlBody)
+	htmlBody := fmt.Sprintf(HtmlTemplate,
+		fileName,
+		dimensions.Width,
+		dimensions.Height,
+		queryParams,
+		generateFilePath(filePath),
+		dimensions.Width,
+		dimensions.Height,
+		fileName,
+		refreshScript,
+	)
+
+	formattedBody := gohtml.Format(htmlBody)
+
+	_, err = io.WriteString(w, formattedBody)
 	if err != nil {
 		return err
 	}
@@ -243,12 +239,12 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath, dimensions stri
 }
 
 func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) error {
-	prefixedFilePath, err := stripQueryParams(r.URL.Path)
+	PrefixedFilePath, err := stripQueryParams(r.URL.Path)
 	if err != nil {
 		return err
 	}
 
-	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, PREFIX))
+	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(PrefixedFilePath, Prefix))
 	if err != nil {
 		return err
 	}
@@ -279,7 +275,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 
 	if Verbose {
 		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
-			startTime.Format(LOGDATE),
+			startTime.Format(LogDate),
 			filePath,
 			humanReadableSize(len(buf)),
 			r.RemoteAddr,
@@ -406,7 +402,7 @@ func ServePage(args []string) error {
 	fileCache := []string{}
 
 	http.Handle("/", serveHtmlHandler(paths, *re, &fileCache))
-	http.Handle(PREFIX+"/", http.StripPrefix(PREFIX, serveStaticFileHandler(paths)))
+	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)
