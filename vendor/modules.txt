@@ -23,7 +23,7 @@ golang.org/x/image/riff
 golang.org/x/image/vp8
 golang.org/x/image/vp8l
 golang.org/x/image/webp
-# golang.org/x/net v0.0.0-20220722155237-a158d28d115b
+# golang.org/x/net v0.2.0
 ## explicit; go 1.17
 golang.org/x/net/html
 golang.org/x/net/html/atom
