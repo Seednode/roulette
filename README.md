@@ -14,7 +14,11 @@ Feature requests, code criticism, bug reports, general chit-chat, and unrelated 
 
 Static binary builds available [here](https://cdn.seedno.de/builds/roulette).
 
-x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette:latest`. (Dockerfile available [here](https://git.seedno.de/seednode/docker-roulette))
+I only test the linux/amd64, linux/arm64, and windows/amd64 builds, the rest are all best-effort™.
+
+x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette:latest`.
+
+Dockerfile available [here](https://git.seedno.de/seednode/docker-roulette).
 
 ## Filtering
 
