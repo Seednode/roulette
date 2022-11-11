@@ -89,11 +89,8 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 func getRefreshInterval(r *http.Request) string {
 	refreshInterval := r.URL.Query().Get("refresh")
 
-	if refreshInterval == "" {
-		refreshInterval = "0"
-	}
-
 	num, err := strconv.Atoi(refreshInterval)
+
 	if err != nil || num < 0 {
 		refreshInterval = "0"
 	}
@@ -103,11 +100,11 @@ func getRefreshInterval(r *http.Request) string {
 
 func getSortOrder(r *http.Request) string {
 	sortOrder := r.URL.Query().Get("sort")
-	if !(sortOrder == "asc" || sortOrder == "desc") {
-		sortOrder = ""
+	if sortOrder == "asc" || sortOrder == "desc" {
+		return sortOrder
 	}
 
-	return sortOrder
+	return ""
 }
 
 func splitQueryParams(query string, regexes *Regexes) []string {
@@ -188,13 +185,15 @@ func stripQueryParams(u string) (string, error) {
 }
 
 func generateFilePath(filePath string) string {
-	htmlBody := Prefix
-	if runtime.GOOS == "windows" {
-		htmlBody += "/"
-	}
-	htmlBody += filePath
+	var htmlBody strings.Builder
 
-	return htmlBody
+	htmlBody.WriteString(Prefix)
+	if runtime.GOOS == "windows" {
+		htmlBody.WriteString(`/`)
+	}
+	htmlBody.WriteString(filePath)
+
+	return htmlBody.String()
 }
 
 func refererToUri(referer string) string {
