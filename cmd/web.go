@@ -220,8 +220,10 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 
 	var htmlBody strings.Builder
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;}`)
-	htmlBody.WriteString(`img{max-width:100%;max-height:97vh;object-fit:contain;}</style>`)
+	htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
+	htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
+	htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
+	htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
 	htmlBody.WriteString(fmt.Sprintf(`<title>%v (%vx%v)</title>`,
 		fileName,
 		dimensions.Width,
