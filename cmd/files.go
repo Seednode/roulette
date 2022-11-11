@@ -485,17 +485,23 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 	if Cache && len(*fileCache) != 0 {
 		fileList = *fileCache
 	} else {
-		files := Files{}
-		files.List = make(map[string][]string)
+		files := &Files{
+			List: make(map[string][]string),
+		}
 
-		stats := Stats{}
+		stats := &Stats{
+			FilesMatched:       0,
+			FilesSkipped:       0,
+			DirectoriesMatched: 0,
+		}
 
-		concurrency := Concurrency{}
-		concurrency.DirectoryScans = make(chan int, maxDirectoryScans)
-		concurrency.FileScans = make(chan int, maxFileScans)
+		concurrency := &Concurrency{
+			DirectoryScans: make(chan int, maxDirectoryScans),
+			FileScans:      make(chan int, maxFileScans),
+		}
 
 		startTime := time.Now()
-		getFileList(args, &files, filters, &stats, &concurrency)
+		getFileList(args, files, filters, stats, concurrency)
 		runTime := time.Since(startTime)
 
 		if Verbose {
@@ -508,7 +514,7 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 			)
 		}
 
-		fileList = prepareDirectories(&files, sort)
+		fileList = prepareDirectories(files, sort)
 
 		if Cache {
 			*fileCache = append(*fileCache, fileList...)

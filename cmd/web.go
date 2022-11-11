@@ -321,9 +321,10 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 			log.Fatal(err)
 		}
 
-		filters := Filters{}
-		filters.Includes = splitQueryParams(r.URL.Query().Get("include"), regexes)
-		filters.Excludes = splitQueryParams(r.URL.Query().Get("exclude"), regexes)
+		filters := &Filters{
+			Includes: splitQueryParams(r.URL.Query().Get("include"), regexes),
+			Excludes: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
+		}
 
 		sortOrder := getSortOrder(r)
 
@@ -341,7 +342,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 			}
 
 			if filePath == "" {
-				filePath, err = getNewFile(paths, &filters, sortOrder, regexes, fileCache)
+				filePath, err = getNewFile(paths, filters, sortOrder, regexes, fileCache)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					notFound(w, r, filePath)
@@ -352,7 +353,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 				}
 			}
 
-			queryParams := generateQueryParams(&filters, sortOrder, refreshInterval)
+			queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
 			newUrl := fmt.Sprintf("http://%v%v%v",
 				r.Host,
@@ -392,7 +393,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 				log.Fatal(err)
 			}
 
-			err = serveHtml(w, r, filePath, dimensions, &filters)
+			err = serveHtml(w, r, filePath, dimensions, filters)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -402,15 +403,6 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 
 func doNothing(http.ResponseWriter, *http.Request) {}
 
-func generateRegularExpressions() *Regexes {
-	r := Regexes{}
-
-	r.Filename = regexp.MustCompile(`(.+)([0-9]{3})(\..+)`)
-	r.Alphanumeric = regexp.MustCompile(`^[a-zA-Z0-9]*$`)
-
-	return &r
-}
-
 func ServePage(args []string) error {
 	fmt.Printf("roulette v%v\n\n", Version)
 
@@ -419,13 +411,16 @@ func ServePage(args []string) error {
 		return err
 	}
 
-	regexes := generateRegularExpressions()
+	regexes := &Regexes{
+		Filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
+		Alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
+	}
 
 	rand.Seed(time.Now().UnixNano())
 
-	fileCache := []string{}
+	fileCache := &[]string{}
 
-	http.Handle("/", serveHtmlHandler(paths, regexes, &fileCache))
+	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
