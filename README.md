@@ -12,7 +12,9 @@ Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp
 
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 
-Builds available [here](https://cdn.seedno.de/builds/roulette).
+Static binary builds available [here](https://cdn.seedno.de/builds/roulette).
+
+Docker image of latest version: `oci.seedno.de/seednode/roulette:latest`.
 
 ## Filtering
 
