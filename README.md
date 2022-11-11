@@ -10,6 +10,8 @@ Browser history is preserved, so you can always go back to any previously displa
 
 Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp`.
 
+Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
+
 Builds available [here](https://cdn.seedno.de/builds/roulette).
 
 ## Filtering
