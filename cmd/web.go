@@ -39,7 +39,7 @@ type Filters struct {
 }
 
 func (f *Filters) IsEmpty() bool {
-	return !(f.HasIncludes() && f.HasExcludes())
+	return !(f.HasIncludes() || f.HasExcludes())
 }
 
 func (f *Filters) HasIncludes() bool {
