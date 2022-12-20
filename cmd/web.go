@@ -294,8 +294,8 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 
 	if Verbose {
 		remoteAddr := ""
-		cfIP := w.Header().Get("Cf-Connecting-Ip")
-		xRealIp := w.Header().Get("X-Real-Ip")
+		cfIP := r.Header.Get("Cf-Connecting-Ip")
+		xRealIp := r.Header.Get("X-Real-Ip")
 		if cfIP != "" {
 			remoteAddr = cfIP
 		} else if xRealIp != "" {
