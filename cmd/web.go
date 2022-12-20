@@ -293,11 +293,22 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	w.Write(buf)
 
 	if Verbose {
+		remoteAddr := ""
+		cfIP := w.Header().Get("Cf-Connecting-Ip")
+		xRealIp := w.Header().Get("X-Real-Ip")
+		if cfIP != "" {
+			remoteAddr = cfIP
+		} else if xRealIp != "" {
+			remoteAddr = xRealIp
+		} else {
+			remoteAddr = r.RemoteAddr
+		}
+
 		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
 			startTime.Format(LogDate),
 			filePath,
 			humanReadableSize(len(buf)),
-			r.RemoteAddr,
+			remoteAddr,
 			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
