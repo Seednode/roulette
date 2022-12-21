@@ -206,6 +206,28 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
+func getRealIp(r *http.Request) string {
+	remoteAddr := strings.SplitAfter(r.RemoteAddr, ":")
+
+	if len(remoteAddr) <= 0 {
+		return r.RemoteAddr
+	}
+
+	remotePort := remoteAddr[len(remoteAddr)-1]
+
+	cfIP := r.Header.Get("Cf-Connecting-Ip")
+	xRealIp := r.Header.Get("X-Real-Ip")
+
+	switch {
+	case cfIP != "":
+		return cfIP + ":" + remotePort
+	case xRealIp != "":
+		return xRealIp + ":" + remotePort
+	default:
+		return r.RemoteAddr
+	}
+}
+
 func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters) error {
 	fileName := filepath.Base(filePath)
 
@@ -293,22 +315,11 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	w.Write(buf)
 
 	if Verbose {
-		remoteAddr := ""
-		cfIP := r.Header.Get("Cf-Connecting-Ip")
-		xRealIp := r.Header.Get("X-Real-Ip")
-		if cfIP != "" {
-			remoteAddr = cfIP
-		} else if xRealIp != "" {
-			remoteAddr = xRealIp
-		} else {
-			remoteAddr = r.RemoteAddr
-		}
-
 		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
 			startTime.Format(LogDate),
 			filePath,
 			humanReadableSize(len(buf)),
-			remoteAddr,
+			getRealIp(r),
 			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
