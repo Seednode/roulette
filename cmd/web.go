@@ -209,7 +209,7 @@ func refererToUri(referer string) string {
 func getRealIp(r *http.Request) string {
 	remoteAddr := strings.SplitAfter(r.RemoteAddr, ":")
 
-	if len(remoteAddr) <= 0 {
+	if len(remoteAddr) < 1 {
 		return r.RemoteAddr
 	}
 
