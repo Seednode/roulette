@@ -59,14 +59,6 @@ func (f *Filters) GetExcludes() string {
 	return strings.Join(f.Excludes, ",")
 }
 
-func generateCache(args []string, fileCache *[]string) error {
-	filters := &Filters{}
-	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
-	_, err := pickFile(args, filters, "", fileCache)
-
-	return err
-}
-
 func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
@@ -335,6 +327,28 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	return nil
 }
 
+func generateCache(args []string, fileCache *[]string) error {
+	filters := &Filters{}
+
+	fileCache = &[]string{}
+
+	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
+	_, err := pickFile(args, filters, "", fileCache)
+
+	return err
+}
+
+func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if Cache {
+			err := generateCache(args, fileCache)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}
+	}
+}
+
 func serveStaticFileHandler(paths []string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := serveStaticFile(w, r, paths)
@@ -459,6 +473,7 @@ func ServePage(args []string) error {
 	}
 
 	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
+	http.Handle("/clear_cache", serveCacheClearHandler(args, fileCache))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
 	http.HandleFunc("/favicon.ico", doNothing)
 

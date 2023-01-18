@@ -64,10 +64,20 @@ This can be used to generate a sort of slideshow of images.
 
 Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
 
+## Caching
+
+If the `-c|--cache` flag is passed, the contents of all specified paths will be cached on start.
+
+This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
+
+If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
+
+The cache can be regenerated any time by accessing the `/clear_cache` endpoint.
+
 ## Usage output
 ```
 Usage:
-  roulette <path> [path2]... [flags]
+  roulette <path> [path]... [flags]
   roulette [command]
 
 Available Commands:
