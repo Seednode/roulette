@@ -30,7 +30,7 @@ You can also provide a comma-delimited string of alphanumeric patterns to exclud
 
 Filenames matching any of these patterns will not be served.
 
-You can also combine these two parameters, with exclusions take priority over inclusions.
+You can also combine these two parameters, with exclusions taking priority over inclusions.
 
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
