@@ -482,7 +482,7 @@ func prepareDirectories(files *Files, sort string) []string {
 func pickFile(args []string, filters *Filters, sort string, fileCache *[]string) (string, error) {
 	var fileList []string
 
-	if Cache && len(*fileCache) != 0 {
+	if Cache && filters.IsEmpty() && len(*fileCache) != 0 {
 		fileList = *fileCache
 	} else {
 		files := &Files{

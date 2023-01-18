@@ -76,8 +76,8 @@ Available Commands:
   version     Print version
 
 Flags:
-  -c, --cache         only scan directories once, at startup (incompatible with --filter)
-  -f, --filter        enable filtering via query parameters (incompatible with --cache)
+  -c, --cache         only scan directories once, at startup (or when filters are applied)
+  -f, --filter        enable filtering via query parameters
   -h, --help          help for roulette
   -p, --port uint16   port to listen on (default 8080)
   -r, --recursive     recurse into subdirectories

@@ -52,9 +52,8 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "only scan directories once, at startup (incompatible with --filter)")
-	rootCmd.Flags().BoolVarP(&Filter, "filter", "f", false, "enable filtering via query parameters (incompatible with --cache)")
-	rootCmd.MarkFlagsMutuallyExclusive("cache", "filter")
+	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "only scan directories once, at startup (or when filters are applied)")
+	rootCmd.Flags().BoolVarP(&Filter, "filter", "f", false, "enable filtering via query parameters")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().BoolVarP(&Sort, "sort", "s", false, "enable sorting via query parameters")
