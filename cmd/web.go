@@ -59,6 +59,14 @@ func (f *Filters) GetExcludes() string {
 	return strings.Join(f.Excludes, ",")
 }
 
+func generateCache(args []string, fileCache *[]string) error {
+	filters := &Filters{}
+	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
+	_, err := pickFile(args, filters, "", fileCache)
+
+	return err
+}
+
 func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
@@ -442,6 +450,13 @@ func ServePage(args []string) error {
 	rand.Seed(time.Now().UnixNano())
 
 	fileCache := &[]string{}
+
+	if Cache {
+		err := generateCache(args, fileCache)
+		if err != nil {
+			return err
+		}
+	}
 
 	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
