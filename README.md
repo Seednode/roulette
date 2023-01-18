@@ -58,9 +58,11 @@ Note: These patterns require sequentially-numbered files matching the following 
 
 ## Refresh
 
-If a non-zero `refresh=<time in seconds>` query parameter is provided, the page will reload after that interval.
+If a non-zero `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
 
 This can be used to generate a sort of slideshow of images.
+
+Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
 
 ## Usage output
 ```

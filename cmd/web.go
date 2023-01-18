@@ -31,6 +31,7 @@ const (
 type Regexes struct {
 	Alphanumeric *regexp.Regexp
 	Filename     *regexp.Regexp
+	Units        *regexp.Regexp
 }
 
 type Filters struct {
@@ -86,16 +87,21 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func getRefreshInterval(r *http.Request) string {
+func getRefreshInterval(r *http.Request, regexes *Regexes) (int64, string) {
 	refreshInterval := r.URL.Query().Get("refresh")
 
-	num, err := strconv.Atoi(refreshInterval)
-
-	if err != nil || num < 0 {
-		refreshInterval = "0"
+	if !regexes.Units.MatchString(refreshInterval) {
+		return 0, "0ms"
 	}
 
-	return refreshInterval
+	duration, err := time.ParseDuration(refreshInterval)
+	if err != nil {
+		return 0, "0ms"
+	}
+
+	durationInMs := duration.Milliseconds()
+
+	return durationInMs, refreshInterval
 }
 
 func getSortOrder(r *http.Request) string {
@@ -228,14 +234,14 @@ func getRealIp(r *http.Request) string {
 	}
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters, regexes *Regexes) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
 
 	sortOrder := getSortOrder(r)
 
-	refreshInterval := getRefreshInterval(r)
+	refreshTimer, refreshInterval := getRefreshInterval(r, regexes)
 
 	queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
@@ -250,13 +256,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 		dimensions.Width,
 		dimensions.Height))
 	htmlBody.WriteString(`</head><body>`)
-	if refreshInterval != "0" {
-		r, err := strconv.Atoi(refreshInterval)
-		if err != nil {
-			return err
-		}
-		refreshTimer := strconv.Itoa(r * 1000)
-
+	if refreshInterval != "0ms" {
 		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%v';}, %v);};</script>",
 			queryParams,
 			refreshTimer))
@@ -350,7 +350,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 
 		sortOrder := getSortOrder(r)
 
-		refreshInterval := getRefreshInterval(r)
+		_, refreshInterval := getRefreshInterval(r, regexes)
 
 		if r.URL.Path == "/" {
 			var filePath string
@@ -415,7 +415,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 				log.Fatal(err)
 			}
 
-			err = serveHtml(w, r, filePath, dimensions, filters)
+			err = serveHtml(w, r, filePath, dimensions, filters, regexes)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -436,6 +436,7 @@ func ServePage(args []string) error {
 	regexes := &Regexes{
 		Filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		Alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
+		Units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
 	}
 
 	rand.Seed(time.Now().UnixNano())
