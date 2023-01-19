@@ -66,7 +66,7 @@ Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
 
 ## Caching
 
-If the `-c|--cache` flag is passed, the contents of all specified paths will be cached on start.
+If the `-c|--cache` flag is passed, the indices of all specified paths will be cached on start.
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
