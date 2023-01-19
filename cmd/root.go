@@ -5,7 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"fmt"
+	"log"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -25,6 +25,7 @@ type Concurrency struct {
 }
 
 var Cache bool
+var Debug bool
 var Filter bool
 var Port uint16
 var Recursive bool
@@ -38,8 +39,7 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		err := ServePage(args)
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			log.Fatal(err)
 		}
 	},
 }
@@ -53,6 +53,7 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "only scan directories once, at startup (or when filters are applied)")
+	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "store list of files served and number of times they were served")
 	rootCmd.Flags().BoolVarP(&Filter, "filter", "f", false, "enable filtering via query parameters")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")

@@ -5,6 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
@@ -43,37 +44,75 @@ type Files struct {
 	List  map[string][]string
 }
 
-type Stats struct {
+type ScanStats struct {
 	FilesMatched       uint64
 	FilesSkipped       uint64
 	DirectoriesMatched uint64
 }
 
-func (s *Stats) GetFilesTotal() uint64 {
+type TimesServed struct {
+	File  string
+	Count uint64
+}
+
+type ServeStats struct {
+	ImagesServed uint64
+	ImageList    []string
+	ImageCount   map[string]uint64
+}
+
+func (s *ServeStats) GetFilesTotal() uint64 {
+	return atomic.LoadUint64(&s.ImagesServed)
+}
+
+func (s *ServeStats) IncrementCounter(image string) {
+	s.ImageCount[image] += 1
+
+	if !contains(s.ImageList, image) {
+		s.ImageList = append(s.ImageList, image)
+	}
+}
+
+func (s *ServeStats) ListImages() ([]byte, error) {
+	a := []TimesServed{}
+
+	for _, image := range s.ImageList {
+		a = append(a, TimesServed{image, s.ImageCount[image]})
+	}
+
+	r, err := json.Marshal(a)
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return r, nil
+}
+
+func (s *ScanStats) GetFilesTotal() uint64 {
 	return atomic.LoadUint64(&s.FilesMatched) + atomic.LoadUint64(&s.FilesSkipped)
 }
 
-func (s *Stats) IncrementFilesMatched() {
+func (s *ScanStats) IncrementFilesMatched() {
 	atomic.AddUint64(&s.FilesMatched, 1)
 }
 
-func (s *Stats) GetFilesMatched() uint64 {
+func (s *ScanStats) GetFilesMatched() uint64 {
 	return atomic.LoadUint64(&s.FilesMatched)
 }
 
-func (s *Stats) IncrementFilesSkipped() {
+func (s *ScanStats) IncrementFilesSkipped() {
 	atomic.AddUint64(&s.FilesSkipped, 1)
 }
 
-func (s *Stats) GetFilesSkipped() uint64 {
+func (s *ScanStats) GetFilesSkipped() uint64 {
 	return atomic.LoadUint64(&s.FilesSkipped)
 }
 
-func (s *Stats) IncrementDirectoriesMatched() {
+func (s *ScanStats) IncrementDirectoriesMatched() {
 	atomic.AddUint64(&s.DirectoriesMatched, 1)
 }
 
-func (s *Stats) GetDirectoriesMatched() uint64 {
+func (s *ScanStats) GetDirectoriesMatched() uint64 {
 	return atomic.LoadUint64(&s.DirectoriesMatched)
 }
 
@@ -89,6 +128,15 @@ func (p *Path) Increment() {
 
 func (p *Path) Decrement() {
 	p.Number = p.Number - 1
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
 
 func humanReadableSize(bytes int) string {
@@ -138,7 +186,7 @@ func preparePath(path string) string {
 	return path
 }
 
-func appendPath(directory, path string, files *Files, stats *Stats) error {
+func appendPath(directory, path string, files *Files, stats *ScanStats) error {
 	// If caching, only check image types once, during the initial scan, to speed up future pickFile() calls
 	if Cache {
 		image, err := isImage(path)
@@ -160,7 +208,7 @@ func appendPath(directory, path string, files *Files, stats *Stats) error {
 	return nil
 }
 
-func appendPaths(path string, files *Files, filters *Filters, stats *Stats) error {
+func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) error {
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -372,7 +420,7 @@ func isImage(path string) (bool, error) {
 	return filetype.IsImage(head), nil
 }
 
-func getFiles(path string, files *Files, filters *Filters, stats *Stats, concurrency *Concurrency) error {
+func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
 	var wg sync.WaitGroup
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -414,7 +462,7 @@ func getFiles(path string, files *Files, filters *Filters, stats *Stats, concurr
 	return nil
 }
 
-func getFileList(paths []string, files *Files, filters *Filters, stats *Stats, concurrency *Concurrency) {
+func getFileList(paths []string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) {
 	var wg sync.WaitGroup
 
 	for i := 0; i < len(paths); i++ {
@@ -489,7 +537,7 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 			List: make(map[string][]string),
 		}
 
-		stats := &Stats{
+		stats := &ScanStats{
 			FilesMatched:       0,
 			FilesSkipped:       0,
 			DirectoriesMatched: 0,

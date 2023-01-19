@@ -277,7 +277,7 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 	return nil
 }
 
-func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) error {
+func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, stats *ServeStats) error {
 	prefixedFilePath, err := stripQueryParams(r.URL.Path)
 	if err != nil {
 		return err
@@ -306,6 +306,8 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string) err
 	}
 
 	startTime := time.Now()
+
+	stats.IncrementCounter(filePath)
 
 	buf, err := os.ReadFile(filePath)
 	if err != nil {
@@ -353,9 +355,34 @@ func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc
 	}
 }
 
-func serveStaticFileHandler(paths []string) http.HandlerFunc {
+func serveStats(args []string, fileCache *[]string) error {
+	filters := &Filters{}
+
+	fileCache = &[]string{}
+
+	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
+	_, err := pickFile(args, filters, "", fileCache)
+
+	return err
+}
+
+func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := serveStaticFile(w, r, paths)
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		response, err := stats.ListImages()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		w.Write([]byte(response))
+	}
+}
+
+func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		err := serveStaticFile(w, r, paths, stats)
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -476,9 +503,18 @@ func ServePage(args []string) error {
 		}
 	}
 
+	stats := &ServeStats{
+		ImagesServed: 0,
+		ImageList:    []string{},
+		ImageCount:   make(map[string]uint64),
+	}
+
 	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
 	http.Handle("/clear_cache", serveCacheClearHandler(args, fileCache))
-	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths)))
+
+	http.Handle("/stats", serveStatsHandler(args, stats))
+
+	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)

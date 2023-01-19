@@ -74,10 +74,16 @@ If any `include=`/`exclude=` filters are specified in a given request, the cache
 
 The cache can be regenerated any time by accessing the `/clear_cache` endpoint.
 
+## Debug
+
+If the `-d|--debug` flag is passed, an additional endpoint, `/stats`, is registered.
+
+When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served.
+
 ## Usage output
 ```
 Usage:
-  roulette <path> [path]... [flags]
+  roulette <path> [path2]... [flags]
   roulette [command]
 
 Available Commands:
@@ -87,6 +93,7 @@ Available Commands:
 
 Flags:
   -c, --cache         only scan directories once, at startup (or when filters are applied)
+  -d, --debug         store list of files served and number of times they were served
   -f, --filter        enable filtering via query parameters
   -h, --help          help for roulette
   -p, --port uint16   port to listen on (default 8080)
