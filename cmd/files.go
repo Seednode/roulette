@@ -51,8 +51,8 @@ type ScanStats struct {
 }
 
 type TimesServed struct {
-	File  string
-	Count uint64
+	file  string
+	count uint64
 }
 
 type ServeStats struct {
