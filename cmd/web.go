@@ -345,6 +345,10 @@ func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc
 			if err != nil {
 				fmt.Println(err)
 			}
+
+			w.WriteHeader(http.StatusOK)
+			w.Header().Set("Content-Type", "text/plain")
+			w.Write([]byte("Ok"))
 		}
 	}
 }
