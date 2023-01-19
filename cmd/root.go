@@ -33,7 +33,7 @@ var Sort bool
 var Verbose bool
 
 var rootCmd = &cobra.Command{
-	Use:   "roulette <path> [path2]...",
+	Use:   "roulette <path> [path]...",
 	Short: "Serves random images from the specified directories.",
 	Args:  cobra.MinimumNArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {

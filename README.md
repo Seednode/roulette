@@ -83,7 +83,7 @@ When accessed, this endpoint returns a JSON document listing every file served, 
 ## Usage output
 ```
 Usage:
-  roulette <path> [path2]... [flags]
+  roulette <path> [path]... [flags]
   roulette [command]
 
 Available Commands:
