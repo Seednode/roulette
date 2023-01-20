@@ -12,6 +12,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"sort"
 
 	"math/rand"
 	"os"
@@ -51,8 +52,8 @@ type ScanStats struct {
 }
 
 type TimesServed struct {
-	file  string
-	count uint64
+	File  string
+	Count uint64
 }
 
 type ServeStats struct {
@@ -66,6 +67,8 @@ func (s *ServeStats) GetFilesTotal() uint64 {
 }
 
 func (s *ServeStats) IncrementCounter(image string) {
+	s.ImagesServed += 1
+
 	s.ImageCount[image] += 1
 
 	if !contains(s.ImageList, image) {
@@ -76,11 +79,17 @@ func (s *ServeStats) IncrementCounter(image string) {
 func (s *ServeStats) ListImages() ([]byte, error) {
 	a := []TimesServed{}
 
+	sortedList := s.ImageList
+
+	sort.SliceStable(sortedList, func(p, q int) bool {
+		return sortedList[p] < sortedList[q]
+	})
+
 	for _, image := range s.ImageList {
 		a = append(a, TimesServed{image, s.ImageCount[image]})
 	}
 
-	r, err := json.Marshal(a)
+	r, err := json.MarshalIndent(a, "", "    ")
 	if err != nil {
 		return []byte{}, err
 	}

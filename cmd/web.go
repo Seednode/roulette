@@ -307,7 +307,9 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 	startTime := time.Now()
 
-	stats.IncrementCounter(filePath)
+	if Debug {
+		stats.IncrementCounter(filePath)
+	}
 
 	buf, err := os.ReadFile(filePath)
 	if err != nil {
@@ -342,16 +344,14 @@ func generateCache(args []string, fileCache *[]string) error {
 
 func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if Cache {
-			err := generateCache(args, fileCache)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			w.WriteHeader(http.StatusOK)
-			w.Header().Set("Content-Type", "text/plain")
-			w.Write([]byte("Ok"))
+		err := generateCache(args, fileCache)
+		if err != nil {
+			fmt.Println(err)
 		}
+
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write([]byte("Ok"))
 	}
 }
 
@@ -496,13 +496,6 @@ func ServePage(args []string) error {
 
 	fileCache := &[]string{}
 
-	if Cache {
-		err := generateCache(args, fileCache)
-		if err != nil {
-			return err
-		}
-	}
-
 	stats := &ServeStats{
 		ImagesServed: 0,
 		ImageList:    []string{},
@@ -510,12 +503,21 @@ func ServePage(args []string) error {
 	}
 
 	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
-	http.Handle("/clear_cache", serveCacheClearHandler(args, fileCache))
-
-	http.Handle("/stats", serveStatsHandler(args, stats))
-
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
+
+	if Cache {
+		err := generateCache(args, fileCache)
+		if err != nil {
+			return err
+		}
+
+		http.Handle("/clear_cache", serveCacheClearHandler(args, fileCache))
+	}
+
+	if Debug {
+		http.Handle("/stats", serveStatsHandler(args, stats))
+	}
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)
 	if err != nil {
