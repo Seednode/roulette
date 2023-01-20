@@ -72,7 +72,7 @@ This will slightly increase the delay before the application begins responding t
 
 If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
 
-The cache can be regenerated any time by accessing the `/clear_cache` endpoint.
+The cache can be regenerated at any time by accessing the `/clear_cache` endpoint.
 
 ## Debug
 
