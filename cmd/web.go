@@ -486,7 +486,7 @@ func ServePage(args []string) error {
 			return err
 		}
 
-		http.Handle("/clear_cache", serveCacheClearHandler(args, index))
+		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
 	}
 
 	stats := &ServeStats{
@@ -502,7 +502,7 @@ func ServePage(args []string) error {
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	if Debug {
-		http.Handle("/stats", serveStatsHandler(args, stats))
+		http.Handle("/_/stats", serveStatsHandler(args, stats))
 	}
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)

@@ -40,6 +40,20 @@ type Index struct {
 	List  []string
 }
 
+func (i *Index) Get() []string {
+	i.Mutex.RLock()
+	val := i.List
+	i.Mutex.RUnlock()
+
+	return val
+}
+
+func (i *Index) Set(val []string) {
+	i.Mutex.Lock()
+	i.List = val
+	i.Mutex.Unlock()
+}
+
 func (i *Index) GenerateCache(args []string) error {
 	filters := &Filters{}
 
@@ -51,6 +65,14 @@ func (i *Index) GenerateCache(args []string) error {
 	_, err := pickFile(args, filters, "", i)
 
 	return err
+}
+
+func (i *Index) IsEmpty() bool {
+	i.Mutex.RLock()
+	length := len(i.List)
+	i.Mutex.RUnlock()
+
+	return length == 0
 }
 
 type Dimensions struct {
@@ -570,8 +592,8 @@ func prepareDirectories(files *Files, sort string) []string {
 func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
 	var fileList []string
 
-	if Cache && filters.IsEmpty() && len(index.List) != 0 {
-		fileList = index.List
+	if Cache && filters.IsEmpty() && !index.IsEmpty() {
+		fileList = index.Get()
 	} else {
 		files := &Files{
 			List: make(map[string][]string),
@@ -605,9 +627,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		fileList = prepareDirectories(files, sort)
 
 		if Cache {
-			index.Mutex.Lock()
-			index.List = append(index.List, fileList...)
-			index.Mutex.Unlock()
+			index.Set(fileList)
 		}
 
 	}
