@@ -35,6 +35,24 @@ var (
 	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
+type Index struct {
+	Mutex sync.RWMutex
+	List  []string
+}
+
+func (i *Index) GenerateCache(args []string) error {
+	filters := &Filters{}
+
+	i.Mutex.Lock()
+	i.List = []string{}
+	i.Mutex.Unlock()
+
+	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
+	_, err := pickFile(args, filters, "", i)
+
+	return err
+}
+
 type Dimensions struct {
 	Width  int
 	Height int
@@ -49,63 +67,6 @@ type ScanStats struct {
 	FilesMatched       uint64
 	FilesSkipped       uint64
 	DirectoriesMatched uint64
-}
-
-type TimesServed struct {
-	File       string
-	Size       string
-	Served     uint64
-	Timestamps []string
-}
-
-type ServeStats struct {
-	Served     uint64
-	List       []string
-	Count      map[string]uint64
-	FileSize   map[string]string
-	Timestamps map[string][]string
-}
-
-func (s *ServeStats) GetFilesTotal() uint64 {
-	return atomic.LoadUint64(&s.Served)
-}
-
-func (s *ServeStats) IncrementCounter(image string, timestamp time.Time, filesize string) {
-	s.Served += 1
-
-	s.Count[image] += 1
-
-	s.Timestamps[image] = append(s.Timestamps[image], timestamp.Format(LogDate))
-
-	_, exists := s.FileSize[image]
-	if !exists {
-		s.FileSize[image] = filesize
-	}
-
-	if !contains(s.List, image) {
-		s.List = append(s.List, image)
-	}
-}
-
-func (s *ServeStats) ListImages() ([]byte, error) {
-	a := []TimesServed{}
-
-	sortedList := s.List
-
-	sort.SliceStable(sortedList, func(p, q int) bool {
-		return sortedList[p] < sortedList[q]
-	})
-
-	for _, image := range s.List {
-		a = append(a, TimesServed{image, s.FileSize[image], s.Count[image], s.Timestamps[image]})
-	}
-
-	r, err := json.MarshalIndent(a, "", "    ")
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return r, nil
 }
 
 func (s *ScanStats) GetFilesTotal() uint64 {
@@ -134,6 +95,65 @@ func (s *ScanStats) IncrementDirectoriesMatched() {
 
 func (s *ScanStats) GetDirectoriesMatched() uint64 {
 	return atomic.LoadUint64(&s.DirectoriesMatched)
+}
+
+type ServeStats struct {
+	Mutex sync.RWMutex
+	List  []string
+	Count map[string]uint64
+	Size  map[string]string
+	Times map[string][]string
+}
+
+type TimesServed struct {
+	File   string
+	Served uint64
+	Size   string
+	Times  []string
+}
+
+func (s *ServeStats) IncrementCounter(image string, timestamp time.Time, filesize string) {
+	s.Mutex.Lock()
+
+	s.Count[image]++
+
+	s.Times[image] = append(s.Times[image], timestamp.Format(LogDate))
+
+	_, exists := s.Size[image]
+	if !exists {
+		s.Size[image] = filesize
+	}
+
+	if !contains(s.List, image) {
+		s.List = append(s.List, image)
+	}
+
+	s.Mutex.Unlock()
+}
+
+func (s *ServeStats) ListImages() ([]byte, error) {
+	s.Mutex.RLock()
+
+	sortedList := s.List
+
+	sort.SliceStable(sortedList, func(p, q int) bool {
+		return sortedList[p] < sortedList[q]
+	})
+
+	a := []TimesServed{}
+
+	for _, image := range s.List {
+		a = append(a, TimesServed{image, s.Count[image], s.Size[image], s.Times[image]})
+	}
+
+	s.Mutex.RUnlock()
+
+	r, err := json.MarshalIndent(a, "", "    ")
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return r, nil
 }
 
 type Path struct {
@@ -279,8 +299,8 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	return nil
 }
 
-func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, fileCache *[]string) (string, error) {
-	filePath, err := pickFile(paths, filters, sortOrder, fileCache)
+func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, index *Index) (string, error) {
+	filePath, err := pickFile(paths, filters, sortOrder, index)
 	if err != nil {
 		return "", nil
 	}
@@ -547,11 +567,11 @@ func prepareDirectories(files *Files, sort string) []string {
 	return directories
 }
 
-func pickFile(args []string, filters *Filters, sort string, fileCache *[]string) (string, error) {
+func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
 	var fileList []string
 
-	if Cache && filters.IsEmpty() && len(*fileCache) != 0 {
-		fileList = *fileCache
+	if Cache && filters.IsEmpty() && len(index.List) != 0 {
+		fileList = index.List
 	} else {
 		files := &Files{
 			List: make(map[string][]string),
@@ -585,8 +605,11 @@ func pickFile(args []string, filters *Filters, sort string, fileCache *[]string)
 		fileList = prepareDirectories(files, sort)
 
 		if Cache {
-			*fileCache = append(*fileCache, fileList...)
+			index.Mutex.Lock()
+			index.List = append(index.List, fileList...)
+			index.Mutex.Unlock()
 		}
+
 	}
 
 	fileCount := len(fileList)

@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/yosssi/gohtml"
@@ -333,20 +334,9 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 	return nil
 }
 
-func generateCache(args []string, fileCache *[]string) error {
-	filters := &Filters{}
-
-	fileCache = &[]string{}
-
-	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
-	_, err := pickFile(args, filters, "", fileCache)
-
-	return err
-}
-
-func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc {
+func serveCacheClearHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := generateCache(args, fileCache)
+		err := index.GenerateCache(args)
 		if err != nil {
 			fmt.Println(err)
 		}
@@ -355,17 +345,6 @@ func serveCacheClearHandler(args []string, fileCache *[]string) http.HandlerFunc
 		w.Header().Set("Content-Type", "text/plain")
 		w.Write([]byte("Ok"))
 	}
-}
-
-func serveStats(args []string, fileCache *[]string) error {
-	filters := &Filters{}
-
-	fileCache = &[]string{}
-
-	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
-	_, err := pickFile(args, filters, "", fileCache)
-
-	return err
 }
 
 func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
@@ -391,7 +370,7 @@ func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc 
 	}
 }
 
-func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) http.HandlerFunc {
+func serveHtmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -419,7 +398,7 @@ func serveHtmlHandler(paths []string, regexes *Regexes, fileCache *[]string) htt
 			}
 
 			if filePath == "" {
-				filePath, err = getNewFile(paths, filters, sortOrder, regexes, fileCache)
+				filePath, err = getNewFile(paths, filters, sortOrder, regexes, index)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					notFound(w, r, filePath)
@@ -496,28 +475,31 @@ func ServePage(args []string) error {
 
 	rand.Seed(time.Now().UnixNano())
 
-	fileCache := &[]string{}
-
-	stats := &ServeStats{
-		Served:     0,
-		List:       []string{},
-		Count:      make(map[string]uint64),
-		FileSize:   make(map[string]string),
-		Timestamps: make(map[string][]string),
+	index := &Index{
+		Mutex: sync.RWMutex{},
+		List:  []string{},
 	}
 
-	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
-	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
-	http.HandleFunc("/favicon.ico", doNothing)
-
 	if Cache {
-		err := generateCache(args, fileCache)
+		err := index.GenerateCache(args)
 		if err != nil {
 			return err
 		}
 
-		http.Handle("/clear_cache", serveCacheClearHandler(args, fileCache))
+		http.Handle("/clear_cache", serveCacheClearHandler(args, index))
 	}
+
+	stats := &ServeStats{
+		Mutex: sync.RWMutex{},
+		List:  []string{},
+		Count: make(map[string]uint64),
+		Size:  make(map[string]string),
+		Times: make(map[string][]string),
+	}
+
+	http.Handle("/", serveHtmlHandler(paths, regexes, index))
+	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
+	http.HandleFunc("/favicon.ico", doNothing)
 
 	if Debug {
 		http.Handle("/stats", serveStatsHandler(args, stats))
