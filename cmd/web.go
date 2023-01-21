@@ -86,7 +86,6 @@ func (i *Index) GenerateCache(args []string) {
 	i.List = []string{}
 	i.Mutex.Unlock()
 
-	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
 	getFileList(args, &Filters{}, "", i)
 }
 
@@ -446,12 +445,23 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
+		startTime := time.Now()
+
 		response, err := stats.ListImages()
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		w.Write([]byte(response))
+		w.Write(response)
+
+		if Verbose {
+			fmt.Printf("%v | Served statistics page (%v) to %v in %v\n",
+				startTime.Format(LogDate),
+				humanReadableSize(len(response)),
+				getRealIp(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
 	}
 }
 
