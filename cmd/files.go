@@ -85,6 +85,12 @@ type Files struct {
 	List  map[string][]string
 }
 
+func (f *Files) Append(directory, path string) {
+	f.Mutex.Lock()
+	f.List[directory] = append(f.List[directory], path)
+	f.Mutex.Unlock()
+}
+
 type ScanStats struct {
 	FilesMatched       uint64
 	FilesSkipped       uint64
@@ -248,9 +254,9 @@ func preparePath(path string) string {
 	return path
 }
 
-func appendPath(directory, path string, files *Files, stats *ScanStats) error {
+func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
 	// If caching, only check image types once, during the initial scan, to speed up future pickFile() calls
-	if Cache {
+	if shouldCache {
 		image, err := isImage(path)
 		if err != nil {
 			return err
@@ -261,9 +267,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats) error {
 		}
 	}
 
-	files.Mutex.Lock()
-	files.List[directory] = append(files.List[directory], path)
-	files.Mutex.Unlock()
+	files.Append(directory, path)
 
 	stats.IncrementFilesMatched()
 
@@ -271,6 +275,8 @@ func appendPath(directory, path string, files *Files, stats *ScanStats) error {
 }
 
 func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) error {
+	shouldCache := Cache && filters.IsEmpty()
+
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -299,7 +305,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 				filename,
 				filters.Includes[i],
 			) {
-				err := appendPath(directory, path, files, stats)
+				err := appendPath(directory, path, files, stats, shouldCache)
 				if err != nil {
 					return err
 				}
@@ -313,7 +319,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 		return nil
 	}
 
-	err = appendPath(directory, path, files, stats)
+	err = appendPath(directory, path, files, stats, shouldCache)
 	if err != nil {
 		return err
 	}
@@ -524,8 +530,31 @@ func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func getFileList(paths []string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) {
+func getFileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
+	if Cache && filters.IsEmpty() && !index.IsEmpty() {
+		return index.Get(), true
+	}
+
+	var fileList []string
+
+	files := &Files{
+		List: make(map[string][]string),
+	}
+
+	stats := &ScanStats{
+		FilesMatched:       0,
+		FilesSkipped:       0,
+		DirectoriesMatched: 0,
+	}
+
+	concurrency := &Concurrency{
+		DirectoryScans: make(chan int, maxDirectoryScans),
+		FileScans:      make(chan int, maxFileScans),
+	}
+
 	var wg sync.WaitGroup
+
+	startTime := time.Now()
 
 	for i := 0; i < len(paths); i++ {
 		wg.Add(1)
@@ -545,6 +574,24 @@ func getFileList(paths []string, files *Files, filters *Filters, stats *ScanStat
 	}
 
 	wg.Wait()
+
+	fileList = prepareDirectories(files, sort)
+
+	if Verbose {
+		fmt.Printf("%v | Indexed %v/%v files across %v directories in %v\n",
+			time.Now().Format(LogDate),
+			stats.GetFilesMatched(),
+			stats.GetFilesTotal(),
+			stats.GetDirectoriesMatched(),
+			time.Since(startTime),
+		)
+	}
+
+	if Cache && filters.IsEmpty() {
+		index.Set(fileList)
+	}
+
+	return fileList, false
 }
 
 func cleanFilename(filename string) string {
@@ -590,47 +637,7 @@ func prepareDirectories(files *Files, sort string) []string {
 }
 
 func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
-	var fileList []string
-
-	if Cache && filters.IsEmpty() && !index.IsEmpty() {
-		fileList = index.Get()
-	} else {
-		files := &Files{
-			List: make(map[string][]string),
-		}
-
-		stats := &ScanStats{
-			FilesMatched:       0,
-			FilesSkipped:       0,
-			DirectoriesMatched: 0,
-		}
-
-		concurrency := &Concurrency{
-			DirectoryScans: make(chan int, maxDirectoryScans),
-			FileScans:      make(chan int, maxFileScans),
-		}
-
-		startTime := time.Now()
-		getFileList(args, files, filters, stats, concurrency)
-		runTime := time.Since(startTime)
-
-		if Verbose {
-			fmt.Printf("%v | Scanned %v/%v files across %v directories in %v\n",
-				time.Now().Format(LogDate),
-				stats.GetFilesMatched(),
-				stats.GetFilesTotal(),
-				stats.GetDirectoriesMatched(),
-				runTime,
-			)
-		}
-
-		fileList = prepareDirectories(files, sort)
-
-		if Cache {
-			index.Set(fileList)
-		}
-
-	}
+	fileList, fromCache := getFileList(args, filters, sort, index)
 
 	fileCount := len(fileList)
 	if fileCount == 0 {
@@ -648,7 +655,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 
 		filePath := fileList[r]
 
-		if !Cache {
+		if !fromCache {
 			isImage, err := isImage(filePath)
 			if err != nil {
 				return "", err
