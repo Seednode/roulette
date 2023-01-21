@@ -81,17 +81,13 @@ func (i *Index) Set(val []string) {
 	i.Mutex.Unlock()
 }
 
-func (i *Index) GenerateCache(args []string) error {
-	filters := &Filters{}
-
+func (i *Index) GenerateCache(args []string) {
 	i.Mutex.Lock()
 	i.List = []string{}
 	i.Mutex.Unlock()
 
 	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
-	_, err := pickFile(args, filters, "", i)
-
-	return err
+	getFileList(args, &Filters{}, "", i)
 }
 
 func (i *Index) IsEmpty() bool {
@@ -437,10 +433,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 func serveCacheClearHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := index.GenerateCache(args)
-		if err != nil {
-			fmt.Println(err)
-		}
+		index.GenerateCache(args)
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
@@ -582,10 +575,7 @@ func ServePage(args []string) error {
 	}
 
 	if Cache {
-		err := index.GenerateCache(args)
-		if err != nil {
-			return err
-		}
+		index.GenerateCache(args)
 
 		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
 	}
