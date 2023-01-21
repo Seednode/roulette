@@ -52,41 +52,52 @@ type ScanStats struct {
 }
 
 type TimesServed struct {
-	File  string
-	Count uint64
+	File       string
+	Size       string
+	Served     uint64
+	Timestamps []string
 }
 
 type ServeStats struct {
-	ImagesServed uint64
-	ImageList    []string
-	ImageCount   map[string]uint64
+	Served     uint64
+	List       []string
+	Count      map[string]uint64
+	FileSize   map[string]string
+	Timestamps map[string][]string
 }
 
 func (s *ServeStats) GetFilesTotal() uint64 {
-	return atomic.LoadUint64(&s.ImagesServed)
+	return atomic.LoadUint64(&s.Served)
 }
 
-func (s *ServeStats) IncrementCounter(image string) {
-	s.ImagesServed += 1
+func (s *ServeStats) IncrementCounter(image string, timestamp time.Time, filesize string) {
+	s.Served += 1
 
-	s.ImageCount[image] += 1
+	s.Count[image] += 1
 
-	if !contains(s.ImageList, image) {
-		s.ImageList = append(s.ImageList, image)
+	s.Timestamps[image] = append(s.Timestamps[image], timestamp.Format(LogDate))
+
+	_, exists := s.FileSize[image]
+	if !exists {
+		s.FileSize[image] = filesize
+	}
+
+	if !contains(s.List, image) {
+		s.List = append(s.List, image)
 	}
 }
 
 func (s *ServeStats) ListImages() ([]byte, error) {
 	a := []TimesServed{}
 
-	sortedList := s.ImageList
+	sortedList := s.List
 
 	sort.SliceStable(sortedList, func(p, q int) bool {
 		return sortedList[p] < sortedList[q]
 	})
 
-	for _, image := range s.ImageList {
-		a = append(a, TimesServed{image, s.ImageCount[image]})
+	for _, image := range s.List {
+		a = append(a, TimesServed{image, s.FileSize[image], s.Count[image], s.Timestamps[image]})
 	}
 
 	r, err := json.MarshalIndent(a, "", "    ")

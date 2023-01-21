@@ -307,10 +307,6 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 	startTime := time.Now()
 
-	if Debug {
-		stats.IncrementCounter(filePath)
-	}
-
 	buf, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
@@ -318,14 +314,20 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 	w.Write(buf)
 
+	fileSize := humanReadableSize(len(buf))
+
 	if Verbose {
 		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
 			startTime.Format(LogDate),
 			filePath,
-			humanReadableSize(len(buf)),
+			fileSize,
 			getRealIp(r),
 			time.Since(startTime).Round(time.Microsecond),
 		)
+	}
+
+	if Debug {
+		stats.IncrementCounter(filePath, startTime, fileSize)
 	}
 
 	return nil
@@ -497,9 +499,11 @@ func ServePage(args []string) error {
 	fileCache := &[]string{}
 
 	stats := &ServeStats{
-		ImagesServed: 0,
-		ImageList:    []string{},
-		ImageCount:   make(map[string]uint64),
+		Served:     0,
+		List:       []string{},
+		Count:      make(map[string]uint64),
+		FileSize:   make(map[string]string),
+		Timestamps: make(map[string][]string),
 	}
 
 	http.Handle("/", serveHtmlHandler(paths, regexes, fileCache))
