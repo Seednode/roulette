@@ -5,14 +5,12 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
-	"sort"
 
 	"math/rand"
 	"os"
@@ -34,46 +32,6 @@ var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
 	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
-
-type Index struct {
-	Mutex sync.RWMutex
-	List  []string
-}
-
-func (i *Index) Get() []string {
-	i.Mutex.RLock()
-	val := i.List
-	i.Mutex.RUnlock()
-
-	return val
-}
-
-func (i *Index) Set(val []string) {
-	i.Mutex.Lock()
-	i.List = val
-	i.Mutex.Unlock()
-}
-
-func (i *Index) GenerateCache(args []string) error {
-	filters := &Filters{}
-
-	i.Mutex.Lock()
-	i.List = []string{}
-	i.Mutex.Unlock()
-
-	fmt.Printf("%v | Preparing image cache...\n", time.Now().Format(LogDate))
-	_, err := pickFile(args, filters, "", i)
-
-	return err
-}
-
-func (i *Index) IsEmpty() bool {
-	i.Mutex.RLock()
-	length := len(i.List)
-	i.Mutex.RUnlock()
-
-	return length == 0
-}
 
 type Dimensions struct {
 	Width  int
@@ -123,65 +81,6 @@ func (s *ScanStats) IncrementDirectoriesMatched() {
 
 func (s *ScanStats) GetDirectoriesMatched() uint64 {
 	return atomic.LoadUint64(&s.DirectoriesMatched)
-}
-
-type ServeStats struct {
-	Mutex sync.RWMutex
-	List  []string
-	Count map[string]uint64
-	Size  map[string]string
-	Times map[string][]string
-}
-
-type TimesServed struct {
-	File   string
-	Served uint64
-	Size   string
-	Times  []string
-}
-
-func (s *ServeStats) IncrementCounter(image string, timestamp time.Time, filesize string) {
-	s.Mutex.Lock()
-
-	s.Count[image]++
-
-	s.Times[image] = append(s.Times[image], timestamp.Format(LogDate))
-
-	_, exists := s.Size[image]
-	if !exists {
-		s.Size[image] = filesize
-	}
-
-	if !contains(s.List, image) {
-		s.List = append(s.List, image)
-	}
-
-	s.Mutex.Unlock()
-}
-
-func (s *ServeStats) ListImages() ([]byte, error) {
-	s.Mutex.RLock()
-
-	sortedList := s.List
-
-	sort.SliceStable(sortedList, func(p, q int) bool {
-		return sortedList[p] < sortedList[q]
-	})
-
-	a := []TimesServed{}
-
-	for _, image := range s.List {
-		a = append(a, TimesServed{image, s.Count[image], s.Size[image], s.Times[image]})
-	}
-
-	s.Mutex.RUnlock()
-
-	r, err := json.MarshalIndent(a, "", "    ")
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return r, nil
 }
 
 type Path struct {
@@ -538,7 +437,8 @@ func getFileList(paths []string, filters *Filters, sort string, index *Index) ([
 	var fileList []string
 
 	files := &Files{
-		List: make(map[string][]string),
+		Mutex: sync.Mutex{},
+		List:  make(map[string][]string),
 	}
 
 	stats := &ScanStats{
