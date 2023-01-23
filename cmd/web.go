@@ -430,7 +430,7 @@ func staticFile(w http.ResponseWriter, r *http.Request, paths []string, stats *S
 	return nil
 }
 
-func cacheClearHandler(args []string, index *Index) http.HandlerFunc {
+func cacheHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		index.generateCache(args)
 
@@ -585,7 +585,7 @@ func ServePage(args []string) error {
 	if Cache {
 		index.generateCache(args)
 
-		http.Handle("/_/clear_cache", cacheClearHandler(args, index))
+		http.Handle("/_/clear_cache", cacheHandler(args, index))
 	}
 
 	stats := &ServeStats{
