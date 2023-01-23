@@ -29,72 +29,72 @@ import (
 )
 
 var (
-	ErrNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
+	errNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
 	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
 type Dimensions struct {
-	Width  int
-	Height int
+	width  int
+	height int
 }
 
 type Files struct {
-	Mutex sync.Mutex
-	List  map[string][]string
+	mutex sync.Mutex
+	list  map[string][]string
 }
 
-func (f *Files) Append(directory, path string) {
-	f.Mutex.Lock()
-	f.List[directory] = append(f.List[directory], path)
-	f.Mutex.Unlock()
+func (f *Files) append(directory, path string) {
+	f.mutex.Lock()
+	f.list[directory] = append(f.list[directory], path)
+	f.mutex.Unlock()
 }
 
 type ScanStats struct {
-	FilesMatched       uint64
-	FilesSkipped       uint64
-	DirectoriesMatched uint64
+	filesMatched       uint64
+	filesSkipped       uint64
+	directoriesMatched uint64
 }
 
-func (s *ScanStats) GetFilesTotal() uint64 {
-	return atomic.LoadUint64(&s.FilesMatched) + atomic.LoadUint64(&s.FilesSkipped)
+func (s *ScanStats) FilesTotal() uint64 {
+	return atomic.LoadUint64(&s.filesMatched) + atomic.LoadUint64(&s.filesSkipped)
 }
 
-func (s *ScanStats) IncrementFilesMatched() {
-	atomic.AddUint64(&s.FilesMatched, 1)
+func (s *ScanStats) incrementFilesMatched() {
+	atomic.AddUint64(&s.filesMatched, 1)
 }
 
-func (s *ScanStats) GetFilesMatched() uint64 {
-	return atomic.LoadUint64(&s.FilesMatched)
+func (s *ScanStats) FilesMatched() uint64 {
+	return atomic.LoadUint64(&s.filesMatched)
 }
 
-func (s *ScanStats) IncrementFilesSkipped() {
-	atomic.AddUint64(&s.FilesSkipped, 1)
+func (s *ScanStats) incrementFilesSkipped() {
+	atomic.AddUint64(&s.filesSkipped, 1)
 }
 
-func (s *ScanStats) GetFilesSkipped() uint64 {
-	return atomic.LoadUint64(&s.FilesSkipped)
+func (s *ScanStats) FilesSkipped() uint64 {
+	return atomic.LoadUint64(&s.filesSkipped)
 }
 
-func (s *ScanStats) IncrementDirectoriesMatched() {
-	atomic.AddUint64(&s.DirectoriesMatched, 1)
+func (s *ScanStats) incrementDirectoriesMatched() {
+	atomic.AddUint64(&s.directoriesMatched, 1)
 }
 
-func (s *ScanStats) GetDirectoriesMatched() uint64 {
-	return atomic.LoadUint64(&s.DirectoriesMatched)
+func (s *ScanStats) DirectoriesMatched() uint64 {
+	return atomic.LoadUint64(&s.directoriesMatched)
 }
 
 type Path struct {
-	Base      string
-	Number    int
-	Extension string
+	base      string
+	number    int
+	extension string
 }
 
-func (p *Path) Increment() {
-	p.Number = p.Number + 1
+func (p *Path) increment() {
+	p.number = p.number + 1
 }
 
-func (p *Path) Decrement() {
-	p.Number = p.Number - 1
+func (p *Path) decrement() {
+	p.number = p.number - 1
 }
 
 func contains(s []string, e string) bool {
@@ -124,7 +124,7 @@ func humanReadableSize(bytes int) string {
 		float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-func getImageDimensions(path string) (*Dimensions, error) {
+func imageDimensions(path string) (*Dimensions, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -137,12 +137,12 @@ func getImageDimensions(path string) (*Dimensions, error) {
 	myImage, _, err := image.DecodeConfig(file)
 	switch {
 	case errors.Is(err, image.ErrFormat):
-		return &Dimensions{Width: 0, Height: 0}, nil
+		return &Dimensions{width: 0, height: 0}, nil
 	case err != nil:
 		return &Dimensions{}, err
 	}
 
-	return &Dimensions{Width: myImage.Width, Height: myImage.Height}, nil
+	return &Dimensions{width: myImage.Width, height: myImage.Height}, nil
 }
 
 func preparePath(path string) string {
@@ -166,9 +166,9 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 		}
 	}
 
-	files.Append(directory, path)
+	files.append(directory, path)
 
-	stats.IncrementFilesMatched()
+	stats.incrementFilesMatched()
 
 	return nil
 }
@@ -186,12 +186,12 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	filename = strings.ToLower(filename)
 
 	if filters.HasExcludes() {
-		for i := 0; i < len(filters.Excludes); i++ {
+		for i := 0; i < len(filters.excludes); i++ {
 			if strings.Contains(
 				filename,
-				filters.Excludes[i],
+				filters.excludes[i],
 			) {
-				stats.IncrementFilesSkipped()
+				stats.incrementFilesSkipped()
 
 				return nil
 			}
@@ -199,10 +199,10 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	}
 
 	if filters.HasIncludes() {
-		for i := 0; i < len(filters.Includes); i++ {
+		for i := 0; i < len(filters.includes); i++ {
 			if strings.Contains(
 				filename,
-				filters.Includes[i],
+				filters.includes[i],
 			) {
 				err := appendPath(directory, path, files, stats, shouldCache)
 				if err != nil {
@@ -213,7 +213,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 			}
 		}
 
-		stats.IncrementFilesSkipped()
+		stats.incrementFilesSkipped()
 
 		return nil
 	}
@@ -226,7 +226,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	return nil
 }
 
-func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, index *Index) (string, error) {
+func newFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, index *Index) (string, error) {
 	filePath, err := pickFile(paths, filters, sortOrder, index)
 	if err != nil {
 		return "", nil
@@ -237,7 +237,7 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Reg
 		return "", err
 	}
 
-	path.Number = 1
+	path.number = 1
 
 	switch {
 	case sortOrder == "asc":
@@ -247,7 +247,7 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Reg
 		}
 	case sortOrder == "desc":
 		for {
-			path.Increment()
+			path.increment()
 
 			filePath, err = tryExtensions(path)
 			if err != nil {
@@ -255,7 +255,7 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Reg
 			}
 
 			if filePath == "" {
-				path.Decrement()
+				path.decrement()
 
 				filePath, err = tryExtensions(path)
 				if err != nil {
@@ -270,7 +270,7 @@ func getNewFile(paths []string, filters *Filters, sortOrder string, regexes *Reg
 	return filePath, nil
 }
 
-func getNextFile(filePath, sortOrder string, regexes *Regexes) (string, error) {
+func nextFile(filePath, sortOrder string, regexes *Regexes) (string, error) {
 	path, err := splitPath(filePath, regexes)
 	if err != nil {
 		return "", err
@@ -278,9 +278,9 @@ func getNextFile(filePath, sortOrder string, regexes *Regexes) (string, error) {
 
 	switch {
 	case sortOrder == "asc":
-		path.Increment()
+		path.increment()
 	case sortOrder == "desc":
-		path.Decrement()
+		path.decrement()
 	default:
 		return "", nil
 	}
@@ -297,21 +297,21 @@ func splitPath(path string, regexes *Regexes) (*Path, error) {
 	p := Path{}
 	var err error
 
-	split := regexes.Filename.FindAllStringSubmatch(path, -1)
+	split := regexes.filename.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
 		return &Path{}, nil
 	}
 
-	p.Base = split[0][1]
+	p.base = split[0][1]
 
-	p.Number, err = strconv.Atoi(split[0][2])
+	p.number, err = strconv.Atoi(split[0][2])
 
 	if err != nil {
 		return &Path{}, err
 	}
 
-	p.Extension = split[0][3]
+	p.extension = split[0][3]
 
 	return &p, nil
 }
@@ -320,7 +320,7 @@ func tryExtensions(p *Path) (string, error) {
 	var fileName string
 
 	for _, extension := range extensions {
-		fileName = fmt.Sprintf("%v%.3d%v", p.Base, p.Number, extension)
+		fileName = fmt.Sprintf("%v%.3d%v", p.base, p.number, extension)
 
 		exists, err := fileExists(fileName)
 		if err != nil {
@@ -359,7 +359,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	switch {
 	case Verbose && !matchesPrefix:
 		fmt.Printf("%v | Error: Failed to serve file outside specified path(s): %v\n",
-			time.Now().Format(LogDate),
+			time.Now().Format(logDate),
 			filePath,
 		)
 
@@ -414,7 +414,7 @@ func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, con
 				}
 			}()
 		case info.IsDir():
-			stats.IncrementDirectoriesMatched()
+			stats.incrementDirectoriesMatched()
 		}
 
 		return err
@@ -429,22 +429,22 @@ func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func getFileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
+func fileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
 	if Cache && filters.IsEmpty() && !index.IsEmpty() {
-		return index.Get(), true
+		return index.Index(), true
 	}
 
 	var fileList []string
 
 	files := &Files{
-		Mutex: sync.Mutex{},
-		List:  make(map[string][]string),
+		mutex: sync.Mutex{},
+		list:  make(map[string][]string),
 	}
 
 	stats := &ScanStats{
-		FilesMatched:       0,
-		FilesSkipped:       0,
-		DirectoriesMatched: 0,
+		filesMatched:       0,
+		filesSkipped:       0,
+		directoriesMatched: 0,
 	}
 
 	concurrency := &Concurrency{
@@ -479,16 +479,16 @@ func getFileList(paths []string, filters *Filters, sort string, index *Index) ([
 
 	if Verbose {
 		fmt.Printf("%v | Indexed %v/%v files across %v directories in %v\n",
-			time.Now().Format(LogDate),
-			stats.GetFilesMatched(),
-			stats.GetFilesTotal(),
-			stats.GetDirectoriesMatched(),
+			time.Now().Format(logDate),
+			stats.FilesMatched(),
+			stats.FilesTotal(),
+			stats.DirectoriesMatched(),
 			time.Since(startTime),
 		)
 	}
 
 	if Cache && filters.IsEmpty() {
-		index.Set(fileList)
+		index.setIndex(fileList)
 	}
 
 	return fileList, false
@@ -515,21 +515,21 @@ func prepareDirectory(directory []string) []string {
 func prepareDirectories(files *Files, sort string) []string {
 	directories := []string{}
 
-	keys := make([]string, len(files.List))
+	keys := make([]string, len(files.list))
 
 	i := 0
-	for k := range files.List {
+	for k := range files.list {
 		keys[i] = k
 		i++
 	}
 
 	if sort == "asc" || sort == "desc" {
 		for i := 0; i < len(keys); i++ {
-			directories = append(directories, prepareDirectory(files.List[keys[i]])...)
+			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
 		}
 	} else {
 		for i := 0; i < len(keys); i++ {
-			directories = append(directories, files.List[keys[i]]...)
+			directories = append(directories, files.list[keys[i]]...)
 		}
 	}
 
@@ -537,11 +537,11 @@ func prepareDirectories(files *Files, sort string) []string {
 }
 
 func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
-	fileList, fromCache := getFileList(args, filters, sort, index)
+	fileList, fromCache := fileList(args, filters, sort, index)
 
 	fileCount := len(fileList)
 	if fileCount == 0 {
-		return "", ErrNoImagesFound
+		return "", errNoImagesFound
 	}
 
 	r := rand.Intn(fileCount - 1)
@@ -571,7 +571,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		return filePath, nil
 	}
 
-	return "", ErrNoImagesFound
+	return "", errNoImagesFound
 }
 
 func normalizePaths(args []string) ([]string, error) {
