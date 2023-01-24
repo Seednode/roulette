@@ -49,6 +49,20 @@ func (f *Files) append(directory, path string) {
 	f.mutex.Unlock()
 }
 
+type Path struct {
+	base      string
+	number    int
+	extension string
+}
+
+func (p *Path) increment() {
+	p.number = p.number + 1
+}
+
+func (p *Path) decrement() {
+	p.number = p.number - 1
+}
+
 type ScanStats struct {
 	filesMatched       uint64
 	filesSkipped       uint64
@@ -83,78 +97,7 @@ func (s *ScanStats) DirectoriesMatched() uint64 {
 	return atomic.LoadUint64(&s.directoriesMatched)
 }
 
-type Path struct {
-	base      string
-	number    int
-	extension string
-}
-
-func (p *Path) increment() {
-	p.number = p.number + 1
-}
-
-func (p *Path) decrement() {
-	p.number = p.number - 1
-}
-
-func contains(s []string, e string) bool {
-	for _, a := range s {
-		if a == e {
-			return true
-		}
-	}
-	return false
-}
-
-func humanReadableSize(bytes int) string {
-	const unit = 1000
-
-	if bytes < unit {
-		return fmt.Sprintf("%d B", bytes)
-	}
-
-	div, exp := int64(unit), 0
-
-	for n := bytes / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-
-	return fmt.Sprintf("%.1f %cB",
-		float64(bytes)/float64(div), "KMGTPE"[exp])
-}
-
-func imageDimensions(path string) (*Dimensions, error) {
-	file, err := os.Open(path)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return &Dimensions{}, nil
-	case err != nil:
-		return &Dimensions{}, err
-	}
-	defer file.Close()
-
-	myImage, _, err := image.DecodeConfig(file)
-	switch {
-	case errors.Is(err, image.ErrFormat):
-		return &Dimensions{width: 0, height: 0}, nil
-	case err != nil:
-		return &Dimensions{}, err
-	}
-
-	return &Dimensions{width: myImage.Width, height: myImage.Height}, nil
-}
-
-func preparePath(path string) string {
-	if runtime.GOOS == "windows" {
-		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
-	}
-
-	return path
-}
-
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
-	// If caching, only check image types once, during the initial scan, to speed up future pickFile() calls
 	if shouldCache {
 		image, err := isImage(path)
 		if err != nil {
@@ -226,6 +169,151 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	return nil
 }
 
+func cleanFilename(filename string) string {
+	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
+}
+
+func fileExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	switch {
+	case err == nil:
+		return true, nil
+	case errors.Is(err, os.ErrNotExist):
+		return false, nil
+	default:
+		return false, err
+	}
+}
+
+func fileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
+	if Cache && filters.IsEmpty() && !index.IsEmpty() {
+		return index.Index(), true
+	}
+
+	var fileList []string
+
+	files := &Files{
+		mutex: sync.Mutex{},
+		list:  make(map[string][]string),
+	}
+
+	stats := &ScanStats{
+		filesMatched:       0,
+		filesSkipped:       0,
+		directoriesMatched: 0,
+	}
+
+	concurrency := &Concurrency{
+		DirectoryScans: make(chan int, maxDirectoryScans),
+		FileScans:      make(chan int, maxFileScans),
+	}
+
+	var wg sync.WaitGroup
+
+	startTime := time.Now()
+
+	for i := 0; i < len(paths); i++ {
+		wg.Add(1)
+		concurrency.DirectoryScans <- 1
+
+		go func(i int) {
+			defer func() {
+				<-concurrency.DirectoryScans
+				wg.Done()
+			}()
+
+			err := scanPath(paths[i], files, filters, stats, concurrency)
+			if err != nil {
+				fmt.Println(err)
+			}
+		}(i)
+	}
+
+	wg.Wait()
+
+	fileList = prepareDirectories(files, sort)
+
+	if Verbose {
+		fmt.Printf("%s | Indexed %d/%d files across %d directories in %s\n",
+			time.Now().Format(logDate),
+			stats.FilesMatched(),
+			stats.FilesTotal(),
+			stats.DirectoriesMatched(),
+			time.Since(startTime),
+		)
+	}
+
+	if Cache && filters.IsEmpty() {
+		index.setIndex(fileList)
+	}
+
+	return fileList, false
+}
+
+func humanReadableSize(bytes int) string {
+	const unit = 1000
+
+	if bytes < unit {
+		return fmt.Sprintf("%d B", bytes)
+	}
+
+	div, exp := int64(unit), 0
+
+	for n := bytes / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+
+	return fmt.Sprintf("%.1f %cB",
+		float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+func imageDimensions(path string) (*Dimensions, error) {
+	file, err := os.Open(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return &Dimensions{}, nil
+	case err != nil:
+		return &Dimensions{}, err
+	}
+	defer file.Close()
+
+	myImage, _, err := image.DecodeConfig(file)
+	switch {
+	case errors.Is(err, image.ErrFormat):
+		return &Dimensions{width: 0, height: 0}, nil
+	case err != nil:
+		return &Dimensions{}, err
+	}
+
+	return &Dimensions{width: myImage.Width, height: myImage.Height}, nil
+}
+
+func isImage(path string) (bool, error) {
+	file, err := os.Open(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return false, nil
+	case err != nil:
+		return false, err
+	}
+	defer file.Close()
+
+	head := make([]byte, 261)
+	file.Read(head)
+
+	return filetype.IsImage(head), nil
+}
+
 func newFile(paths []string, filters *Filters, sortOrder string, regexes *Regexes, index *Index) (string, error) {
 	filePath, err := pickFile(paths, filters, sortOrder, index)
 	if err != nil {
@@ -293,58 +381,34 @@ func nextFile(filePath, sortOrder string, regexes *Regexes) (string, error) {
 	return fileName, err
 }
 
-func splitPath(path string, regexes *Regexes) (*Path, error) {
-	p := Path{}
-	var err error
+func normalizePaths(args []string) ([]string, error) {
+	var paths []string
 
-	split := regexes.filename.FindAllStringSubmatch(path, -1)
+	fmt.Println("Paths:")
 
-	if len(split) < 1 || len(split[0]) < 3 {
-		return &Path{}, nil
-	}
-
-	p.base = split[0][1]
-
-	p.number, err = strconv.Atoi(split[0][2])
-
-	if err != nil {
-		return &Path{}, err
-	}
-
-	p.extension = split[0][3]
-
-	return &p, nil
-}
-
-func tryExtensions(p *Path) (string, error) {
-	var fileName string
-
-	for _, extension := range extensions {
-		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
-
-		exists, err := fileExists(fileName)
+	for i := 0; i < len(args); i++ {
+		path, err := filepath.EvalSymlinks(args[i])
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
-		if exists {
-			return fileName, nil
+		absolutePath, err := filepath.Abs(path)
+		if err != nil {
+			return nil, err
 		}
+
+		if (args[i]) != absolutePath {
+			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
+		} else {
+			fmt.Printf("%s\n", args[i])
+		}
+
+		paths = append(paths, absolutePath)
 	}
 
-	return "", nil
-}
+	fmt.Println()
 
-func fileExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	switch {
-	case err == nil:
-		return true, nil
-	case errors.Is(err, os.ErrNotExist):
-		return false, nil
-	default:
-		return false, err
-	}
+	return paths, nil
 }
 
 func pathIsValid(filePath string, paths []string) bool {
@@ -371,23 +435,91 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func isImage(path string) (bool, error) {
-	file, err := os.Open(path)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return false, nil
-	case err != nil:
-		return false, err
+func pickFile(args []string, filters *Filters, sortOrder string, index *Index) (string, error) {
+	fileList, fromCache := fileList(args, filters, sortOrder, index)
+
+	fileCount := len(fileList)
+	if fileCount == 0 {
+		return "", errNoImagesFound
 	}
-	defer file.Close()
 
-	head := make([]byte, 261)
-	file.Read(head)
+	r := rand.Intn(fileCount - 1)
 
-	return filetype.IsImage(head), nil
+	for i := 0; i < fileCount; i++ {
+		if r >= (fileCount - 1) {
+			r = 0
+		} else {
+			r++
+		}
+
+		filePath := fileList[r]
+
+		if !fromCache {
+			isImage, err := isImage(filePath)
+			if err != nil {
+				return "", err
+			}
+
+			if isImage {
+				return filePath, nil
+			}
+
+			continue
+		}
+
+		return filePath, nil
+	}
+
+	return "", errNoImagesFound
 }
 
-func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
+func prepareDirectories(files *Files, sort string) []string {
+	directories := []string{}
+
+	keys := make([]string, len(files.list))
+
+	i := 0
+	for k := range files.list {
+		keys[i] = k
+		i++
+	}
+
+	if sort == "asc" || sort == "desc" {
+		for i := 0; i < len(keys); i++ {
+			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
+		}
+	} else {
+		for i := 0; i < len(keys); i++ {
+			directories = append(directories, files.list[keys[i]]...)
+		}
+	}
+
+	return directories
+}
+
+func prepareDirectory(directory []string) []string {
+	_, first := filepath.Split(directory[0])
+	first = cleanFilename(first)
+
+	_, last := filepath.Split(directory[len(directory)-1])
+	last = cleanFilename(last)
+
+	if first == last {
+		return append([]string{}, directory[0])
+	} else {
+		return directory
+	}
+}
+
+func preparePath(path string) string {
+	if runtime.GOOS == "windows" {
+		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
+	}
+
+	return path
+}
+
+func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
 	var wg sync.WaitGroup
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -429,177 +561,44 @@ func getFiles(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func fileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
-	if Cache && filters.IsEmpty() && !index.IsEmpty() {
-		return index.Index(), true
+func splitPath(path string, regexes *Regexes) (*Path, error) {
+	p := Path{}
+	var err error
+
+	split := regexes.filename.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
+		return &Path{}, nil
 	}
 
-	var fileList []string
+	p.base = split[0][1]
 
-	files := &Files{
-		mutex: sync.Mutex{},
-		list:  make(map[string][]string),
+	p.number, err = strconv.Atoi(split[0][2])
+
+	if err != nil {
+		return &Path{}, err
 	}
 
-	stats := &ScanStats{
-		filesMatched:       0,
-		filesSkipped:       0,
-		directoriesMatched: 0,
-	}
+	p.extension = split[0][3]
 
-	concurrency := &Concurrency{
-		DirectoryScans: make(chan int, maxDirectoryScans),
-		FileScans:      make(chan int, maxFileScans),
-	}
-
-	var wg sync.WaitGroup
-
-	startTime := time.Now()
-
-	for i := 0; i < len(paths); i++ {
-		wg.Add(1)
-		concurrency.DirectoryScans <- 1
-
-		go func(i int) {
-			defer func() {
-				<-concurrency.DirectoryScans
-				wg.Done()
-			}()
-
-			err := getFiles(paths[i], files, filters, stats, concurrency)
-			if err != nil {
-				fmt.Println(err)
-			}
-		}(i)
-	}
-
-	wg.Wait()
-
-	fileList = prepareDirectories(files, sort)
-
-	if Verbose {
-		fmt.Printf("%s | Indexed %d/%d files across %d directories in %s\n",
-			time.Now().Format(logDate),
-			stats.FilesMatched(),
-			stats.FilesTotal(),
-			stats.DirectoriesMatched(),
-			time.Since(startTime),
-		)
-	}
-
-	if Cache && filters.IsEmpty() {
-		index.setIndex(fileList)
-	}
-
-	return fileList, false
+	return &p, nil
 }
 
-func cleanFilename(filename string) string {
-	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
-}
+func tryExtensions(p *Path) (string, error) {
+	var fileName string
 
-func prepareDirectory(directory []string) []string {
-	_, first := filepath.Split(directory[0])
-	first = cleanFilename(first)
+	for _, extension := range extensions {
+		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 
-	_, last := filepath.Split(directory[len(directory)-1])
-	last = cleanFilename(last)
-
-	if first == last {
-		return append([]string{}, directory[0])
-	} else {
-		return directory
-	}
-}
-
-func prepareDirectories(files *Files, sort string) []string {
-	directories := []string{}
-
-	keys := make([]string, len(files.list))
-
-	i := 0
-	for k := range files.list {
-		keys[i] = k
-		i++
-	}
-
-	if sort == "asc" || sort == "desc" {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
-		}
-	} else {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, files.list[keys[i]]...)
-		}
-	}
-
-	return directories
-}
-
-func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
-	fileList, fromCache := fileList(args, filters, sort, index)
-
-	fileCount := len(fileList)
-	if fileCount == 0 {
-		return "", errNoImagesFound
-	}
-
-	r := rand.Intn(fileCount - 1)
-
-	for i := 0; i < fileCount; i++ {
-		if r >= (fileCount - 1) {
-			r = 0
-		} else {
-			r++
-		}
-
-		filePath := fileList[r]
-
-		if !fromCache {
-			isImage, err := isImage(filePath)
-			if err != nil {
-				return "", err
-			}
-
-			if isImage {
-				return filePath, nil
-			}
-
-			continue
-		}
-
-		return filePath, nil
-	}
-
-	return "", errNoImagesFound
-}
-
-func normalizePaths(args []string) ([]string, error) {
-	var paths []string
-
-	fmt.Println("Paths:")
-
-	for i := 0; i < len(args); i++ {
-		path, err := filepath.EvalSymlinks(args[i])
+		exists, err := fileExists(fileName)
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 
-		absolutePath, err := filepath.Abs(path)
-		if err != nil {
-			return nil, err
+		if exists {
+			return fileName, nil
 		}
-
-		if (args[i]) != absolutePath {
-			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
-		} else {
-			fmt.Printf("%s\n", args[i])
-		}
-
-		paths = append(paths, absolutePath)
 	}
 
-	fmt.Println()
-
-	return paths, nil
+	return "", nil
 }
