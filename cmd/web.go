@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -160,7 +159,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
 	if Verbose {
-		fmt.Printf("%v | Unavailable file %v requested by %v\n",
+		fmt.Printf("%s | Unavailable file %s requested by %s\n",
 			startTime.Format(logDate),
 			filePath,
 			r.RemoteAddr,
@@ -196,9 +195,7 @@ func refreshInterval(r *http.Request, regexes *Regexes) (int64, string) {
 		return 0, "0ms"
 	}
 
-	durationInMs := duration.Milliseconds()
-
-	return durationInMs, refreshInterval
+	return duration.Milliseconds(), refreshInterval
 }
 
 func sortOrder(r *http.Request) string {
@@ -254,7 +251,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 			queryParams.WriteString("&")
 		}
 
-		queryParams.WriteString(fmt.Sprintf("sort=%v", sortOrder))
+		queryParams.WriteString(fmt.Sprintf("sort=%s", sortOrder))
 
 		hasParams = true
 	}
@@ -262,7 +259,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 	if hasParams {
 		queryParams.WriteString("&")
 	}
-	queryParams.WriteString(fmt.Sprintf("refresh=%v", refreshInterval))
+	queryParams.WriteString(fmt.Sprintf("refresh=%s", refreshInterval))
 
 	return queryParams.String()
 }
@@ -319,13 +316,13 @@ func realIP(r *http.Request) string {
 	remotePort := remoteAddr[len(remoteAddr)-1]
 
 	cfIP := r.Header.Get("Cf-Connecting-Ip")
-	xRealIp := r.Header.Get("X-Real-Ip")
+	xRealIP := r.Header.Get("X-Real-Ip")
 
 	switch {
 	case cfIP != "":
 		return cfIP + ":" + remotePort
-	case xRealIp != "":
-		return xRealIp + ":" + remotePort
+	case xRealIP != "":
+		return xRealIP + ":" + remotePort
 	default:
 		return r.RemoteAddr
 	}
@@ -348,17 +345,17 @@ func html(w http.ResponseWriter, r *http.Request, filePath string, dimensions *D
 	htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 	htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 	htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-	htmlBody.WriteString(fmt.Sprintf(`<title>%v (%vx%v)</title>`,
+	htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 		fileName,
 		dimensions.width,
 		dimensions.height))
 	htmlBody.WriteString(`</head><body>`)
 	if refreshInterval != "0ms" {
-		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%v';}, %v);};</script>",
+		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 			queryParams,
 			refreshTimer))
 	}
-	htmlBody.WriteString(fmt.Sprintf(`<a href="/%v"><img src="%v" width="%v" height="%v" alt="Roulette selected: %v"></a>`,
+	htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
 		queryParams,
 		generateFilePath(filePath),
 		dimensions.width,
@@ -414,7 +411,7 @@ func staticFile(w http.ResponseWriter, r *http.Request, paths []string, stats *S
 	fileSize := humanReadableSize(len(buf))
 
 	if Verbose {
-		fmt.Printf("%v | Served %v (%v) to %v in %v\n",
+		fmt.Printf("%s | Served %s (%s) to %s in %s\n",
 			startTime.Format(logDate),
 			filePath,
 			fileSize,
@@ -447,13 +444,13 @@ func statsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 
 		response, err := stats.ListImages()
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%v | Served statistics page (%v) to %v in %v\n",
+			fmt.Printf("%s | Served statistics page (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -467,7 +464,7 @@ func staticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := staticFile(w, r, paths, stats)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 	}
 }
@@ -476,7 +473,7 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 
 		filters := &Filters{
@@ -495,7 +492,7 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 			if refererUri != "" {
 				filePath, err = nextFile(refererUri, sortOrder, regexes)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err)
 				}
 			}
 
@@ -507,13 +504,13 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 
 					return
 				case err != nil:
-					log.Fatal(err)
+					fmt.Println(err)
 				}
 			}
 
 			queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
-			newUrl := fmt.Sprintf("http://%v%v%v",
+			newUrl := fmt.Sprintf("http://%s%s%s",
 				r.Host,
 				preparePath(filePath),
 				queryParams,
@@ -528,7 +525,7 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 
 			exists, err := fileExists(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
 			}
 			if !exists {
 				notFound(w, r, filePath)
@@ -538,7 +535,7 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 
 			image, err := isImage(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
 			}
 			if !image {
 				notFound(w, r, filePath)
@@ -548,12 +545,12 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 
 			dimensions, err := imageDimensions(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
 			}
 
 			err = html(w, r, filePath, dimensions, filters, regexes)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
 			}
 		}
 	}
@@ -562,7 +559,7 @@ func htmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFun
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) error {
-	fmt.Printf("roulette v%v\n\n", Version)
+	fmt.Printf("roulette v%s\n\n", Version)
 
 	paths, err := normalizePaths(args)
 	if err != nil {

@@ -147,7 +147,7 @@ func imageDimensions(path string) (*Dimensions, error) {
 
 func preparePath(path string) string {
 	if runtime.GOOS == "windows" {
-		path = fmt.Sprintf("/%v", filepath.ToSlash(path))
+		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
 	}
 
 	return path
@@ -320,7 +320,7 @@ func tryExtensions(p *Path) (string, error) {
 	var fileName string
 
 	for _, extension := range extensions {
-		fileName = fmt.Sprintf("%v%.3d%v", p.base, p.number, extension)
+		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 
 		exists, err := fileExists(fileName)
 		if err != nil {
@@ -358,7 +358,7 @@ func pathIsValid(filePath string, paths []string) bool {
 
 	switch {
 	case Verbose && !matchesPrefix:
-		fmt.Printf("%v | Error: Failed to serve file outside specified path(s): %v\n",
+		fmt.Printf("%s | Error: Failed to serve file outside specified path(s): %s\n",
 			time.Now().Format(logDate),
 			filePath,
 		)
@@ -478,7 +478,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	fileList = prepareDirectories(files, sort)
 
 	if Verbose {
-		fmt.Printf("%v | Indexed %v/%v files across %v directories in %v\n",
+		fmt.Printf("%s | Indexed %d/%d files across %d directories in %s\n",
 			time.Now().Format(logDate),
 			stats.FilesMatched(),
 			stats.FilesTotal(),
@@ -591,9 +591,9 @@ func normalizePaths(args []string) ([]string, error) {
 		}
 
 		if (args[i]) != absolutePath {
-			fmt.Printf("%v (resolved to %v)\n", args[i], absolutePath)
+			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
 		} else {
-			fmt.Printf("%v\n", args[i])
+			fmt.Printf("%s\n", args[i])
 		}
 
 		paths = append(paths, absolutePath)
