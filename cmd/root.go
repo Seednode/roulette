@@ -5,7 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
@@ -24,11 +24,13 @@ var (
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random images from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServePage(args)
 			if err != nil {
-				log.Fatal(err)
+				return err
 			}
+
+			return nil
 		},
 	}
 )
@@ -36,6 +38,7 @@ var (
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
+		fmt.Println(err)
 		os.Exit(1)
 	}
 }
