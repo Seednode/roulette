@@ -11,19 +11,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type MaxConcurrency int
-
-const (
-	// avoid hitting default open file descriptor limits (1024)
-	maxDirectoryScans MaxConcurrency = 32
-	maxFileScans      MaxConcurrency = 256
-)
-
-type Concurrency struct {
-	DirectoryScans chan int
-	FileScans      chan int
-}
-
 var Cache bool
 var Debug bool
 var Filter bool

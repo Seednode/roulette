@@ -32,14 +32,14 @@ const (
 )
 
 type Regexes struct {
-	Alphanumeric *regexp.Regexp
-	Filename     *regexp.Regexp
-	Units        *regexp.Regexp
+	alphanumeric *regexp.Regexp
+	filename     *regexp.Regexp
+	units        *regexp.Regexp
 }
 
 type Filters struct {
-	Includes []string
-	Excludes []string
+	includes []string
+	excludes []string
 }
 
 func (f *Filters) IsEmpty() bool {
@@ -47,99 +47,99 @@ func (f *Filters) IsEmpty() bool {
 }
 
 func (f *Filters) HasIncludes() bool {
-	return len(f.Includes) != 0
+	return len(f.includes) != 0
 }
 
-func (f *Filters) GetIncludes() string {
-	return strings.Join(f.Includes, ",")
+func (f *Filters) Includes() string {
+	return strings.Join(f.includes, ",")
 }
 
 func (f *Filters) HasExcludes() bool {
-	return len(f.Excludes) != 0
+	return len(f.excludes) != 0
 }
 
-func (f *Filters) GetExcludes() string {
-	return strings.Join(f.Excludes, ",")
+func (f *Filters) Excludes() string {
+	return strings.Join(f.excludes, ",")
 }
 
 type Index struct {
-	Mutex sync.RWMutex
-	List  []string
+	mutex sync.RWMutex
+	list  []string
 }
 
-func (i *Index) Get() []string {
-	i.Mutex.RLock()
-	val := i.List
-	i.Mutex.RUnlock()
+func (i *Index) Index() []string {
+	i.mutex.RLock()
+	val := i.list
+	i.mutex.RUnlock()
 
 	return val
 }
 
-func (i *Index) Set(val []string) {
-	i.Mutex.Lock()
-	i.List = val
-	i.Mutex.Unlock()
+func (i *Index) setIndex(val []string) {
+	i.mutex.Lock()
+	i.list = val
+	i.mutex.Unlock()
 }
 
-func (i *Index) GenerateCache(args []string) {
-	i.Mutex.Lock()
-	i.List = []string{}
-	i.Mutex.Unlock()
+func (i *Index) generateCache(args []string) {
+	i.mutex.Lock()
+	i.list = []string{}
+	i.mutex.Unlock()
 
-	getFileList(args, &Filters{}, "", i)
+	fileList(args, &Filters{}, "", i)
 }
 
 func (i *Index) IsEmpty() bool {
-	i.Mutex.RLock()
-	length := len(i.List)
-	i.Mutex.RUnlock()
+	i.mutex.RLock()
+	length := len(i.list)
+	i.mutex.RUnlock()
 
 	return length == 0
 }
 
 type ServeStats struct {
-	Mutex sync.RWMutex
-	List  []string
-	Count map[string]uint64
-	Size  map[string]string
-	Times map[string][]string
+	mutex sync.RWMutex
+	list  []string
+	count map[string]uint64
+	size  map[string]string
+	times map[string][]string
 }
 
-func (s *ServeStats) IncrementCounter(image string, timestamp time.Time, filesize string) {
-	s.Mutex.Lock()
+func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesize string) {
+	s.mutex.Lock()
 
-	s.Count[image]++
+	s.count[image]++
 
-	s.Times[image] = append(s.Times[image], timestamp.Format(LogDate))
+	s.times[image] = append(s.times[image], timestamp.Format(LogDate))
 
-	_, exists := s.Size[image]
+	_, exists := s.size[image]
 	if !exists {
-		s.Size[image] = filesize
+		s.size[image] = filesize
 	}
 
-	if !contains(s.List, image) {
-		s.List = append(s.List, image)
+	if !contains(s.list, image) {
+		s.list = append(s.list, image)
 	}
 
-	s.Mutex.Unlock()
+	s.mutex.Unlock()
 }
 
 func (s *ServeStats) ListImages() ([]byte, error) {
-	s.Mutex.RLock()
+	s.mutex.RLock()
 
-	sortedList := s.List
+	sortedList := s.list
 
 	sort.SliceStable(sortedList, func(p, q int) bool {
 		return sortedList[p] < sortedList[q]
 	})
 
-	a := []TimesServed{}
+	a := []timesServed{}
 
-	for _, image := range s.List {
-		a = append(a, TimesServed{image, s.Count[image], s.Size[image], s.Times[image]})
+	for _, image := range s.list {
+		a = append(a, timesServed{image, s.count[image], s.size[image], s.times[image]})
 	}
 
-	s.Mutex.RUnlock()
+	s.mutex.RUnlock()
 
 	r, err := json.MarshalIndent(a, "", "    ")
 	if err != nil {
@@ -149,7 +149,7 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 	return r, nil
 }
 
-type TimesServed struct {
+type timesServed struct {
 	File   string
 	Served uint64
 	Size   string
@@ -184,10 +184,10 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func getRefreshInterval(r *http.Request, regexes *Regexes) (int64, string) {
+func refreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
 	refreshInterval := r.URL.Query().Get("refresh")
 
-	if !regexes.Units.MatchString(refreshInterval) {
+	if !Regexes.units.MatchString(refreshInterval) {
 		return 0, "0ms"
 	}
 
@@ -201,7 +201,7 @@ func getRefreshInterval(r *http.Request, regexes *Regexes) (int64, string) {
 	return durationInMs, refreshInterval
 }
 
-func getSortOrder(r *http.Request) string {
+func sortOrder(r *http.Request) string {
 	sortOrder := r.URL.Query().Get("sort")
 	if sortOrder == "asc" || sortOrder == "desc" {
 		return sortOrder
@@ -210,7 +210,7 @@ func getSortOrder(r *http.Request) string {
 	return ""
 }
 
-func splitQueryParams(query string, regexes *Regexes) []string {
+func splitQueryParams(query string, Regexes *Regexes) []string {
 	results := []string{}
 
 	if query == "" {
@@ -220,7 +220,7 @@ func splitQueryParams(query string, regexes *Regexes) []string {
 	params := strings.Split(query, ",")
 
 	for i := 0; i < len(params); i++ {
-		if regexes.Alphanumeric.MatchString(params[i]) {
+		if Regexes.alphanumeric.MatchString(params[i]) {
 			results = append(results, strings.ToLower(params[i]))
 		}
 	}
@@ -238,12 +238,12 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 	if Filter {
 		queryParams.WriteString("include=")
 		if filters.HasIncludes() {
-			queryParams.WriteString(filters.GetIncludes())
+			queryParams.WriteString(filters.Includes())
 		}
 
 		queryParams.WriteString("&exclude=")
 		if filters.HasExcludes() {
-			queryParams.WriteString(filters.GetExcludes())
+			queryParams.WriteString(filters.Excludes())
 		}
 
 		hasParams = true
@@ -309,7 +309,7 @@ func refererToUri(referer string) string {
 	return "/" + parts[3]
 }
 
-func getRealIp(r *http.Request) string {
+func realIP(r *http.Request) string {
 	remoteAddr := strings.SplitAfter(r.RemoteAddr, ":")
 
 	if len(remoteAddr) < 1 {
@@ -331,14 +331,14 @@ func getRealIp(r *http.Request) string {
 	}
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters, regexes *Regexes) error {
+func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters, Regexes *Regexes) error {
 	fileName := filepath.Base(filePath)
 
 	w.Header().Add("Content-Type", "text/html")
 
-	sortOrder := getSortOrder(r)
+	sortOrder := sortOrder(r)
 
-	refreshTimer, refreshInterval := getRefreshInterval(r, regexes)
+	refreshTimer, refreshInterval := refreshInterval(r, Regexes)
 
 	queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
@@ -350,8 +350,8 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 	htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
 	htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 		fileName,
-		dimensions.Width,
-		dimensions.Height))
+		dimensions.width,
+		dimensions.height))
 	htmlBody.WriteString(`</head><body>`)
 	if refreshInterval != "0ms" {
 		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
@@ -361,8 +361,8 @@ func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensio
 	htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
 		queryParams,
 		generateFilePath(filePath),
-		dimensions.Width,
-		dimensions.Height,
+		dimensions.width,
+		dimensions.height,
 		fileName))
 	htmlBody.WriteString(`</body></html>`)
 
@@ -418,13 +418,13 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 			startTime.Format(LogDate),
 			filePath,
 			fileSize,
-			getRealIp(r),
+			realIP(r),
 			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
 
 	if Debug {
-		stats.IncrementCounter(filePath, startTime, fileSize)
+		stats.incrementCounter(filePath, startTime, fileSize)
 	}
 
 	return nil
@@ -432,7 +432,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 func serveCacheClearHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		index.GenerateCache(args)
+		index.generateCache(args)
 
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/plain")
@@ -458,7 +458,7 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 			fmt.Printf("%s | Served statistics page (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
-				getRealIp(r),
+				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
 		}
@@ -474,7 +474,7 @@ func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc 
 	}
 }
 
-func serveHtmlHandler(paths []string, regexes *Regexes, index *Index) http.HandlerFunc {
+func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -482,27 +482,27 @@ func serveHtmlHandler(paths []string, regexes *Regexes, index *Index) http.Handl
 		}
 
 		filters := &Filters{
-			Includes: splitQueryParams(r.URL.Query().Get("include"), regexes),
-			Excludes: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
+			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
+			excludes: splitQueryParams(r.URL.Query().Get("exclude"), Regexes),
 		}
 
-		sortOrder := getSortOrder(r)
+		sortOrder := sortOrder(r)
 
-		_, refreshInterval := getRefreshInterval(r, regexes)
+		_, refreshInterval := refreshInterval(r, Regexes)
 
 		if r.URL.Path == "/" {
 			var filePath string
 			var err error
 
 			if refererUri != "" {
-				filePath, err = getNextFile(refererUri, sortOrder, regexes)
+				filePath, err = nextFile(refererUri, sortOrder, Regexes)
 				if err != nil {
 					log.Fatal(err)
 				}
 			}
 
 			if filePath == "" {
-				filePath, err = getNewFile(paths, filters, sortOrder, regexes, index)
+				filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
 				switch {
 				case err != nil && err == ErrNoImagesFound:
 					notFound(w, r, filePath)
@@ -548,12 +548,12 @@ func serveHtmlHandler(paths []string, regexes *Regexes, index *Index) http.Handl
 				return
 			}
 
-			dimensions, err := getImageDimensions(filePath)
+			dimensions, err := imageDimensions(filePath)
 			if err != nil {
 				log.Fatal(err)
 			}
 
-			err = serveHtml(w, r, filePath, dimensions, filters, regexes)
+			err = serveHtml(w, r, filePath, dimensions, filters, Regexes)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -571,34 +571,34 @@ func ServePage(args []string) error {
 		return err
 	}
 
-	regexes := &Regexes{
-		Filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
-		Alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
-		Units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
+	Regexes := &Regexes{
+		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
+		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
+		units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
 	}
 
 	rand.Seed(time.Now().UnixNano())
 
 	index := &Index{
-		Mutex: sync.RWMutex{},
-		List:  []string{},
+		mutex: sync.RWMutex{},
+		list:  []string{},
 	}
 
 	if Cache {
-		index.GenerateCache(args)
+		index.generateCache(args)
 
 		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
 	}
 
 	stats := &ServeStats{
-		Mutex: sync.RWMutex{},
-		List:  []string{},
-		Count: make(map[string]uint64),
-		Size:  make(map[string]string),
-		Times: make(map[string][]string),
+		mutex: sync.RWMutex{},
+		list:  []string{},
+		count: make(map[string]uint64),
+		size:  make(map[string]string),
+		times: make(map[string][]string),
 	}
 
-	http.Handle("/", serveHtmlHandler(paths, regexes, index))
+	http.Handle("/", serveHtmlHandler(paths, Regexes, index))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
