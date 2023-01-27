@@ -43,7 +43,7 @@ type Concurrency struct {
 
 var (
 	ErrNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
-	extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
+	Extensions       = [6]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp"}
 )
 
 type Dimensions struct {
@@ -102,11 +102,11 @@ type Path struct {
 	extension string
 }
 
-func (p *Path) Increment() {
+func (p *Path) increment() {
 	p.number = p.number + 1
 }
 
-func (p *Path) Decrement() {
+func (p *Path) decrement() {
 	p.number = p.number - 1
 }
 
@@ -186,7 +186,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 }
 
 func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) error {
-	shouldCache := Cache && filters.IsEmpty()
+	shouldCache := cache && filters.IsEmpty()
 
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
@@ -259,7 +259,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 		}
 	case sortOrder == "desc":
 		for {
-			path.Increment()
+			path.increment()
 
 			filePath, err = tryExtensions(path)
 			if err != nil {
@@ -267,7 +267,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 			}
 
 			if filePath == "" {
-				path.Decrement()
+				path.decrement()
 
 				filePath, err = tryExtensions(path)
 				if err != nil {
@@ -290,9 +290,9 @@ func nextFile(filePath, sortOrder string, Regexes *Regexes) (string, error) {
 
 	switch {
 	case sortOrder == "asc":
-		path.Increment()
+		path.increment()
 	case sortOrder == "desc":
-		path.Decrement()
+		path.decrement()
 	default:
 		return "", nil
 	}
@@ -331,7 +331,7 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 func tryExtensions(p *Path) (string, error) {
 	var fileName string
 
-	for _, extension := range extensions {
+	for _, extension := range Extensions {
 		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 
 		exists, err := fileExists(fileName)
@@ -369,7 +369,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 
 	switch {
-	case Verbose && !matchesPrefix:
+	case verbose && !matchesPrefix:
 		fmt.Printf("%s | Error: Failed to serve file outside specified path(s): %s\n",
 			time.Now().Format(LogDate),
 			filePath,
@@ -408,7 +408,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 		}
 
 		switch {
-		case !Recursive && info.IsDir() && p != path:
+		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
 			wg.Add(1)
@@ -442,7 +442,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 }
 
 func fileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
-	if Cache && filters.IsEmpty() && !index.IsEmpty() {
+	if cache && filters.IsEmpty() && !index.IsEmpty() {
 		return index.Index(), true
 	}
 
@@ -489,7 +489,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 
 	fileList = prepareDirectories(files, sort)
 
-	if Verbose {
+	if verbose {
 		fmt.Printf("%s | Indexed %d/%d files across %d directories in %s\n",
 			time.Now().Format(LogDate),
 			stats.FilesMatched(),
@@ -499,7 +499,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 		)
 	}
 
-	if Cache && filters.IsEmpty() {
+	if cache && filters.IsEmpty() {
 		index.setIndex(fileList)
 	}
 

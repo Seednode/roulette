@@ -159,7 +159,7 @@ type timesServed struct {
 func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
-	if Verbose {
+	if verbose {
 		fmt.Printf("%s | Unavailable file %s requested by %s\n",
 			startTime.Format(LogDate),
 			filePath,
@@ -235,7 +235,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 
 	queryParams.WriteString("?")
 
-	if Filter {
+	if filtering {
 		queryParams.WriteString("include=")
 		if filters.HasIncludes() {
 			queryParams.WriteString(filters.Includes())
@@ -249,7 +249,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 		hasParams = true
 	}
 
-	if Sort {
+	if sorting {
 		if hasParams {
 			queryParams.WriteString("&")
 		}
@@ -413,7 +413,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 
 	fileSize := humanReadableSize(len(buf))
 
-	if Verbose {
+	if verbose {
 		fmt.Printf("%s | Served %s (%s) to %s in %s\n",
 			startTime.Format(LogDate),
 			filePath,
@@ -423,7 +423,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 		)
 	}
 
-	if Debug {
+	if debug {
 		stats.incrementCounter(filePath, startTime, fileSize)
 	}
 
@@ -454,7 +454,7 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 
 		w.Write(response)
 
-		if Verbose {
+		if verbose {
 			fmt.Printf("%s | Served statistics page (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
@@ -584,7 +584,7 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
-	if Cache {
+	if cache {
 		index.generateCache(args)
 
 		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
@@ -602,11 +602,11 @@ func ServePage(args []string) error {
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
-	if Debug {
+	if debug {
 		http.Handle("/_/stats", serveStatsHandler(args, stats))
 	}
 
-	err = http.ListenAndServe(":"+strconv.FormatInt(int64(Port), 10), nil)
+	err = http.ListenAndServe(":"+strconv.FormatInt(int64(port), 10), nil)
 	if err != nil {
 		return err
 	}

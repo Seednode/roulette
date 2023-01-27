@@ -11,25 +11,27 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Cache bool
-var Debug bool
-var Filter bool
-var Port uint16
-var Recursive bool
-var Sort bool
-var Verbose bool
+var (
+	cache     bool
+	debug     bool
+	filtering bool
+	port      uint16
+	recursive bool
+	sorting   bool
+	verbose   bool
 
-var rootCmd = &cobra.Command{
-	Use:   "roulette <path> [path]...",
-	Short: "Serves random images from the specified directories.",
-	Args:  cobra.MinimumNArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		err := ServePage(args)
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
-}
+	rootCmd = &cobra.Command{
+		Use:   "roulette <path> [path]...",
+		Short: "Serves random images from the specified directories.",
+		Args:  cobra.MinimumNArgs(1),
+		Run: func(cmd *cobra.Command, args []string) {
+			err := ServePage(args)
+			if err != nil {
+				log.Fatal(err)
+			}
+		},
+	}
+)
 
 func Execute() {
 	err := rootCmd.Execute()
@@ -39,12 +41,12 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "only scan directories once, at startup (or when filters are applied)")
-	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "store list of files served and number of times they were served")
-	rootCmd.Flags().BoolVarP(&Filter, "filter", "f", false, "enable filtering via query parameters")
-	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
-	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
-	rootCmd.Flags().BoolVarP(&Sort, "sort", "s", false, "enable sorting via query parameters")
-	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files to stdout")
+	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose stats endpoint")
+	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
+	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
+	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
+	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")
+	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().SetInterspersed(true)
 }
