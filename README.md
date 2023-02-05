@@ -74,6 +74,8 @@ If any `include=`/`exclude=` filters are specified in a given request, the cache
 
 The cache can be regenerated at any time by accessing the `/_/clear_cache` endpoint.
 
+If `--cache-file` is set, the cache will be loaded on start (if it exists), and compressed via zstd and serialized to disk whenever it is re-generated.
+
 ## Debug
 
 If the `-d|--debug` flag is passed, an additional endpoint, `/_/stats`, is registered.
@@ -82,7 +84,7 @@ When accessed, this endpoint returns a JSON document listing every file served, 
 
 ## Usage output
 ```
-Usage:
+sage:
   roulette <path> [path]... [flags]
   roulette [command]
 
@@ -92,15 +94,15 @@ Available Commands:
   version     Print version
 
 Flags:
-  -c, --cache          generate directory cache at startup
-  -d, --debug          expose stats endpoint
-  -f, --filter         enable filtering
-  -h, --help           help for roulette
-  -i, --index string   path to persistent index file
-  -p, --port uint16    port to listen on (default 8080)
-  -r, --recursive      recurse into subdirectories
-  -s, --sort           enable sorting
-  -v, --verbose        log accessed files to stdout
+  -c, --cache               generate directory cache at startup
+      --cache-file string   path to optional persistent cache file
+  -f, --filter              enable filtering
+  -h, --help                help for roulette
+  -p, --port uint16         port to listen on (default 8080)
+  -r, --recursive           recurse into subdirectories
+  -s, --sort                enable sorting
+      --stats               expose stats endpoint
+  -v, --verbose             log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.
 ```

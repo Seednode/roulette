@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var Version = "0.35.0"
+var Version = "0.36.0"
 
 func init() {
 	rootCmd.AddCommand(versionCmd)

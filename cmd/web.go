@@ -24,6 +24,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 )
 
@@ -94,8 +95,8 @@ func (i *Index) generateCache(args []string) {
 
 	fileList(args, &Filters{}, "", i)
 
-	if indexFile != "" {
-		i.Export(indexFile)
+	if cache && cacheFile != "" {
+		i.Export(cacheFile)
 	}
 }
 
@@ -114,7 +115,13 @@ func (i *Index) Export(path string) error {
 	}
 	defer file.Close()
 
-	enc := gob.NewEncoder(file)
+	z, err := zstd.NewWriter(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	enc := gob.NewEncoder(z)
 
 	enc.Encode(&i.list)
 
@@ -130,7 +137,13 @@ func (i *Index) Import(path string) error {
 	}
 	defer file.Close()
 
-	dec := gob.NewDecoder(file)
+	z, err := zstd.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	dec := gob.NewDecoder(z)
 
 	err = dec.Decode(&i.list)
 	if err != nil {
@@ -466,7 +479,7 @@ func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, sta
 		)
 	}
 
-	if debug {
+	if statistics {
 		stats.incrementCounter(filePath, startTime, fileSize)
 	}
 
@@ -630,8 +643,8 @@ func ServePage(args []string) error {
 	if cache {
 		skipIndex := false
 
-		if indexFile != "" {
-			err = index.Import(indexFile)
+		if cacheFile != "" {
+			err = index.Import(cacheFile)
 			switch err {
 			case ErrIndexNotExist:
 			case nil:
@@ -660,7 +673,7 @@ func ServePage(args []string) error {
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
-	if debug {
+	if statistics {
 		http.Handle("/_/stats", serveStatsHandler(args, stats))
 	}
 
