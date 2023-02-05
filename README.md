@@ -74,7 +74,7 @@ If any `include=`/`exclude=` filters are specified in a given request, the cache
 
 The cache can be regenerated at any time by accessing the `/_/clear_cache` endpoint.
 
-If `--cache-file` is set, the cache will be loaded on start (if it exists), and compressed via zstd and serialized to disk whenever it is re-generated.
+If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
 ## Debug
 
