@@ -620,8 +620,6 @@ func ServePage(args []string) error {
 		units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
 	}
 
-	//NewRand(NewSource(time.Now().UnixNano()))
-
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	index := &Index{
