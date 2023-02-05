@@ -5,7 +5,9 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -23,6 +25,10 @@ import (
 	"time"
 
 	"github.com/yosssi/gohtml"
+)
+
+var (
+	ErrIndexNotExist = errors.New(`specified index does not exist`)
 )
 
 const (
@@ -87,6 +93,10 @@ func (i *Index) generateCache(args []string) {
 	i.mutex.Unlock()
 
 	fileList(args, &Filters{}, "", i)
+
+	if indexFile != "" {
+		i.Export(indexFile)
+	}
 }
 
 func (i *Index) IsEmpty() bool {
@@ -95,6 +105,39 @@ func (i *Index) IsEmpty() bool {
 	i.mutex.RUnlock()
 
 	return length == 0
+}
+
+func (i *Index) Export(path string) error {
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	enc := gob.NewEncoder(file)
+
+	enc.Encode(&i.list)
+
+	return nil
+}
+
+func (i *Index) Import(path string) error {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if os.IsNotExist(err) {
+		return ErrIndexNotExist
+	} else if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	dec := gob.NewDecoder(file)
+
+	err = dec.Decode(&i.list)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 type ServeStats struct {
@@ -577,7 +620,9 @@ func ServePage(args []string) error {
 		units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
 	}
 
-	rand.Seed(time.Now().UnixNano())
+	//NewRand(NewSource(time.Now().UnixNano()))
+
+	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	index := &Index{
 		mutex: sync.RWMutex{},
@@ -585,7 +630,22 @@ func ServePage(args []string) error {
 	}
 
 	if cache {
-		index.generateCache(args)
+		skipIndex := false
+
+		if indexFile != "" {
+			err = index.Import(indexFile)
+			switch err {
+			case ErrIndexNotExist:
+			case nil:
+				skipIndex = true
+			default:
+				return err
+			}
+		}
+
+		if !skipIndex {
+			index.generateCache(args)
+		}
 
 		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
 	}

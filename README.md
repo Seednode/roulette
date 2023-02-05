@@ -92,14 +92,15 @@ Available Commands:
   version     Print version
 
 Flags:
-  -c, --cache         only scan directories once, at startup (or when filters are applied)
-  -d, --debug         store list of files served and number of times they were served
-  -f, --filter        enable filtering via query parameters
-  -h, --help          help for roulette
-  -p, --port uint16   port to listen on (default 8080)
-  -r, --recursive     recurse into subdirectories
-  -s, --sort          enable sorting via query parameters
-  -v, --verbose       log accessed files to stdout
+  -c, --cache          generate directory cache at startup
+  -d, --debug          expose stats endpoint
+  -f, --filter         enable filtering
+  -h, --help           help for roulette
+  -i, --index string   path to persistent index file
+  -p, --port uint16    port to listen on (default 8080)
+  -r, --recursive      recurse into subdirectories
+  -s, --sort           enable sorting
+  -v, --verbose        log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.
 ```
