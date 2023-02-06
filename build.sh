@@ -13,6 +13,7 @@ platforms=(
   "freebsd/amd64"
   "freebsd/arm"
   "freebsd/arm64"
+  "freebsd/riscv64"
   "illumos/amd64"
   "js/wasm"
   "linux/386"
