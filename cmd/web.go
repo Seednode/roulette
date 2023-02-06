@@ -183,19 +183,25 @@ func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesiz
 func (s *ServeStats) ListImages() ([]byte, error) {
 	s.mutex.RLock()
 
-	sortedList := s.list
+	sortedList := &ServeStats{
+		mutex: sync.RWMutex{},
+		list:  s.list,
+		count: s.count,
+		size:  s.size,
+		times: s.times,
+	}
 
-	sort.SliceStable(sortedList, func(p, q int) bool {
-		return sortedList[p] < sortedList[q]
+	s.mutex.RUnlock()
+
+	sort.SliceStable(sortedList.list, func(p, q int) bool {
+		return sortedList.list[p] < sortedList.list[q]
 	})
 
 	a := []timesServed{}
 
-	for _, image := range s.list {
-		a = append(a, timesServed{image, s.count[image], s.size[image], s.times[image]})
+	for _, image := range sortedList.list {
+		a = append(a, timesServed{image, sortedList.count[image], sortedList.size[image], sortedList.times[image]})
 	}
-
-	s.mutex.RUnlock()
 
 	r, err := json.MarshalIndent(a, "", "    ")
 	if err != nil {
