@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -258,9 +257,7 @@ func refreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
 		return 0, "0ms"
 	}
 
-	durationInMs := duration.Milliseconds()
-
-	return durationInMs, refreshInterval
+	return duration.Milliseconds(), refreshInterval
 }
 
 func sortOrder(r *http.Request) string {
@@ -511,7 +508,8 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 
 		response, err := stats.ListImages()
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			return
 		}
 
 		w.Write(response)
@@ -531,7 +529,7 @@ func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc 
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := serveStaticFile(w, r, paths, stats)
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
 		}
 	}
 }
@@ -540,7 +538,8 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+			return
 		}
 
 		filters := &Filters{
@@ -559,7 +558,8 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 			if refererUri != "" {
 				filePath, err = nextFile(refererUri, sortOrder, Regexes)
 				if err != nil {
-					log.Fatal(err)
+					fmt.Println(err)
+					return
 				}
 			}
 
@@ -571,7 +571,8 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 
 					return
 				case err != nil:
-					log.Fatal(err)
+					fmt.Println(err)
+					return
 				}
 			}
 
@@ -592,7 +593,8 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 
 			exists, err := fileExists(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				return
 			}
 			if !exists {
 				notFound(w, r, filePath)
@@ -602,7 +604,8 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 
 			image, err := isImage(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				return
 			}
 			if !image {
 				notFound(w, r, filePath)
@@ -612,12 +615,14 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 
 			dimensions, err := imageDimensions(filePath)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				return
 			}
 
 			err = serveHtml(w, r, filePath, dimensions, filters, Regexes)
 			if err != nil {
-				log.Fatal(err)
+				fmt.Println(err)
+				return
 			}
 		}
 	}
