@@ -12,14 +12,15 @@ import (
 )
 
 var (
-	cache      bool
-	cacheFile  string
-	filtering  bool
-	port       uint16
-	recursive  bool
-	sorting    bool
-	statistics bool
-	verbose    bool
+	cache          bool
+	cacheFile      string
+	filtering      bool
+	port           uint16
+	recursive      bool
+	sorting        bool
+	statistics     bool
+	statisticsFile string
+	verbose        bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -52,6 +53,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&statistics, "stats", false, "expose stats endpoint")
+	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().SetInterspersed(true)
 }

@@ -10,10 +10,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -21,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/klauspost/compress/zstd"
@@ -122,16 +125,18 @@ func (i *Index) Export(path string) error {
 
 	enc := gob.NewEncoder(z)
 
+	i.mutex.RLock()
+
 	enc.Encode(&i.list)
+
+	i.mutex.RUnlock()
 
 	return nil
 }
 
 func (i *Index) Import(path string) error {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
-	if os.IsNotExist(err) {
-		return ErrIndexNotExist
-	} else if err != nil {
+	if err != nil {
 		return err
 	}
 	defer file.Close()
@@ -144,7 +149,12 @@ func (i *Index) Import(path string) error {
 
 	dec := gob.NewDecoder(z)
 
+	i.mutex.Lock()
+
 	err = dec.Decode(&i.list)
+
+	i.mutex.Unlock()
+
 	if err != nil {
 		return err
 	}
@@ -158,6 +168,13 @@ type ServeStats struct {
 	count map[string]uint64
 	size  map[string]string
 	times map[string][]string
+}
+
+type exportedServeStats struct {
+	List  []string
+	Count map[string]uint64
+	Size  map[string]string
+	Times map[string][]string
 }
 
 func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesize string) {
@@ -179,27 +196,66 @@ func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesiz
 	s.mutex.Unlock()
 }
 
-func (s *ServeStats) ListImages() ([]byte, error) {
+func (s *ServeStats) toExported() *exportedServeStats {
+	stats := &exportedServeStats{
+		List:  []string{},
+		Count: make(map[string]uint64),
+		Size:  make(map[string]string),
+		Times: make(map[string][]string),
+	}
+
 	s.mutex.RLock()
 
-	sortedList := &ServeStats{
-		mutex: sync.RWMutex{},
-		list:  s.list,
-		count: s.count,
-		size:  s.size,
-		times: s.times,
+	stats.List = append(stats.List, s.list...)
+
+	for k, v := range s.count {
+		stats.Count[k] = v
+	}
+
+	for k, v := range s.size {
+		stats.Size[k] = v
+	}
+
+	for k, v := range s.times {
+		stats.Times[k] = v
 	}
 
 	s.mutex.RUnlock()
 
-	sort.SliceStable(sortedList.list, func(p, q int) bool {
-		return sortedList.list[p] < sortedList.list[q]
+	return stats
+}
+
+func (s *ServeStats) toImported(stats *exportedServeStats) {
+	s.mutex.Lock()
+
+	s.list = append(s.list, stats.List...)
+
+	for k, v := range stats.Count {
+		s.count[k] = v
+	}
+
+	for k, v := range stats.Size {
+		s.size[k] = v
+	}
+
+	for k, v := range stats.Times {
+		s.times[k] = v
+	}
+
+	s.mutex.Unlock()
+}
+
+func (s *ServeStats) ListImages() ([]byte, error) {
+	stats := s.toExported()
+
+	sort.SliceStable(stats.List, func(p, q int) bool {
+		return stats.List[p] < stats.List[q]
 	})
 
 	a := []timesServed{}
 
-	for _, image := range sortedList.list {
-		a = append(a, timesServed{image, sortedList.count[image], sortedList.size[image], sortedList.times[image]})
+	for _, image := range stats.List {
+		a = append(a, timesServed{image, stats.Count[image], stats.Size[image], stats.Times[image]})
 	}
 
 	r, err := json.MarshalIndent(a, "", "    ")
@@ -208,6 +264,63 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 	}
 
 	return r, nil
+}
+
+func (s *ServeStats) Export(path string) error {
+	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	z, err := zstd.NewWriter(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	enc := gob.NewEncoder(z)
+
+	stats := s.toExported()
+
+	err = enc.Encode(&stats)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return nil
+}
+
+func (s *ServeStats) Import(path string) error {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	z, err := zstd.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	dec := gob.NewDecoder(z)
+
+	stats := &exportedServeStats{
+		List:  []string{},
+		Count: make(map[string]uint64),
+		Size:  make(map[string]string),
+		Times: make(map[string][]string),
+	}
+
+	err = dec.Decode(stats)
+	if err != nil {
+		return err
+	}
+
+	s.toImported(stats)
+
+	return nil
 }
 
 type timesServed struct {
@@ -522,6 +635,10 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 				time.Since(startTime).Round(time.Microsecond),
 			)
 		}
+
+		if statisticsFile != "" {
+			stats.Export(statisticsFile)
+		}
 	}
 }
 
@@ -655,13 +772,9 @@ func ServePage(args []string) error {
 		skipIndex := false
 
 		if cacheFile != "" {
-			err = index.Import(cacheFile)
-			switch err {
-			case ErrIndexNotExist:
-			case nil:
+			err := index.Import(cacheFile)
+			if err == nil {
 				skipIndex = true
-			default:
-				return err
 			}
 		}
 
@@ -678,6 +791,19 @@ func ServePage(args []string) error {
 		count: make(map[string]uint64),
 		size:  make(map[string]string),
 		times: make(map[string][]string),
+	}
+
+	if statistics && statisticsFile != "" {
+		stats.Import(statisticsFile)
+
+		gracefulShutdown := make(chan os.Signal, 1)
+		signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			<-gracefulShutdown
+			stats.Export(statisticsFile)
+			os.Exit(0)
+		}()
 	}
 
 	http.Handle("/", serveHtmlHandler(paths, Regexes, index))

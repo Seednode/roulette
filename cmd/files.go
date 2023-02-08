@@ -318,7 +318,6 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 	p.base = split[0][1]
 
 	p.number, err = strconv.Atoi(split[0][2])
-
 	if err != nil {
 		return &Path{}, err
 	}
