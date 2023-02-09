@@ -7,11 +7,11 @@ require (
 	github.com/klauspost/compress v1.15.15
 	github.com/spf13/cobra v1.6.1
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
-	golang.org/x/image v0.3.0
+	golang.org/x/image v0.4.0
 )
 
 require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	golang.org/x/net v0.5.0 // indirect
+	golang.org/x/net v0.6.0 // indirect
 )
