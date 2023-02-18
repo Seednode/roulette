@@ -505,6 +505,24 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	return fileList, false
 }
 
+func cleanFilename(filename string) string {
+	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
+}
+
+func prepareDirectory(directory []string) []string {
+	_, first := filepath.Split(directory[0])
+	first = cleanFilename(first)
+
+	_, last := filepath.Split(directory[len(directory)-1])
+	last = cleanFilename(last)
+
+	if first == last {
+		return append([]string{}, directory[0])
+	} else {
+		return directory
+	}
+}
+
 func prepareDirectories(files *Files, sort string) []string {
 	i, l := 0, 0
 
@@ -520,8 +538,14 @@ func prepareDirectories(files *Files, sort string) []string {
 
 	directories := make([]string, l)
 
-	for i := 0; i < len(keys); i++ {
-		copy(directories, files.list[keys[i]])
+	if sort == "asc" || sort == "desc" {
+		for i := 0; i < len(keys); i++ {
+			copy(directories, prepareDirectory(files.list[keys[i]]))
+		}
+	} else {
+		for i := 0; i < len(keys); i++ {
+			copy(directories, files.list[keys[i]])
+		}
 	}
 
 	files.mutex.RUnlock()
