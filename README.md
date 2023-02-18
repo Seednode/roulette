@@ -102,6 +102,7 @@ Flags:
   -r, --recursive           recurse into subdirectories
   -s, --sort                enable sorting
       --stats               expose stats endpoint
+      --stats-file string   path to optional persistent stats file
   -v, --verbose             log accessed files to stdout
 
 Use "roulette [command] --help" for more information about a command.
