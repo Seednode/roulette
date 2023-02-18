@@ -52,7 +52,7 @@ type Dimensions struct {
 }
 
 type Files struct {
-	mutex sync.Mutex
+	mutex sync.RWMutex
 	list  map[string][]string
 }
 
@@ -448,7 +448,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	var fileList []string
 
 	files := &Files{
-		mutex: sync.Mutex{},
+		mutex: sync.RWMutex{},
 		list:  make(map[string][]string),
 	}
 
@@ -505,44 +505,26 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	return fileList, false
 }
 
-func cleanFilename(filename string) string {
-	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
-}
-
-func prepareDirectory(directory []string) []string {
-	_, first := filepath.Split(directory[0])
-	first = cleanFilename(first)
-
-	_, last := filepath.Split(directory[len(directory)-1])
-	last = cleanFilename(last)
-
-	if first == last {
-		return append([]string{}, directory[0])
-	} else {
-		return directory
-	}
-}
-
 func prepareDirectories(files *Files, sort string) []string {
-	directories := []string{}
+	i, l := 0, 0
+
+	files.mutex.RLock()
 
 	keys := make([]string, len(files.list))
 
-	i := 0
 	for k := range files.list {
 		keys[i] = k
 		i++
+		l += len(files.list[k])
 	}
 
-	if sort == "asc" || sort == "desc" {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
-		}
-	} else {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, files.list[keys[i]]...)
-		}
+	directories := make([]string, l)
+
+	for i := 0; i < len(keys); i++ {
+		copy(directories, files.list[keys[i]])
 	}
+
+	files.mutex.RUnlock()
 
 	return directories
 }
@@ -586,7 +568,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 }
 
 func normalizePaths(args []string) ([]string, error) {
-	var paths []string
+	paths := make([]string, len(args))
 
 	fmt.Println("Paths:")
 
@@ -607,7 +589,7 @@ func normalizePaths(args []string) ([]string, error) {
 			fmt.Printf("%s\n", args[i])
 		}
 
-		paths = append(paths, absolutePath)
+		paths[i] = absolutePath
 	}
 
 	fmt.Println()

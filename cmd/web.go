@@ -198,7 +198,7 @@ func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesiz
 
 func (s *ServeStats) toExported() *exportedServeStats {
 	stats := &exportedServeStats{
-		List:  []string{},
+		List:  make([]string, len(s.list)),
 		Count: make(map[string]uint64),
 		Size:  make(map[string]string),
 		Times: make(map[string][]string),
@@ -206,7 +206,7 @@ func (s *ServeStats) toExported() *exportedServeStats {
 
 	s.mutex.RLock()
 
-	stats.List = append(stats.List, s.list...)
+	copy(stats.List, s.list)
 
 	for k, v := range s.count {
 		stats.Count[k] = v
@@ -228,7 +228,9 @@ func (s *ServeStats) toExported() *exportedServeStats {
 func (s *ServeStats) toImported(stats *exportedServeStats) {
 	s.mutex.Lock()
 
-	s.list = append(s.list, stats.List...)
+	s.list = make([]string, len(stats.List))
+
+	copy(s.list, stats.List)
 
 	for k, v := range stats.Count {
 		s.count[k] = v
@@ -252,10 +254,10 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 		return stats.List[p] < stats.List[q]
 	})
 
-	a := []timesServed{}
+	a := make([]timesServed, len(stats.List))
 
-	for _, image := range stats.List {
-		a = append(a, timesServed{image, stats.Count[image], stats.Size[image], stats.Times[image]})
+	for k, v := range stats.List {
+		a[k] = timesServed{v, stats.Count[v], stats.Size[v], stats.Times[v]}
 	}
 
 	r, err := json.MarshalIndent(a, "", "    ")
