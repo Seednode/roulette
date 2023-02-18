@@ -35,9 +35,10 @@ var (
 )
 
 const (
-	LogDate            string = `2006-01-02T15:04:05.000-07:00`
-	Prefix             string = `/src`
-	RedirectStatusCode int    = http.StatusSeeOther
+	LogDate            string        = `2006-01-02T15:04:05.000-07:00`
+	Prefix             string        = `/src`
+	RedirectStatusCode int           = http.StatusSeeOther
+	Timeout            time.Duration = 10 * time.Second
 )
 
 type Regexes struct {
@@ -682,7 +683,18 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 				}
 			}
 
-			if filePath == "" {
+		loop:
+			for timeout := time.After(Timeout); ; {
+				select {
+				case <-timeout:
+					break loop
+				default:
+				}
+
+				if filePath != "" {
+					break loop
+				}
+
 				filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
 				switch {
 				case err != nil && err == ErrNoImagesFound:

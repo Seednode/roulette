@@ -517,38 +517,32 @@ func prepareDirectory(directory []string) []string {
 	last = cleanFilename(last)
 
 	if first == last {
-		return append([]string{}, directory[0])
+		return []string{directory[0]}
 	} else {
 		return directory
 	}
 }
 
 func prepareDirectories(files *Files, sort string) []string {
-	i, l := 0, 0
-
-	files.mutex.RLock()
+	directories := []string{}
 
 	keys := make([]string, len(files.list))
 
+	i := 0
 	for k := range files.list {
 		keys[i] = k
 		i++
-		l += len(files.list[k])
 	}
-
-	directories := make([]string, l)
 
 	if sort == "asc" || sort == "desc" {
 		for i := 0; i < len(keys); i++ {
-			copy(directories, prepareDirectory(files.list[keys[i]]))
+			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
 		}
 	} else {
 		for i := 0; i < len(keys); i++ {
-			copy(directories, files.list[keys[i]])
+			directories = append(directories, files.list[keys[i]]...)
 		}
 	}
-
-	files.mutex.RUnlock()
 
 	return directories
 }
