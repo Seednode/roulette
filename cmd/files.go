@@ -551,7 +551,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 	fileList, fromCache := fileList(args, filters, sort, index)
 
 	fileCount := len(fileList)
-	if fileCount == 0 {
+	if fileCount < 1 {
 		return "", ErrNoImagesFound
 	}
 
