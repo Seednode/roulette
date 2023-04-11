@@ -770,6 +770,11 @@ func ServePage(args []string) error {
 		return err
 	}
 
+	if len(paths) == 0 {
+		fmt.Println("No supported files found in provided paths. Exiting.")
+		os.Exit(0)
+	}
+
 	Regexes := &Regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),

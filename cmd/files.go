@@ -398,6 +398,43 @@ func isImage(path string) (bool, error) {
 	return filetype.IsImage(head), nil
 }
 
+func pathHasSupportedFiles(path string) (bool, error) {
+	hasSupportedFiles := make(chan bool, 1)
+
+	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		switch {
+		case !recursive && info.IsDir() && p != path:
+			return filepath.SkipDir
+		case !info.IsDir():
+			image, err := isImage(p)
+			if err != nil {
+				return err
+			}
+
+			if image {
+				hasSupportedFiles <- true
+				return filepath.SkipAll
+			}
+		}
+
+		return err
+	})
+	if err != nil {
+		return false, err
+	}
+
+	select {
+	case <-hasSupportedFiles:
+		return true, nil
+	default:
+		return false, nil
+	}
+}
+
 func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
 	var wg sync.WaitGroup
 
@@ -586,7 +623,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 }
 
 func normalizePaths(args []string) ([]string, error) {
-	paths := make([]string, len(args))
+	paths := []string{}
 
 	fmt.Println("Paths:")
 
@@ -601,13 +638,29 @@ func normalizePaths(args []string) ([]string, error) {
 			return nil, err
 		}
 
-		if (args[i]) != absolutePath {
-			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
-		} else {
-			fmt.Printf("%s\n", args[i])
+		hasSupportedFiles, err := pathHasSupportedFiles(absolutePath)
+		if err != nil {
+			return nil, err
 		}
 
-		paths[i] = absolutePath
+		var addPath bool = false
+
+		switch {
+		case args[i] == absolutePath && hasSupportedFiles:
+			fmt.Printf("%s\n", args[i])
+			addPath = true
+		case args[i] != absolutePath && hasSupportedFiles:
+			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
+			addPath = true
+		case args[i] == absolutePath && !hasSupportedFiles:
+			fmt.Printf("%s [No supported files found]\n", args[i])
+		case args[i] != absolutePath && !hasSupportedFiles:
+			fmt.Printf("%s (resolved to %s) [No supported files found]\n", args[i], absolutePath)
+		}
+
+		if addPath {
+			paths = append(paths, absolutePath)
+		}
 	}
 
 	fmt.Println()
