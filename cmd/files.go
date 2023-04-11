@@ -456,7 +456,12 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 					wg.Done()
 				}()
 
-				err = appendPaths(p, files, filters, stats)
+				path, err := normalizePath(p)
+				if err != nil {
+					fmt.Println(err)
+				}
+
+				err = appendPaths(path, files, filters, stats)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -622,23 +627,34 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 	return "", ErrNoImagesFound
 }
 
+func normalizePath(path string) (string, error) {
+	path, err := filepath.EvalSymlinks(path)
+	if err != nil {
+		return "", err
+	}
+
+	absolutePath, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+
+	return absolutePath, nil
+}
+
 func normalizePaths(args []string) ([]string, error) {
 	paths := []string{}
 
 	fmt.Println("Paths:")
 
 	for i := 0; i < len(args); i++ {
-		path, err := filepath.EvalSymlinks(args[i])
+		path, err := normalizePath(args[i])
 		if err != nil {
 			return nil, err
 		}
 
-		absolutePath, err := filepath.Abs(path)
-		if err != nil {
-			return nil, err
-		}
+		pathMatches := (args[i] == path)
 
-		hasSupportedFiles, err := pathHasSupportedFiles(absolutePath)
+		hasSupportedFiles, err := pathHasSupportedFiles(path)
 		if err != nil {
 			return nil, err
 		}
@@ -646,20 +662,20 @@ func normalizePaths(args []string) ([]string, error) {
 		var addPath bool = false
 
 		switch {
-		case args[i] == absolutePath && hasSupportedFiles:
+		case pathMatches && hasSupportedFiles:
 			fmt.Printf("%s\n", args[i])
 			addPath = true
-		case args[i] != absolutePath && hasSupportedFiles:
-			fmt.Printf("%s (resolved to %s)\n", args[i], absolutePath)
+		case !pathMatches && hasSupportedFiles:
+			fmt.Printf("%s (resolved to %s)\n", args[i], path)
 			addPath = true
-		case args[i] == absolutePath && !hasSupportedFiles:
+		case pathMatches && !hasSupportedFiles:
 			fmt.Printf("%s [No supported files found]\n", args[i])
-		case args[i] != absolutePath && !hasSupportedFiles:
-			fmt.Printf("%s (resolved to %s) [No supported files found]\n", args[i], absolutePath)
+		case !pathMatches && !hasSupportedFiles:
+			fmt.Printf("%s (resolved to %s) [No supported files found]\n", args[i], path)
 		}
 
 		if addPath {
-			paths = append(paths, absolutePath)
+			paths = append(paths, path)
 		}
 	}
 
