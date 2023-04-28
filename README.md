@@ -83,9 +83,9 @@ If the `--stats` flag is passed, an additional endpoint, `/_/stats`, is register
 When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served, its filesize, and timestamps of when it was served.
 
 ## Debug
-If the `-d|--debug` flag is passed, an additional endpoint, `/_/index`, is registered.
+If the `-d|--debug` flag is passed, an additional endpoint, `/_/debug`, is registered.
 
-When accessed, this endpoint returns a JSON document listing every file currently in the index.
+When accessed, this endpoint returns a sorted JSON document listing every file currently in the index. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
 ## Usage output
 ```
@@ -101,7 +101,7 @@ Available Commands:
 Flags:
   -c, --cache               generate directory cache at startup
       --cache-file string   path to optional persistent cache file
-  -d, --debug               expose index endpoint
+  -d, --debug               expose debug endpoint
   -f, --filter              enable filtering
   -h, --help                help for roulette
   -p, --port uint16         port to listen on (default 8080)

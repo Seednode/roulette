@@ -646,7 +646,7 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveIndexHandler(args []string, index *Index) http.HandlerFunc {
+func serveDebugHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -667,7 +667,7 @@ func serveIndexHandler(args []string, index *Index) http.HandlerFunc {
 		w.Write(response)
 
 		if verbose {
-			fmt.Printf("%s | Served index page (%s) to %s in %s\n",
+			fmt.Printf("%s | Served debug page (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -866,7 +866,7 @@ func ServePage(args []string) error {
 	}
 
 	if debug {
-		http.Handle("/_/index", serveIndexHandler(args, index))
+		http.Handle("/_/debug", serveDebugHandler(args, index))
 	}
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(port), 10), nil)
