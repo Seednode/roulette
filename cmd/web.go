@@ -646,6 +646,31 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
+func serveIndexHandler(args []string, index *Index) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "application/json")
+
+		startTime := time.Now()
+
+		response, err := json.MarshalIndent(index.Index(), "", "    ")
+		if err != nil {
+			return
+		}
+
+		w.Write(response)
+
+		if verbose {
+			fmt.Printf("%s | Served index page (%s) to %s in %s\n",
+				startTime.Format(LogDate),
+				humanReadableSize(len(response)),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
+
 func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		err := serveStaticFile(w, r, paths, stats)
@@ -832,6 +857,10 @@ func ServePage(args []string) error {
 
 	if statistics {
 		http.Handle("/_/stats", serveStatsHandler(args, stats))
+	}
+
+	if debug {
+		http.Handle("/_/index", serveIndexHandler(args, index))
 	}
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(port), 10), nil)

@@ -14,6 +14,7 @@ import (
 var (
 	cache          bool
 	cacheFile      string
+	debug          bool
 	filtering      bool
 	port           uint16
 	recursive      bool
@@ -48,6 +49,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
+	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose index endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
