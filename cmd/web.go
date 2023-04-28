@@ -653,7 +653,13 @@ func serveIndexHandler(args []string, index *Index) http.HandlerFunc {
 
 		startTime := time.Now()
 
-		response, err := json.MarshalIndent(index.Index(), "", "    ")
+		indexDump := index.Index()
+
+		sort.SliceStable(indexDump, func(p, q int) bool {
+			return indexDump[p] < indexDump[q]
+		})
+
+		response, err := json.MarshalIndent(indexDump, "", "    ")
 		if err != nil {
 			return
 		}
