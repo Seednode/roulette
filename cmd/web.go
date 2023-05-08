@@ -7,14 +7,12 @@ package cmd
 import (
 	"encoding/gob"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
 	"math/rand"
 	"net"
 	"net/http"
-	_ "net/http/pprof"
 	"net/url"
 	"os"
 	"os/signal"
@@ -30,10 +28,6 @@ import (
 
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
-)
-
-var (
-	ErrIndexNotExist = errors.New(`specified index does not exist`)
 )
 
 const (
