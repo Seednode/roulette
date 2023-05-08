@@ -12,6 +12,7 @@ import (
 )
 
 var (
+	bind           string
 	cache          bool
 	cacheFile      string
 	debug          bool
@@ -52,6 +53,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().StringVarP(&bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")

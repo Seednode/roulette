@@ -99,6 +99,7 @@ Available Commands:
   version     Print version
 
 Flags:
+  -b, --bind string         address to bind to (default "0.0.0.0")
   -c, --cache               generate directory cache at startup
       --cache-file string   path to optional persistent cache file
   -d, --debug               expose debug endpoint

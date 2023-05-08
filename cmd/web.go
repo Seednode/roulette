@@ -12,6 +12,7 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"net/url"
@@ -835,6 +836,17 @@ func doNothing(http.ResponseWriter, *http.Request) {}
 func ServePage(args []string) error {
 	fmt.Printf("roulette v%s\n\n", Version)
 
+	bindHost, err := net.LookupHost(bind)
+	if err != nil {
+		return err
+	}
+
+	bindAddr := net.ParseIP(bindHost[0])
+	if bindAddr == nil {
+		fmt.Println("Invalid bind address provided. Please specify an IPv4 or IPv6 address in dotted decimal or IPv6 format.")
+		os.Exit(1)
+	}
+
 	paths, err := normalizePaths(args)
 	if err != nil {
 		return err
@@ -909,7 +921,7 @@ func ServePage(args []string) error {
 		http.Handle("/_/json", serveJsonDebugHandler(args, index))
 	}
 
-	err = http.ListenAndServe(":"+strconv.FormatInt(int64(port), 10), nil)
+	err = http.ListenAndServe(net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)), nil)
 	if err != nil {
 		return err
 	}
