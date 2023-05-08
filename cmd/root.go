@@ -27,6 +27,11 @@ var (
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random images from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
+		PreRun: func(cmd *cobra.Command, args []string) {
+			if debug {
+				cmd.MarkFlagRequired("cache")
+			}
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServePage(args)
 			if err != nil {
