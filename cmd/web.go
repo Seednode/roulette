@@ -363,7 +363,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func refreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
+func RefreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
 	refreshInterval := r.URL.Query().Get("refresh")
 
 	if !Regexes.units.MatchString(refreshInterval) {
@@ -378,7 +378,7 @@ func refreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
 	return duration.Milliseconds(), refreshInterval
 }
 
-func sortOrder(r *http.Request) string {
+func SortOrder(r *http.Request) string {
 	sortOrder := r.URL.Query().Get("sort")
 	if sortOrder == "asc" || sortOrder == "desc" {
 		return sortOrder
@@ -508,106 +508,7 @@ func realIP(r *http.Request) string {
 	}
 }
 
-func serveHtml(w http.ResponseWriter, r *http.Request, filePath string, dimensions *Dimensions, filters *Filters, Regexes *Regexes) error {
-	fileName := filepath.Base(filePath)
-
-	w.Header().Add("Content-Type", "text/html")
-
-	sortOrder := sortOrder(r)
-
-	refreshTimer, refreshInterval := refreshInterval(r, Regexes)
-
-	queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
-
-	var htmlBody strings.Builder
-	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
-	htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
-	htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
-	htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-	htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-		fileName,
-		dimensions.width,
-		dimensions.height))
-	htmlBody.WriteString(`</head><body>`)
-	if refreshInterval != "0ms" {
-		htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
-			queryParams,
-			refreshTimer))
-	}
-	htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
-		queryParams,
-		generateFilePath(filePath),
-		dimensions.width,
-		dimensions.height,
-		fileName))
-	htmlBody.WriteString(`</body></html>`)
-
-	_, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func serveStaticFile(w http.ResponseWriter, r *http.Request, paths []string, stats *ServeStats) error {
-	prefixedFilePath, err := stripQueryParams(r.URL.Path)
-	if err != nil {
-		return err
-	}
-
-	filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, Prefix))
-	if err != nil {
-		return err
-	}
-
-	if !pathIsValid(filePath, paths) {
-		notFound(w, r, filePath)
-
-		return nil
-	}
-
-	exists, err := fileExists(filePath)
-	if err != nil {
-		return err
-	}
-
-	if !exists {
-		notFound(w, r, filePath)
-
-		return nil
-	}
-
-	startTime := time.Now()
-
-	buf, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
-
-	w.Write(buf)
-
-	fileSize := humanReadableSize(len(buf))
-
-	if verbose {
-		fmt.Printf("%s | Served %s (%s) to %s in %s\n",
-			startTime.Format(LogDate),
-			filePath,
-			fileSize,
-			realIP(r),
-			time.Since(startTime).Round(time.Microsecond),
-		)
-	}
-
-	if statistics {
-		stats.incrementCounter(filePath, startTime, fileSize)
-	}
-
-	return nil
-}
-
-func serveCacheClearHandler(args []string, index *Index) http.HandlerFunc {
+func serveCacheClear(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		index.generateCache(args)
 
@@ -617,7 +518,7 @@ func serveCacheClearHandler(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
+func serveStats(args []string, stats *ServeStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -647,7 +548,7 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveHtmlDebugHandler(args []string, index *Index) http.HandlerFunc {
+func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
@@ -686,7 +587,7 @@ func serveHtmlDebugHandler(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveJsonDebugHandler(args []string, index *Index) http.HandlerFunc {
+func serveDebugJson(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -717,16 +618,67 @@ func serveJsonDebugHandler(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveStaticFileHandler(paths []string, stats *ServeStats) http.HandlerFunc {
+func serveStaticFile(paths []string, stats *ServeStats) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := serveStaticFile(w, r, paths, stats)
+		prefixedFilePath, err := stripQueryParams(r.URL.Path)
 		if err != nil {
 			fmt.Println(err)
+			return
+		}
+
+		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, Prefix))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if !pathIsValid(filePath, paths) {
+			notFound(w, r, filePath)
+
+			return
+		}
+
+		exists, err := fileExists(filePath)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if !exists {
+			notFound(w, r, filePath)
+
+			return
+		}
+
+		startTime := time.Now()
+
+		buf, err := os.ReadFile(filePath)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		w.Write(buf)
+
+		fileSize := humanReadableSize(len(buf))
+
+		if verbose {
+			fmt.Printf("%s | Served %s (%s) to %s in %s\n",
+				startTime.Format(LogDate),
+				filePath,
+				fileSize,
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+
+		if statistics {
+			stats.incrementCounter(filePath, startTime, fileSize)
 		}
 	}
 }
 
-func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
+func serveImage(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -739,9 +691,9 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 			excludes: splitQueryParams(r.URL.Query().Get("exclude"), Regexes),
 		}
 
-		sortOrder := sortOrder(r)
+		sortOrder := SortOrder(r)
 
-		_, refreshInterval := refreshInterval(r, Regexes)
+		_, refreshInterval := RefreshInterval(r, Regexes)
 
 		if r.URL.Path == "/" {
 			var filePath string
@@ -822,7 +774,41 @@ func serveHtmlHandler(paths []string, Regexes *Regexes, index *Index) http.Handl
 				return
 			}
 
-			err = serveHtml(w, r, filePath, dimensions, filters, Regexes)
+			fileName := filepath.Base(filePath)
+
+			w.Header().Add("Content-Type", "text/html")
+
+			sortOrder := SortOrder(r)
+
+			refreshTimer, refreshInterval := RefreshInterval(r, Regexes)
+
+			queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+
+			var htmlBody strings.Builder
+			htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+			htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
+			htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
+			htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
+			htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
+			htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
+				fileName,
+				dimensions.width,
+				dimensions.height))
+			htmlBody.WriteString(`</head><body>`)
+			if refreshInterval != "0ms" {
+				htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
+					queryParams,
+					refreshTimer))
+			}
+			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
+				queryParams,
+				generateFilePath(filePath),
+				dimensions.width,
+				dimensions.height,
+				fileName))
+			htmlBody.WriteString(`</body></html>`)
+
+			_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 			if err != nil {
 				fmt.Println(err)
 				return
@@ -843,7 +829,7 @@ func ServePage(args []string) error {
 
 	bindAddr := net.ParseIP(bindHost[0])
 	if bindAddr == nil {
-		fmt.Println("Invalid bind address provided. Please specify an IPv4 or IPv6 address in dotted decimal or IPv6 format.")
+		fmt.Println("Invalid bind address provided. Please specify a hostname, or an IPv4 or IPv6 address in dotted decimal or IPv6 format.")
 		os.Exit(1)
 	}
 
@@ -884,7 +870,7 @@ func ServePage(args []string) error {
 			index.generateCache(args)
 		}
 
-		http.Handle("/_/clear_cache", serveCacheClearHandler(args, index))
+		http.Handle("/_/clear_cache", serveCacheClear(args, index))
 	}
 
 	stats := &ServeStats{
@@ -908,17 +894,17 @@ func ServePage(args []string) error {
 		}()
 	}
 
-	http.Handle("/", serveHtmlHandler(paths, Regexes, index))
-	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFileHandler(paths, stats)))
+	http.Handle("/", serveImage(paths, Regexes, index))
+	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
 	if statistics {
-		http.Handle("/_/stats", serveStatsHandler(args, stats))
+		http.Handle("/_/stats", serveStats(args, stats))
 	}
 
 	if debug {
-		http.Handle("/_/html", serveHtmlDebugHandler(args, index))
-		http.Handle("/_/json", serveJsonDebugHandler(args, index))
+		http.Handle("/_/html", serveDebugHtml(args, index))
+		http.Handle("/_/json", serveDebugJson(args, index))
 	}
 
 	err = http.ListenAndServe(net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)), nil)
