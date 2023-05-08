@@ -646,7 +646,46 @@ func serveStatsHandler(args []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveDebugHandler(args []string, index *Index) http.HandlerFunc {
+func serveHtmlDebugHandler(args []string, index *Index) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		w.Header().Set("Content-Type", "text/html")
+
+		startTime := time.Now()
+
+		indexDump := index.Index()
+
+		sort.SliceStable(indexDump, func(p, q int) bool {
+			return indexDump[p] < indexDump[q]
+		})
+
+		var htmlBody strings.Builder
+
+		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+		htmlBody.WriteString(`<title>Debug</title></head><body>`)
+		for _, v := range indexDump {
+			htmlBody.WriteString(fmt.Sprintf("<a href=%q>%s</a>\n", v, v))
+		}
+		htmlBody.WriteString(`</body></html>`)
+
+		b, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
+		if err != nil {
+			return
+		}
+
+		if verbose {
+			fmt.Printf("%s | Served HTML debug page (%s) to %s in %s\n",
+				startTime.Format(LogDate),
+				humanReadableSize(b),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
+
+func serveJsonDebugHandler(args []string, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
@@ -667,7 +706,7 @@ func serveDebugHandler(args []string, index *Index) http.HandlerFunc {
 		w.Write(response)
 
 		if verbose {
-			fmt.Printf("%s | Served debug page (%s) to %s in %s\n",
+			fmt.Printf("%s | Served JSON debug page (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -866,7 +905,8 @@ func ServePage(args []string) error {
 	}
 
 	if debug {
-		http.Handle("/_/debug", serveDebugHandler(args, index))
+		http.Handle("/_/html", serveHtmlDebugHandler(args, index))
+		http.Handle("/_/json", serveJsonDebugHandler(args, index))
 	}
 
 	err = http.ListenAndServe(":"+strconv.FormatInt(int64(port), 10), nil)
