@@ -751,21 +751,26 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 				return
 			}
 
-			image, err := isImage(filePath)
+			image, video, err := isSupportedFileType(filePath)
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
-			if !image {
+
+			if !(image || video) {
 				notFound(w, r, filePath)
 
 				return
 			}
 
-			dimensions, err := imageDimensions(filePath)
-			if err != nil {
-				fmt.Println(err)
-				return
+			var dimensions *Dimensions
+
+			if image {
+				dimensions, err = imageDimensions(filePath)
+				if err != nil {
+					fmt.Println(err)
+					return
+				}
 			}
 
 			fileName := filepath.Base(filePath)
@@ -782,24 +787,38 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 			htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 			htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
 			htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
-			htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
+			htmlBody.WriteString(`img,video{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 			htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-			htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-				fileName,
-				dimensions.width,
-				dimensions.height))
+			switch {
+			case image:
+				htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
+					fileName,
+					dimensions.width,
+					dimensions.height))
+			case video:
+				htmlBody.WriteString(fmt.Sprintf(`<title>%s</title>`,
+					fileName))
+			}
 			htmlBody.WriteString(`</head><body>`)
 			if refreshInterval != "0ms" {
 				htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 					queryParams,
 					refreshTimer))
 			}
-			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
-				queryParams,
-				generateFilePath(filePath),
-				dimensions.width,
-				dimensions.height,
-				fileName))
+			switch {
+			case image:
+				htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
+					queryParams,
+					generateFilePath(filePath),
+					dimensions.width,
+					dimensions.height,
+					fileName))
+			case video:
+				htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><video src="%s" alt="Roulette selected: %s" autoplay controls></a>`,
+					queryParams,
+					generateFilePath(filePath),
+					fileName))
+			}
 			htmlBody.WriteString(`</body></html>`)
 
 			_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))

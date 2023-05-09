@@ -1,14 +1,14 @@
 ## About
 
-Sometimes, you just need a way to randomly display images from your filesystem.
+Sometimes, you just need a way to randomly display media from your filesystem.
 
 Simply point this tool at one or more directories, and then open the specified port (default `8080`) in your browser.
 
-A new image will be selected if you open `/` directly, or if you click on any displayed image.
+A new file will be selected if you open `/` directly, or if you click on any displayed media.
 
-Browser history is preserved, so you can always go back to any previously displayed image.
+Browser history is preserved, so you can always go back to any previously displayed media.
 
-Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp`.
+Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, `webp`, `mp4`, `ogv`, and `webm`.
 
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 
@@ -60,7 +60,7 @@ Note: These patterns require sequentially-numbered files matching the following 
 
 If a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
 
-This can be used to generate a sort of slideshow of images.
+This can be used to generate a sort of slideshow of files.
 
 Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
 
