@@ -561,7 +561,12 @@ func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 		htmlBody.WriteString(`<title>Debug</title></head><body>`)
 		for _, v := range indexDump {
-			htmlBody.WriteString(fmt.Sprintf("<a href=%q>%s</a>\n", v, v))
+			var shouldSort = ""
+
+			if sorting {
+				shouldSort = "?sort=asc"
+			}
+			htmlBody.WriteString(fmt.Sprintf("<a href=\"%s%s\">%s</a>\n", v, shouldSort, v))
 		}
 		htmlBody.WriteString(`</body></html>`)
 
@@ -672,7 +677,7 @@ func serveStaticFile(paths []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveImage(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
+func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -907,7 +912,7 @@ func ServePage(args []string) error {
 		}()
 	}
 
-	http.Handle("/", serveImage(paths, Regexes, index))
+	http.Handle("/", serveMedia(paths, Regexes, index))
 	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
 	http.HandleFunc("/favicon.ico", doNothing)
 
