@@ -838,8 +838,6 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 func doNothing(http.ResponseWriter, *http.Request) {}
 
 func ServePage(args []string) error {
-	fmt.Printf("roulette v%s\n\n", Version)
-
 	bindHost, err := net.LookupHost(bind)
 	if err != nil {
 		return err

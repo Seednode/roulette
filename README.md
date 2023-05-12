@@ -91,12 +91,6 @@ When accessed, these endpoints return the contents of the index, in HTML and JSO
 ```
 Usage:
   roulette <path> [path]... [flags]
-  roulette [command]
-
-Available Commands:
-  completion  Generate the autocompletion script for the specified shell
-  help        Help about any command
-  version     Print version
 
 Flags:
   -b, --bind string         address to bind to (default "0.0.0.0")
@@ -111,6 +105,5 @@ Flags:
       --stats               expose stats endpoint
       --stats-file string   path to optional persistent stats file
   -v, --verbose             log accessed files to stdout
-
-Use "roulette [command] --help" for more information about a command.
+  -V, --version             display version and exit
 ```

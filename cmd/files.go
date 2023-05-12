@@ -649,9 +649,10 @@ func normalizePath(path string) (string, error) {
 }
 
 func normalizePaths(args []string) ([]string, error) {
-	paths := []string{}
+	paths := make([]string, len(args))
 
-	fmt.Println("Paths:")
+	var pathList strings.Builder
+	pathList.WriteString("Paths:\n")
 
 	for i := 0; i < len(args); i++ {
 		path, err := normalizePath(args[i])
@@ -670,23 +671,25 @@ func normalizePaths(args []string) ([]string, error) {
 
 		switch {
 		case pathMatches && hasSupportedFiles:
-			fmt.Printf("%s\n", args[i])
+			pathList.WriteString(fmt.Sprintf("%s\n", args[i]))
 			addPath = true
 		case !pathMatches && hasSupportedFiles:
-			fmt.Printf("%s (resolved to %s)\n", args[i], path)
+			pathList.WriteString(fmt.Sprintf("%s (resolved to %s)\n", args[i], path))
 			addPath = true
 		case pathMatches && !hasSupportedFiles:
-			fmt.Printf("%s [No supported files found]\n", args[i])
+			pathList.WriteString(fmt.Sprintf("%s [No supported files found]\n", args[i]))
 		case !pathMatches && !hasSupportedFiles:
-			fmt.Printf("%s (resolved to %s) [No supported files found]\n", args[i], path)
+			pathList.WriteString(fmt.Sprintf("%s (resolved to %s) [No supported files found]\n", args[i], path))
 		}
 
 		if addPath {
-			paths = append(paths, path)
+			paths[i] = path
 		}
 	}
 
-	fmt.Println()
+	if len(paths) > 0 {
+		fmt.Println(pathList.String())
+	}
 
 	return paths, nil
 }

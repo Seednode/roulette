@@ -23,6 +23,7 @@ var (
 	statistics     bool
 	statisticsFile string
 	verbose        bool
+	version        bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -64,5 +65,16 @@ func init() {
 	rootCmd.Flags().BoolVar(&statistics, "stats", false, "expose stats endpoint")
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
+	rootCmd.Flags().BoolVarP(&version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().SetInterspersed(true)
+
+	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
+	rootCmd.SilenceErrors = true
+	rootCmd.SetHelpCommand(&cobra.Command{
+		Hidden: true,
+	})
+
+	rootCmd.SetVersionTemplate("roulette v{{.Version}}\n")
+	rootCmd.Version = "0.46.0"
 }
