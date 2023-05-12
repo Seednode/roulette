@@ -37,6 +37,8 @@ const (
 	Timeout            time.Duration = 10 * time.Second
 )
 
+type Stat int
+
 type Regexes struct {
 	alphanumeric *regexp.Regexp
 	filename     *regexp.Regexp
@@ -263,6 +265,67 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 	}
 
 	return r, nil
+}
+
+func (s *ServeStats) GetHistory() (string, string, error) {
+	stats := s.toExported()
+
+	type History struct {
+		name string
+		time time.Time
+	}
+
+	firstServed := History{}
+	lastServed := History{}
+
+	for _, name := range stats.List {
+		for _, accessTime := range stats.Times[name] {
+			t, err := time.Parse(LogDate, accessTime)
+			if err != nil {
+				return "", "", err
+			}
+
+			if (firstServed.time == time.Time{}) {
+				firstServed.name = name
+				firstServed.time = t
+			}
+
+			if (lastServed.time == time.Time{}) {
+				lastServed.name = name
+				lastServed.time = t
+			}
+
+			switch {
+			case t.Before(firstServed.time):
+				firstServed.name = name
+				firstServed.time = t
+			case t.After(lastServed.time):
+				lastServed.name = name
+				lastServed.time = t
+			}
+		}
+	}
+
+	return firstServed.name, lastServed.name, nil
+}
+
+func (s *ServeStats) GetMostServed() string {
+	stats := s.toExported()
+
+	retVal := ""
+
+	for _, v := range stats.List {
+		if retVal == "" {
+			retVal = v
+			continue
+		}
+
+		if stats.Count[v] > stats.Count[retVal] {
+			retVal = v
+		}
+	}
+
+	return retVal
 }
 
 func (s *ServeStats) Export(path string) error {
@@ -518,6 +581,17 @@ func serveStats(args []string, stats *ServeStats) http.HandlerFunc {
 		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
+
+		first, last, err := stats.GetHistory()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		most := stats.GetMostServed()
+
+		fmt.Printf("First served: %s\n", first)
+		fmt.Printf("Last served: %s\n", last)
+		fmt.Printf("Most served: %s\n", most)
 
 		response, err := stats.ListImages()
 		if err != nil {
