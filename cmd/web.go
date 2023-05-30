@@ -5,6 +5,8 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"bytes"
+	"embed"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -26,9 +28,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 )
+
+//go:embed img/*
+var favicons embed.FS
 
 const (
 	LogDate            string        = `2006-01-02T15:04:05.000-07:00`
@@ -864,6 +870,13 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 
 			var htmlBody strings.Builder
 			htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+			htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`)
+			htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">`)
+			htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">`)
+			htmlBody.WriteString(`<link rel="manifest" href="/site.webmanifest">`)
+			htmlBody.WriteString(`<link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5">`)
+			htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
+			htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
 			htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
 			htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 			htmlBody.WriteString(`img,video{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
@@ -909,7 +922,67 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 	}
 }
 
-func doNothing(http.ResponseWriter, *http.Request) {}
+func registerIcoHandlers(router *chi.Mux) {
+	router.HandleFunc("/favicon.ico", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/favicon.ico")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: image/x-icon"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+
+	router.HandleFunc("/apple-touch-icon.png", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/apple-touch-icon.png")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: image/png"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+
+	router.HandleFunc("/favicon-32x32.png", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/favicon-32x32.png")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: image/png"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+
+	router.HandleFunc("/favicon-16x16.png", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/favicon-16x16.png")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: image/png"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+
+	router.HandleFunc("/site.webmanifest", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/site.webmanifest")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: application/json"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+
+	router.HandleFunc("/safari-pinned-tab.svg", func(w http.ResponseWriter, r *http.Request) {
+		data, err := favicons.ReadFile("img/safari-pinned-tab.svg")
+		if err != nil {
+			return
+		}
+		w.Header().Write(bytes.NewBufferString("Content-Type: image/svg+xml"))
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	})
+}
 
 func ServePage(args []string) error {
 	bindHost, err := net.LookupHost(bind)
@@ -946,6 +1019,10 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
+	router := chi.NewRouter()
+
+	registerIcoHandlers(router)
+
 	if cache {
 		skipIndex := false
 
@@ -960,7 +1037,7 @@ func ServePage(args []string) error {
 			index.generateCache(args)
 		}
 
-		http.Handle("/_/clear_cache", serveCacheClear(args, index))
+		router.Handle("/_/clear_cache", serveCacheClear(args, index))
 	}
 
 	stats := &ServeStats{
@@ -983,21 +1060,20 @@ func ServePage(args []string) error {
 			os.Exit(0)
 		}()
 	}
-
-	http.Handle("/", serveMedia(paths, Regexes, index))
-	http.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
-	http.HandleFunc("/favicon.ico", doNothing)
+	router.Handle(Prefix+"/*", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
 
 	if statistics {
-		http.Handle("/_/stats", serveStats(args, stats))
+		router.Handle("/_/stats", serveStats(args, stats))
 	}
 
 	if debug {
-		http.Handle("/_/html", serveDebugHtml(args, index))
-		http.Handle("/_/json", serveDebugJson(args, index))
+		router.Handle("/_/html", serveDebugHtml(args, index))
+		router.Handle("/_/json", serveDebugJson(args, index))
 	}
 
-	err = http.ListenAndServe(net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)), nil)
+	router.Handle("/*", serveMedia(paths, Regexes, index))
+
+	err = http.ListenAndServe(net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)), router)
 	if err != nil {
 		return err
 	}
