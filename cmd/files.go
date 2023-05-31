@@ -649,7 +649,7 @@ func normalizePath(path string) (string, error) {
 }
 
 func normalizePaths(args []string) ([]string, error) {
-	paths := make([]string, len(args))
+	var paths []string
 
 	var pathList strings.Builder
 	pathList.WriteString("Paths:\n")
@@ -683,7 +683,7 @@ func normalizePaths(args []string) ([]string, error) {
 		}
 
 		if addPath {
-			paths[i] = path
+			paths = append(paths, path)
 		}
 	}
 

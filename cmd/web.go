@@ -943,8 +943,7 @@ func ServePage(args []string) error {
 
 	bindAddr := net.ParseIP(bindHost[0])
 	if bindAddr == nil {
-		fmt.Println("Invalid bind address provided. Please specify a hostname, or an IPv4 or IPv6 address in dotted decimal or IPv6 format.")
-		os.Exit(1)
+		return errors.New("invalid bind address provided")
 	}
 
 	paths, err := normalizePaths(args)
@@ -953,8 +952,7 @@ func ServePage(args []string) error {
 	}
 
 	if len(paths) == 0 {
-		fmt.Println("No supported files found in provided paths. Exiting.")
-		os.Exit(0)
+		return errors.New("no supported files found in provided paths")
 	}
 
 	Regexes := &Regexes{
