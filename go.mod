@@ -3,7 +3,6 @@ module seedno.de/seednode/roulette
 go 1.20
 
 require (
-	github.com/go-chi/chi/v5 v5.0.8
 	github.com/h2non/filetype v1.1.3
 	github.com/klauspost/compress v1.16.5
 	github.com/spf13/cobra v1.7.0

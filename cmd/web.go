@@ -9,6 +9,7 @@ import (
 	"embed"
 	"encoding/gob"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -28,7 +29,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 )
@@ -970,9 +970,7 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
-	router := chi.NewRouter()
-
-	router.Handle("/favicons/*", serveFavicons())
+	mux := http.NewServeMux()
 
 	if cache {
 		skipIndex := false
@@ -988,7 +986,7 @@ func ServePage(args []string) error {
 			index.generateCache(args)
 		}
 
-		router.Handle("/_/clear_cache", serveCacheClear(args, index))
+		mux.Handle("/_/clear_cache", serveCacheClear(args, index))
 	}
 
 	stats := &ServeStats{
@@ -1011,21 +1009,31 @@ func ServePage(args []string) error {
 			os.Exit(0)
 		}()
 	}
-	router.Handle(Prefix+"/*", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
 
 	if statistics {
-		router.Handle("/_/stats", serveStats(args, stats))
+		mux.Handle("/_/stats", serveStats(args, stats))
 	}
 
 	if debug {
-		router.Handle("/_/html", serveDebugHtml(args, index))
-		router.Handle("/_/json", serveDebugJson(args, index))
+		mux.Handle("/_/html", serveDebugHtml(args, index))
+		mux.Handle("/_/json", serveDebugJson(args, index))
 	}
 
-	router.Handle("/*", serveMedia(paths, Regexes, index))
+	mux.Handle("/favicons/", serveFavicons())
 
-	err = http.ListenAndServe(net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)), router)
-	if err != nil {
+	mux.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
+
+	mux.Handle("/", serveMedia(paths, Regexes, index))
+
+	srv := &http.Server{
+		Addr:         net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)),
+		Handler:      mux,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 10 * time.Second,
+	}
+
+	err = srv.ListenAndServe()
+	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
 
