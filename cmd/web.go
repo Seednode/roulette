@@ -411,7 +411,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 		)
 	}
 
-	w.WriteHeader(404)
+	w.WriteHeader(http.StatusNotFound)
 	w.Header().Add("Content-Type", "text/html")
 
 	var htmlBody strings.Builder
@@ -440,7 +440,7 @@ func serverError() func(http.ResponseWriter, *http.Request, interface{}) {
 			)
 		}
 
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusInternalServerError)
 		w.Header().Add("Content-Type", "text/html")
 
 		var htmlBody strings.Builder
@@ -961,6 +961,15 @@ func serveFavicons() httprouter.Handle {
 	}
 }
 
+func serveVersion() httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		data := []byte(fmt.Sprintf("roulette v%s\n", Version))
+
+		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		w.Write(data)
+	}
+}
+
 func ServePage(args []string) error {
 	bindHost, err := net.LookupHost(bind)
 	if err != nil {
@@ -1046,13 +1055,15 @@ func ServePage(args []string) error {
 		mux.GET("/json", serveDebugJson(args, index))
 	}
 
+	mux.GET("/", serveRoot(paths, Regexes, index))
+
 	mux.GET("/favicons/*favicon", serveFavicons())
+
+	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
 
-	mux.GET("/", serveRoot(paths, Regexes, index))
-
-	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
+	mux.GET("/version", serveVersion())
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)),

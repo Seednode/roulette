@@ -10,6 +10,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	Version string = "0.51.0"
+)
+
 var (
 	bind           string
 	cache          bool
@@ -74,5 +78,5 @@ func init() {
 	})
 
 	rootCmd.SetVersionTemplate("roulette v{{.Version}}\n")
-	rootCmd.Version = "0.50.0"
+	rootCmd.Version = Version
 }
