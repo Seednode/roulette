@@ -641,7 +641,7 @@ func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-		htmlBody.WriteString(`<title>Listing `)
+		htmlBody.WriteString(`<title>Index contains `)
 		htmlBody.WriteString(fileCount)
 		htmlBody.WriteString(` files</title></head><body>`)
 		for _, v := range indexDump {
