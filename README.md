@@ -72,18 +72,18 @@ This will slightly increase the delay before the application begins responding t
 
 If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
 
-The cache can be regenerated at any time by accessing the `/_/clear_cache` endpoint.
+The cache can be regenerated at any time by accessing the `/clear_cache` endpoint.
 
 If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
 ## Statistics
 
-If the `--stats` flag is passed, an additional endpoint, `/_/stats`, is registered.
+If the `--stats` flag is passed, an additional endpoint, `/stats`, is registered.
 
 When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served, its filesize, and timestamps of when it was served.
 
 ## Debug
-If the `-d|--debug` flag is passed, two additional endpoints—`/_/html` and `/_/json`—are registered.
+If the `-d|--debug` flag is passed, two additional endpoints—`/html` and `/json`—are registered.
 
 When accessed, these endpoints return the contents of the index, in HTML and JSON formats respectively. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
