@@ -74,5 +74,5 @@ func init() {
 	})
 
 	rootCmd.SetVersionTemplate("roulette v{{.Version}}\n")
-	rootCmd.Version = "0.49.0"
+	rootCmd.Version = "0.49.1"
 }

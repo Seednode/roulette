@@ -631,6 +631,8 @@ func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 
 		indexDump := index.Index()
 
+		fileCount := strconv.Itoa(len(indexDump))
+
 		sort.SliceStable(indexDump, func(p, q int) bool {
 			return indexDump[p] < indexDump[q]
 		})
@@ -639,7 +641,9 @@ func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-		htmlBody.WriteString(`<title>Debug</title></head><body>`)
+		htmlBody.WriteString(`<title>Listing `)
+		htmlBody.WriteString(fileCount)
+		htmlBody.WriteString(` files</title></head><body>`)
 		for _, v := range indexDump {
 			var shouldSort = ""
 
