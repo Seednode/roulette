@@ -677,7 +677,7 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 			if sorting {
 				shouldSort = "?sort=asc"
 			}
-			htmlBody.WriteString(fmt.Sprintf("<a href=\"%s%s\">%s</a>\n", v, shouldSort, v))
+			htmlBody.WriteString(fmt.Sprintf("<a href=\"%s%s%s\">%s</a>\n", ImagePrefix, v, shouldSort, v))
 		}
 		htmlBody.WriteString(`</body></html>`)
 
