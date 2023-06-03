@@ -1,14 +1,14 @@
 ## About
 
-Sometimes, you just need a way to randomly display media from your filesystem.
+Sometimes, you just need a way to randomly display images from your filesystem.
 
 Simply point this tool at one or more directories, and then open the specified port (default `8080`) in your browser.
 
-A new file will be selected if you open `/` directly, or if you click on any displayed media.
+A new file will be selected if you open `/` directly, or if you click on any displayed images.
 
-Browser history is preserved, so you can always go back to any previously displayed media.
+Browser history is preserved, so you can always go back to any previously displayed images.
 
-Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, `webp`, `mp4`, `ogv`, and `webm`.
+Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp`.
 
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 

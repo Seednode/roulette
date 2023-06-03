@@ -159,6 +159,8 @@ func imageDimensions(path string) (*Dimensions, error) {
 }
 
 func preparePath(path string) string {
+	path = ImagePrefix + path
+
 	if runtime.GOOS == "windows" {
 		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
 	}
@@ -168,12 +170,12 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
 	if shouldCache {
-		image, video, err := isSupportedFileType(path)
+		image, err := isSupportedFileType(path)
 		if err != nil {
 			return err
 		}
 
-		if !(image || video) {
+		if !image {
 			return nil
 		}
 	}
@@ -382,13 +384,13 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func isSupportedFileType(path string) (bool, bool, error) {
+func isSupportedFileType(path string) (bool, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return false, false, nil
+		return false, nil
 	case err != nil:
-		return false, false, err
+		return false, err
 	}
 	defer file.Close()
 
@@ -397,11 +399,9 @@ func isSupportedFileType(path string) (bool, bool, error) {
 
 	switch {
 	case filetype.IsImage(head):
-		return true, false, nil
-	case filetype.IsVideo(head):
-		return false, true, nil
+		return true, nil
 	default:
-		return false, false, nil
+		return false, nil
 	}
 }
 
@@ -417,12 +417,12 @@ func pathHasSupportedFiles(path string) (bool, error) {
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			image, video, err := isSupportedFileType(p)
+			image, err := isSupportedFileType(p)
 			if err != nil {
 				return err
 			}
 
-			if image || video {
+			if image {
 				hasSupportedFiles <- true
 				return filepath.SkipAll
 			}
@@ -616,12 +616,12 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		filePath := fileList[r]
 
 		if !fromCache {
-			image, video, err := isSupportedFileType(filePath)
+			image, err := isSupportedFileType(filePath)
 			if err != nil {
 				return "", err
 			}
 
-			if image || video {
+			if image {
 				return filePath, nil
 			}
 

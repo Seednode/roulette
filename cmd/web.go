@@ -29,6 +29,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 )
@@ -38,7 +39,8 @@ var favicons embed.FS
 
 const (
 	LogDate            string        = `2006-01-02T15:04:05.000-07:00`
-	Prefix             string        = `/src`
+	SourcePrefix       string        = `/source`
+	ImagePrefix        string        = `/view`
 	RedirectStatusCode int           = http.StatusSeeOther
 	Timeout            time.Duration = 10 * time.Second
 )
@@ -426,6 +428,31 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
+func serverError() func(http.ResponseWriter, *http.Request, interface{}) {
+	return func(w http.ResponseWriter, r *http.Request, i interface{}) {
+		startTime := time.Now()
+
+		if verbose {
+			fmt.Printf("%s | Invalid request for %s from %s\n",
+				startTime.Format(LogDate),
+				r.URL.Path,
+				r.RemoteAddr,
+			)
+		}
+
+		w.WriteHeader(500)
+		w.Header().Add("Content-Type", "text/html")
+
+		var htmlBody strings.Builder
+		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+		htmlBody.WriteString(`<title>Server Error</title></head>`)
+		htmlBody.WriteString(`<body><a href="/">500 Internal Server Error</a></body></html>`)
+
+		io.WriteString(w, gohtml.Format(htmlBody.String()))
+	}
+}
+
 func RefreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
 	refreshInterval := r.URL.Query().Get("refresh")
 
@@ -530,7 +557,7 @@ func stripQueryParams(u string) (string, error) {
 func generateFilePath(filePath string) string {
 	var htmlBody strings.Builder
 
-	htmlBody.WriteString(Prefix)
+	htmlBody.WriteString(SourcePrefix)
 	if runtime.GOOS == "windows" {
 		htmlBody.WriteString(`/`)
 	}
@@ -571,8 +598,8 @@ func realIP(r *http.Request) string {
 	}
 }
 
-func serveCacheClear(args []string, index *Index) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveCacheClear(args []string, index *Index) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		index.generateCache(args)
 
 		w.WriteHeader(http.StatusOK)
@@ -581,8 +608,8 @@ func serveCacheClear(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveStats(args []string, stats *ServeStats) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveStats(args []string, stats *ServeStats) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -622,8 +649,8 @@ func serveStats(args []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveDebugHtml(args []string, index *Index) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
 
@@ -670,8 +697,8 @@ func serveDebugHtml(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveDebugJson(args []string, index *Index) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveDebugJson(args []string, index *Index) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
@@ -701,15 +728,17 @@ func serveDebugJson(args []string, index *Index) http.HandlerFunc {
 	}
 }
 
-func serveStaticFile(paths []string, stats *ServeStats) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		prefixedFilePath, err := stripQueryParams(r.URL.Path)
+func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		path := strings.TrimPrefix(r.URL.Path, SourcePrefix)
+
+		prefixedFilePath, err := stripQueryParams(path)
 		if err != nil {
 			fmt.Println(err)
 			return
 		}
 
-		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, Prefix))
+		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, SourcePrefix))
 		if err != nil {
 			fmt.Println(err)
 			return
@@ -761,8 +790,8 @@ func serveStaticFile(paths []string, stats *ServeStats) http.HandlerFunc {
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
 			fmt.Println(err)
@@ -778,155 +807,148 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) http.HandlerFunc
 
 		_, refreshInterval := RefreshInterval(r, Regexes)
 
-		if r.URL.Path == "/" {
-			var filePath string
-			var err error
+		var filePath string
 
-			if refererUri != "" {
-				filePath, err = nextFile(refererUri, sortOrder, Regexes)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-			}
-
-		loop:
-			for timeout := time.After(Timeout); ; {
-				select {
-				case <-timeout:
-					break loop
-				default:
-				}
-
-				if filePath != "" {
-					break loop
-				}
-
-				filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
-				switch {
-				case err != nil && err == ErrNoImagesFound:
-					notFound(w, r, filePath)
-
-					return
-				case err != nil:
-					fmt.Println(err)
-					return
-				}
-			}
-
-			queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
-
-			newUrl := fmt.Sprintf("http://%s%s%s",
-				r.Host,
-				preparePath(filePath),
-				queryParams,
-			)
-			http.Redirect(w, r, newUrl, RedirectStatusCode)
-		} else {
-			filePath := r.URL.Path
-
-			if runtime.GOOS == "windows" {
-				filePath = strings.TrimPrefix(filePath, "/")
-			}
-
-			exists, err := fileExists(filePath)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-			if !exists {
-				notFound(w, r, filePath)
-
-				return
-			}
-
-			image, video, err := isSupportedFileType(filePath)
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-
-			if !(image || video) {
-				notFound(w, r, filePath)
-
-				return
-			}
-
-			var dimensions *Dimensions
-
-			if image {
-				dimensions, err = imageDimensions(filePath)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-			}
-
-			fileName := filepath.Base(filePath)
-
-			w.Header().Add("Content-Type", "text/html")
-
-			sortOrder := SortOrder(r)
-
-			refreshTimer, refreshInterval := RefreshInterval(r, Regexes)
-
-			queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
-
-			var htmlBody strings.Builder
-			htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-			htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
-			htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
-			htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
-			htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
-			htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
-			htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
-			htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
-			htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
-			htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
-			htmlBody.WriteString(`img,video{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
-			htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-			switch {
-			case image:
-				htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-					fileName,
-					dimensions.width,
-					dimensions.height))
-			case video:
-				htmlBody.WriteString(fmt.Sprintf(`<title>%s</title>`,
-					fileName))
-			}
-			htmlBody.WriteString(`</head><body>`)
-			if refreshInterval != "0ms" {
-				htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
-					queryParams,
-					refreshTimer))
-			}
-			switch {
-			case image:
-				htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
-					queryParams,
-					generateFilePath(filePath),
-					dimensions.width,
-					dimensions.height,
-					fileName))
-			case video:
-				htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><video src="%s" alt="Roulette selected: %s" autoplay controls></a>`,
-					queryParams,
-					generateFilePath(filePath),
-					fileName))
-			}
-			htmlBody.WriteString(`</body></html>`)
-
-			_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
+		if refererUri != "" {
+			filePath, err = nextFile(refererUri, sortOrder, Regexes)
 			if err != nil {
 				fmt.Println(err)
 				return
 			}
 		}
+
+	loop:
+		for timeout := time.After(Timeout); ; {
+			select {
+			case <-timeout:
+				break loop
+			default:
+			}
+
+			if filePath != "" {
+				break loop
+			}
+
+			filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
+			switch {
+			case err != nil && err == ErrNoImagesFound:
+				notFound(w, r, filePath)
+
+				return
+			case err != nil:
+				fmt.Println(err)
+				return
+			}
+		}
+
+		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+
+		newUrl := fmt.Sprintf("http://%s%s%s",
+			r.Host,
+			preparePath(filePath),
+			queryParams,
+		)
+		http.Redirect(w, r, newUrl, RedirectStatusCode)
 	}
 }
-func serveFavicons() http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+
+func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		filters := &Filters{
+			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
+			excludes: splitQueryParams(r.URL.Query().Get("exclude"), Regexes),
+		}
+
+		sortOrder := SortOrder(r)
+
+		filePath := strings.TrimPrefix(r.URL.Path, ImagePrefix)
+
+		if runtime.GOOS == "windows" {
+			filePath = strings.TrimPrefix(filePath, "/")
+		}
+
+		exists, err := fileExists(filePath)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+		if !exists {
+			notFound(w, r, filePath)
+
+			return
+		}
+
+		image, err := isSupportedFileType(filePath)
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+
+		if !image {
+			notFound(w, r, filePath)
+
+			return
+		}
+
+		var dimensions *Dimensions
+
+		if image {
+			dimensions, err = imageDimensions(filePath)
+			if err != nil {
+				fmt.Println(err)
+				return
+			}
+		}
+
+		fileName := filepath.Base(filePath)
+
+		w.Header().Add("Content-Type", "text/html")
+
+		refreshTimer, refreshInterval := RefreshInterval(r, Regexes)
+
+		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+
+		var htmlBody strings.Builder
+		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+		htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
+		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
+		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
+		htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
+		htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
+		htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
+		htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
+		htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
+		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
+		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
+		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
+		htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
+			fileName,
+			dimensions.width,
+			dimensions.height))
+		htmlBody.WriteString(`</head><body>`)
+		if refreshInterval != "0ms" {
+			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
+				queryParams,
+				refreshTimer))
+		}
+		htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
+			queryParams,
+			generateFilePath(filePath),
+			dimensions.width,
+			dimensions.height,
+			fileName))
+		htmlBody.WriteString(`</body></html>`)
+
+		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
+		if err != nil {
+			fmt.Println(err)
+			return
+		}
+	}
+}
+
+func serveFavicons() httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		fname := strings.TrimPrefix(r.URL.Path, "/")
 
 		data, err := favicons.ReadFile(fname)
@@ -972,7 +994,9 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
-	mux := http.NewServeMux()
+	mux := httprouter.New()
+
+	mux.PanicHandler = serverError()
 
 	if cache {
 		skipIndex := false
@@ -988,7 +1012,7 @@ func ServePage(args []string) error {
 			index.generateCache(args)
 		}
 
-		mux.Handle("/_/clear_cache", serveCacheClear(args, index))
+		mux.GET("/clear_cache", serveCacheClear(args, index))
 	}
 
 	stats := &ServeStats{
@@ -1013,19 +1037,22 @@ func ServePage(args []string) error {
 	}
 
 	if statistics {
-		mux.Handle("/_/stats", serveStats(args, stats))
+		mux.GET("/stats", serveStats(args, stats))
 	}
 
 	if debug {
-		mux.Handle("/_/html", serveDebugHtml(args, index))
-		mux.Handle("/_/json", serveDebugJson(args, index))
+		mux.GET("/html", serveDebugHtml(args, index))
+
+		mux.GET("/json", serveDebugJson(args, index))
 	}
 
-	mux.Handle("/favicons/", serveFavicons())
+	mux.GET("/favicons/*favicon", serveFavicons())
 
-	mux.Handle(Prefix+"/", http.StripPrefix(Prefix, serveStaticFile(paths, stats)))
+	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
 
-	mux.Handle("/", serveMedia(paths, Regexes, index))
+	mux.GET("/", serveRoot(paths, Regexes, index))
+
+	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)),

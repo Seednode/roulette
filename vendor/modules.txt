@@ -7,6 +7,9 @@ github.com/h2non/filetype/types
 # github.com/inconshreveable/mousetrap v1.1.0
 ## explicit; go 1.18
 github.com/inconshreveable/mousetrap
+# github.com/julienschmidt/httprouter v1.3.0
+## explicit; go 1.7
+github.com/julienschmidt/httprouter
 # github.com/klauspost/compress v1.16.5
 ## explicit; go 1.18
 github.com/klauspost/compress
