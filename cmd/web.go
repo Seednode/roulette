@@ -795,8 +795,11 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
+
+		strippedRefererUri := strings.TrimPrefix(refererUri, ImagePrefix)
 
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -810,9 +813,10 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 		var filePath string
 
 		if refererUri != "" {
-			filePath, err = nextFile(refererUri, sortOrder, Regexes)
+			filePath, err = nextFile(strippedRefererUri, sortOrder, Regexes)
 			if err != nil {
 				fmt.Println(err)
+
 				return
 			}
 		}
@@ -837,6 +841,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 				return
 			case err != nil:
 				fmt.Println(err)
+
 				return
 			}
 		}
@@ -870,6 +875,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		exists, err := fileExists(filePath)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 		if !exists {
@@ -881,6 +887,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		image, err := isSupportedFileType(filePath)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
@@ -896,6 +903,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			dimensions, err = imageDimensions(filePath)
 			if err != nil {
 				fmt.Println(err)
+
 				return
 			}
 		}
@@ -942,6 +950,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 	}
@@ -957,6 +966,7 @@ func serveFavicons() httprouter.Handle {
 		}
 
 		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+
 		w.Write(data)
 	}
 }
@@ -966,6 +976,7 @@ func serveVersion() httprouter.Handle {
 		data := []byte(fmt.Sprintf("roulette v%s\n", Version))
 
 		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+
 		w.Write(data)
 	}
 }
@@ -1040,7 +1051,9 @@ func ServePage(args []string) error {
 
 		go func() {
 			<-gracefulShutdown
+
 			stats.Export(statisticsFile)
+
 			os.Exit(0)
 		}()
 	}
