@@ -460,6 +460,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 			go func() {
 				defer func() {
 					<-concurrency.fileScans
+
 					wg.Done()
 				}()
 
@@ -523,6 +524,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 		go func(i int) {
 			defer func() {
 				<-concurrency.directoryScans
+
 				wg.Done()
 			}()
 

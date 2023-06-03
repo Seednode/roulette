@@ -325,6 +325,7 @@ func (s *ServeStats) GetMostServed() string {
 	for _, v := range stats.List {
 		if retVal == "" {
 			retVal = v
+
 			continue
 		}
 
@@ -603,7 +604,9 @@ func serveCacheClear(args []string, index *Index) httprouter.Handle {
 		index.generateCache(args)
 
 		w.WriteHeader(http.StatusOK)
+
 		w.Header().Set("Content-Type", "text/plain")
+
 		w.Write([]byte("Ok"))
 	}
 }
@@ -629,6 +632,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 		response, err := stats.ListImages()
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
@@ -735,12 +739,14 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		prefixedFilePath, err := stripQueryParams(path)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
 		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, SourcePrefix))
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
@@ -753,6 +759,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		exists, err := fileExists(filePath)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
@@ -767,6 +774,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		buf, err := os.ReadFile(filePath)
 		if err != nil {
 			fmt.Println(err)
+
 			return
 		}
 
