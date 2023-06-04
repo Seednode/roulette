@@ -1089,8 +1089,9 @@ func ServePage(args []string) error {
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)),
 		Handler:      mux,
+		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 10 * time.Second,
+		WriteTimeout: 5 * time.Minute,
 	}
 
 	err = srv.ListenAndServe()
