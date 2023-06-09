@@ -671,6 +671,13 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		var htmlBody strings.Builder
 
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+		htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
+		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
+		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
+		htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
+		htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
+		htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
+		htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
 		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 		htmlBody.WriteString(`<title>Index contains `)
 		htmlBody.WriteString(fileCount)
