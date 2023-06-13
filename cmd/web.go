@@ -118,7 +118,7 @@ func (i *Index) IsEmpty() bool {
 }
 
 func (i *Index) Export(path string) error {
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
@@ -338,7 +338,7 @@ func (s *ServeStats) GetMostServed() string {
 }
 
 func (s *ServeStats) Export(path string) error {
-	file, err := os.OpenFile(path, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0600)
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
 	}
