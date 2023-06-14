@@ -678,19 +678,19 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
 		htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
 		htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
-		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(`<title>Index contains `)
 		htmlBody.WriteString(fileCount)
-		htmlBody.WriteString(` files</title></head><body>`)
+		htmlBody.WriteString(` files</title></head><body><table>`)
 		for _, v := range indexDump {
 			var shouldSort = ""
 
 			if sorting {
 				shouldSort = "?sort=asc"
 			}
-			htmlBody.WriteString(fmt.Sprintf("<a href=\"%s%s%s\">%s</a>\n", ImagePrefix, v, shouldSort, v))
+			htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", ImagePrefix, v, shouldSort, v))
 		}
-		htmlBody.WriteString(`</body></html>`)
+		htmlBody.WriteString(`</table></body></html>`)
 
 		b, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
