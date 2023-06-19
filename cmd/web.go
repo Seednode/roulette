@@ -665,7 +665,7 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		fileCount := strconv.Itoa(len(indexDump))
 
 		sort.SliceStable(indexDump, func(p, q int) bool {
-			return indexDump[p] < indexDump[q]
+			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
 
 		var htmlBody strings.Builder
