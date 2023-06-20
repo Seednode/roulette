@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -356,7 +355,7 @@ func (s *ServeStats) Export(path string) error {
 
 	err = enc.Encode(&stats)
 	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil
@@ -429,7 +428,30 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func serverError() func(http.ResponseWriter, *http.Request, interface{}) {
+func serverError(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+
+	if verbose {
+		fmt.Printf("%s | Invalid request for %s from %s\n",
+			startTime.Format(LogDate),
+			r.URL.Path,
+			r.RemoteAddr,
+		)
+	}
+
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Header().Add("Content-Type", "text/html")
+
+	var htmlBody strings.Builder
+	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(`<title>Server Error</title></head>`)
+	htmlBody.WriteString(`<body><a href="/">500 Internal Server Error</a></body></html>`)
+
+	io.WriteString(w, gohtml.Format(htmlBody.String()))
+}
+
+func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
 	return func(w http.ResponseWriter, r *http.Request, i interface{}) {
 		startTime := time.Now()
 
@@ -620,7 +642,11 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		first, last, err := stats.GetHistory()
 		if err != nil {
-			log.Fatal(err)
+			fmt.Println(err)
+
+			serverError(w, r)
+
+			return
 		}
 
 		most := stats.GetMostServed()
@@ -632,6 +658,8 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 		response, err := stats.ListImages()
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -723,6 +751,10 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 
 		response, err := json.MarshalIndent(indexDump, "", "    ")
 		if err != nil {
+			fmt.Println(err)
+
+			serverError(w, r)
+
 			return
 		}
 
@@ -747,12 +779,16 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
+			serverError(w, r)
+
 			return
 		}
 
 		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, SourcePrefix))
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -766,6 +802,8 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		exists, err := fileExists(filePath)
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -781,6 +819,8 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		buf, err := os.ReadFile(filePath)
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -811,6 +851,8 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 		if err != nil {
 			fmt.Println(err)
 
+			serverError(w, r)
+
 			return
 		}
 
@@ -831,6 +873,8 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 			filePath, err = nextFile(strippedRefererUri, sortOrder, Regexes)
 			if err != nil {
 				fmt.Println(err)
+
+				serverError(w, r)
 
 				return
 			}
@@ -856,6 +900,8 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 				return
 			case err != nil:
 				fmt.Println(err)
+
+				serverError(w, r)
 
 				return
 			}
@@ -891,6 +937,8 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		if err != nil {
 			fmt.Println(err)
 
+			serverError(w, r)
+
 			return
 		}
 		if !exists {
@@ -902,6 +950,8 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		image, err := isSupportedFileType(filePath)
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -918,6 +968,8 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			dimensions, err = imageDimensions(filePath)
 			if err != nil {
 				fmt.Println(err)
+
+				serverError(w, r)
 
 				return
 			}
@@ -965,6 +1017,8 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
 			fmt.Println(err)
+
+			serverError(w, r)
 
 			return
 		}
@@ -1031,7 +1085,7 @@ func ServePage(args []string) error {
 
 	mux := httprouter.New()
 
-	mux.PanicHandler = serverError()
+	mux.PanicHandler = serverErrorHandler()
 
 	if cache {
 		skipIndex := false
