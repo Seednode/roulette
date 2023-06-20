@@ -258,7 +258,7 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 	stats := s.toExported()
 
 	sort.SliceStable(stats.List, func(p, q int) bool {
-		return stats.List[p] < stats.List[q]
+		return strings.ToLower(stats.List[p]) < strings.ToLower(stats.List[q])
 	})
 
 	a := make([]timesServed, len(stats.List))
@@ -718,7 +718,7 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 		indexDump := index.Index()
 
 		sort.SliceStable(indexDump, func(p, q int) bool {
-			return indexDump[p] < indexDump[q]
+			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
 
 		response, err := json.MarshalIndent(indexDump, "", "    ")
