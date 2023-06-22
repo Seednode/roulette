@@ -625,8 +625,6 @@ func serveCacheClear(args []string, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		index.generateCache(args)
 
-		w.WriteHeader(http.StatusOK)
-
 		w.Header().Set("Content-Type", "text/plain")
 
 		w.Write([]byte("Ok"))
@@ -635,7 +633,6 @@ func serveCacheClear(args []string, index *Index) httprouter.Handle {
 
 func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
@@ -683,7 +680,6 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "text/html")
 
 		startTime := time.Now()
@@ -738,7 +734,6 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 
 func serveDebugJson(args []string, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.WriteHeader(http.StatusOK)
 		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
