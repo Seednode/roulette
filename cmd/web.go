@@ -1046,6 +1046,15 @@ func serveVersion() httprouter.Handle {
 }
 
 func ServePage(args []string) error {
+	timeZone := os.Getenv("TZ")
+	if timeZone != "" {
+		var err error
+		time.Local, err = time.LoadLocation(timeZone)
+		if err != nil {
+			return err
+		}
+	}
+
 	bindHost, err := net.LookupHost(bind)
 	if err != nil {
 		return err
