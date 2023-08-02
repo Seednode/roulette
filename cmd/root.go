@@ -6,27 +6,30 @@ package cmd
 
 import (
 	"log"
+	"math"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	Version string = "0.53.2"
+	Version string = "0.54.0"
 )
 
 var (
-	bind           string
-	cache          bool
-	cacheFile      string
-	debug          bool
-	filtering      bool
-	port           uint16
-	recursive      bool
-	sorting        bool
-	statistics     bool
-	statisticsFile string
-	verbose        bool
-	version        bool
+	bind             string
+	cache            bool
+	cacheFile        string
+	debug            bool
+	filtering        bool
+	maximumFileCount uint32
+	minimumFileCount uint32
+	port             uint16
+	recursive        bool
+	sorting          bool
+	statistics       bool
+	statisticsFile   string
+	verbose          bool
+	version          bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -61,6 +64,8 @@ func init() {
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
+	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", math.MaxUint32, "skip directories with file counts over this value")
+	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")

@@ -66,34 +66,47 @@ type ScanStats struct {
 	filesMatched       uint64
 	filesSkipped       uint64
 	directoriesMatched uint64
+	directoriesSkipped uint64
 }
 
 func (s *ScanStats) FilesTotal() uint64 {
 	return atomic.LoadUint64(&s.filesMatched) + atomic.LoadUint64(&s.filesSkipped)
 }
 
-func (s *ScanStats) incrementFilesMatched() {
-	atomic.AddUint64(&s.filesMatched, 1)
+func (s *ScanStats) incrementFilesMatched(n int) {
+	atomic.AddUint64(&s.filesMatched, uint64(n))
 }
 
 func (s *ScanStats) FilesMatched() uint64 {
 	return atomic.LoadUint64(&s.filesMatched)
 }
 
-func (s *ScanStats) incrementFilesSkipped() {
-	atomic.AddUint64(&s.filesSkipped, 1)
+func (s *ScanStats) incrementFilesSkipped(n int) {
+	atomic.AddUint64(&s.filesSkipped, uint64(n))
 }
 
 func (s *ScanStats) FilesSkipped() uint64 {
 	return atomic.LoadUint64(&s.filesSkipped)
 }
 
-func (s *ScanStats) incrementDirectoriesMatched() {
-	atomic.AddUint64(&s.directoriesMatched, 1)
+func (s *ScanStats) DirectoriesTotal() uint64 {
+	return atomic.LoadUint64(&s.directoriesMatched) + atomic.LoadUint64(&s.directoriesSkipped)
+}
+
+func (s *ScanStats) incrementDirectoriesMatched(n int) {
+	atomic.AddUint64(&s.directoriesMatched, uint64(n))
 }
 
 func (s *ScanStats) DirectoriesMatched() uint64 {
 	return atomic.LoadUint64(&s.directoriesMatched)
+}
+
+func (s *ScanStats) incrementDirectoriesSkipped(n int) {
+	atomic.AddUint64(&s.directoriesSkipped, uint64(n))
+}
+
+func (s *ScanStats) DirectoriesSkipped() uint64 {
+	return atomic.LoadUint64(&s.directoriesSkipped)
 }
 
 type Path struct {
@@ -182,7 +195,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 
 	files.Append(directory, path)
 
-	stats.incrementFilesMatched()
+	stats.incrementFilesMatched(1)
 
 	return nil
 }
@@ -205,7 +218,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 				filename,
 				filters.excludes[i],
 			) {
-				stats.incrementFilesSkipped()
+				stats.incrementFilesSkipped(1)
 
 				return nil
 			}
@@ -227,7 +240,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 			}
 		}
 
-		stats.incrementFilesSkipped()
+		stats.incrementFilesSkipped(1)
 
 		return nil
 	}
@@ -442,6 +455,26 @@ func pathHasSupportedFiles(path string) (bool, error) {
 	}
 }
 
+func pathCount(path string) (int, int, error) {
+	directories := 0
+	files := 0
+
+	nodes, err := os.ReadDir(path)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	for _, node := range nodes {
+		if node.IsDir() {
+			directories++
+		} else {
+			files++
+		}
+	}
+
+	return files, directories, nil
+}
+
 func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
 	var wg sync.WaitGroup
 
@@ -475,7 +508,20 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 				}
 			}()
 		case info.IsDir():
-			stats.incrementDirectoriesMatched()
+			files, directories, err := pathCount(p)
+			if err != nil {
+				fmt.Println(err)
+			}
+
+			if files > 0 && (files < int(minimumFileCount) || files > int(maximumFileCount)) {
+				// This count will not otherwise include the parent directory itself, so increment by one
+				stats.incrementDirectoriesSkipped(directories + 1)
+				stats.incrementFilesSkipped(files)
+
+				return filepath.SkipDir
+			}
+
+			stats.incrementDirectoriesMatched(1)
 		}
 
 		return err
@@ -506,6 +552,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 		filesMatched:       0,
 		filesSkipped:       0,
 		directoriesMatched: 0,
+		directoriesSkipped: 0,
 	}
 
 	concurrency := &Concurrency{
@@ -540,11 +587,12 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	fileList = prepareDirectories(files, sort)
 
 	if verbose {
-		fmt.Printf("%s | Indexed %d/%d files across %d directories in %s\n",
+		fmt.Printf("%s | Indexed %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(LogDate),
 			stats.FilesMatched(),
 			stats.FilesTotal(),
 			stats.DirectoriesMatched(),
+			stats.DirectoriesTotal(),
 			time.Since(startTime),
 		)
 	}
