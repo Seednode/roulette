@@ -693,7 +693,6 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		})
 
 		var htmlBody strings.Builder
-
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
 		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
