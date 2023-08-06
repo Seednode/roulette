@@ -274,68 +274,6 @@ func (s *ServeStats) ListImages() ([]byte, error) {
 	return r, nil
 }
 
-func (s *ServeStats) GetHistory() (string, string, error) {
-	stats := s.toExported()
-
-	type History struct {
-		name string
-		time time.Time
-	}
-
-	firstServed := History{}
-	lastServed := History{}
-
-	for _, name := range stats.List {
-		for _, accessTime := range stats.Times[name] {
-			t, err := time.Parse(LogDate, accessTime)
-			if err != nil {
-				return "", "", err
-			}
-
-			if (firstServed.time == time.Time{}) {
-				firstServed.name = name
-				firstServed.time = t
-			}
-
-			if (lastServed.time == time.Time{}) {
-				lastServed.name = name
-				lastServed.time = t
-			}
-
-			switch {
-			case t.Before(firstServed.time):
-				firstServed.name = name
-				firstServed.time = t
-			case t.After(lastServed.time):
-				lastServed.name = name
-				lastServed.time = t
-			}
-		}
-	}
-
-	return firstServed.name, lastServed.name, nil
-}
-
-func (s *ServeStats) GetMostServed() string {
-	stats := s.toExported()
-
-	retVal := ""
-
-	for _, v := range stats.List {
-		if retVal == "" {
-			retVal = v
-
-			continue
-		}
-
-		if stats.Count[v] > stats.Count[retVal] {
-			retVal = v
-		}
-	}
-
-	return retVal
-}
-
 func (s *ServeStats) Export(path string) error {
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
@@ -400,6 +338,32 @@ type timesServed struct {
 	Times  []string
 }
 
+func addFavicon() string {
+	var htmlBody strings.Builder
+
+	htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
+	htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
+	htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
+	htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
+	htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
+	htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
+	htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
+
+	return htmlBody.String()
+}
+
+func newErrorPage(title, body string) string {
+	var htmlBody strings.Builder
+
+	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+	htmlBody.WriteString(addFavicon())
+	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
+	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
+
+	return htmlBody.String()
+}
+
 func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
@@ -414,13 +378,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	w.WriteHeader(http.StatusNotFound)
 	w.Header().Add("Content-Type", "text/html")
 
-	var htmlBody strings.Builder
-	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-	htmlBody.WriteString(`<title>Not Found</title></head>`)
-	htmlBody.WriteString(`<body><a href="/">404 page not found</a></body></html>`)
-
-	_, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
+	_, err := io.WriteString(w, gohtml.Format(newErrorPage("Not Found", "404 Page not found")))
 	if err != nil {
 		return err
 	}
@@ -428,7 +386,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	return nil
 }
 
-func serverError(w http.ResponseWriter, r *http.Request) {
+func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
 	if verbose {
@@ -442,38 +400,11 @@ func serverError(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Add("Content-Type", "text/html")
 
-	var htmlBody strings.Builder
-	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-	htmlBody.WriteString(`<title>Server Error</title></head>`)
-	htmlBody.WriteString(`<body><a href="/">500 Internal Server Error</a></body></html>`)
-
-	io.WriteString(w, gohtml.Format(htmlBody.String()))
+	io.WriteString(w, gohtml.Format(newErrorPage("Server Error", "500 Internal Server Error")))
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
-	return func(w http.ResponseWriter, r *http.Request, i interface{}) {
-		startTime := time.Now()
-
-		if verbose {
-			fmt.Printf("%s | Invalid request for %s from %s\n",
-				startTime.Format(LogDate),
-				r.URL.Path,
-				r.RemoteAddr,
-			)
-		}
-
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Header().Add("Content-Type", "text/html")
-
-		var htmlBody strings.Builder
-		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-		htmlBody.WriteString(`<title>Server Error</title></head>`)
-		htmlBody.WriteString(`<body><a href="/">500 Internal Server Error</a></body></html>`)
-
-		io.WriteString(w, gohtml.Format(htmlBody.String()))
-	}
+	return serverError
 }
 
 func RefreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
@@ -637,26 +568,11 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		startTime := time.Now()
 
-		first, last, err := stats.GetHistory()
-		if err != nil {
-			fmt.Println(err)
-
-			serverError(w, r)
-
-			return
-		}
-
-		most := stats.GetMostServed()
-
-		fmt.Printf("First served: %s\n", first)
-		fmt.Printf("Last served: %s\n", last)
-		fmt.Printf("Most served: %s\n", most)
-
 		response, err := stats.ListImages()
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -694,13 +610,7 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
-		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
-		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
-		htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
-		htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
-		htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
-		htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
+		htmlBody.WriteString(addFavicon())
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(`<title>Index contains `)
 		htmlBody.WriteString(fileCount)
@@ -747,7 +657,7 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -773,7 +683,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -782,7 +692,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -797,7 +707,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -814,7 +724,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -845,7 +755,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -868,7 +778,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 			if err != nil {
 				fmt.Println(err)
 
-				serverError(w, r)
+				serverError(w, r, nil)
 
 				return
 			}
@@ -895,7 +805,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 			case err != nil:
 				fmt.Println(err)
 
-				serverError(w, r)
+				serverError(w, r, nil)
 
 				return
 			}
@@ -931,7 +841,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -945,7 +855,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -963,7 +873,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			if err != nil {
 				fmt.Println(err)
 
-				serverError(w, r)
+				serverError(w, r, nil)
 
 				return
 			}
@@ -979,13 +889,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
-		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
-		htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
-		htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
-		htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
-		htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
-		htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
+		htmlBody.WriteString(addFavicon())
 		htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
@@ -1012,7 +916,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		if err != nil {
 			fmt.Println(err)
 
-			serverError(w, r)
+			serverError(w, r, nil)
 
 			return
 		}
@@ -1143,6 +1047,8 @@ func ServePage(args []string) error {
 	mux.GET("/", serveRoot(paths, Regexes, index))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
+
+	mux.GET("/favicon.ico", serveFavicons())
 
 	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
 
