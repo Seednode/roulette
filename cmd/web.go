@@ -611,10 +611,9 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(addFavicon())
-		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
-		htmlBody.WriteString(`<title>Index contains `)
-		htmlBody.WriteString(fileCount)
-		htmlBody.WriteString(` files</title></head><body><table>`)
+		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
+		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
+		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %s files</title></head><body><table>", fileCount))
 		for _, v := range indexDump {
 			var shouldSort = ""
 
