@@ -63,10 +63,10 @@ func (f *Files) Append(directory, path string) {
 }
 
 type ScanStats struct {
-	filesMatched       atomic.Uint64
-	filesSkipped       atomic.Uint64
-	directoriesMatched atomic.Uint64
-	directoriesSkipped atomic.Uint64
+	filesMatched       atomic.Uint32
+	filesSkipped       atomic.Uint32
+	directoriesMatched atomic.Uint32
+	directoriesSkipped atomic.Uint32
 }
 
 type Path struct {
@@ -155,7 +155,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 
 	files.Append(directory, path)
 
-	stats.filesMatched.Add(uint64(1))
+	stats.filesMatched.Add(1)
 
 	return nil
 }
@@ -415,9 +415,9 @@ func pathHasSupportedFiles(path string) (bool, error) {
 	}
 }
 
-func pathCount(path string) (int, int, error) {
-	directories := 0
-	files := 0
+func pathCount(path string) (uint32, uint32, error) {
+	var directories uint32 = 0
+	var files uint32 = 0
 
 	nodes, err := os.ReadDir(path)
 	if err != nil {
@@ -473,10 +473,10 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 				fmt.Println(err)
 			}
 
-			if files > 0 && (files < int(minimumFileCount) || files > int(maximumFileCount)) {
+			if files > 0 && (files < minimumFileCount) || (files > maximumFileCount) {
 				// This count will not otherwise include the parent directory itself, so increment by one
-				stats.directoriesSkipped.Add(uint64(directories + 1))
-				stats.filesSkipped.Add(uint64(files))
+				stats.directoriesSkipped.Add(directories + 1)
+				stats.filesSkipped.Add(files)
 
 				return filepath.SkipDir
 			}
@@ -509,10 +509,10 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	}
 
 	stats := &ScanStats{
-		filesMatched:       atomic.Uint64{},
-		filesSkipped:       atomic.Uint64{},
-		directoriesMatched: atomic.Uint64{},
-		directoriesSkipped: atomic.Uint64{},
+		filesMatched:       atomic.Uint32{},
+		filesSkipped:       atomic.Uint32{},
+		directoriesMatched: atomic.Uint32{},
+		directoriesSkipped: atomic.Uint32{},
 	}
 
 	concurrency := &Concurrency{

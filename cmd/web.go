@@ -171,14 +171,14 @@ func (i *Index) Import(path string) error {
 type ServeStats struct {
 	mutex sync.RWMutex
 	list  []string
-	count map[string]uint64
+	count map[string]uint32
 	size  map[string]string
 	times map[string][]string
 }
 
 type exportedServeStats struct {
 	List  []string
-	Count map[string]uint64
+	Count map[string]uint32
 	Size  map[string]string
 	Times map[string][]string
 }
@@ -205,7 +205,7 @@ func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesiz
 func (s *ServeStats) toExported() *exportedServeStats {
 	stats := &exportedServeStats{
 		List:  make([]string, len(s.list)),
-		Count: make(map[string]uint64),
+		Count: make(map[string]uint32),
 		Size:  make(map[string]string),
 		Times: make(map[string][]string),
 	}
@@ -316,7 +316,7 @@ func (s *ServeStats) Import(path string) error {
 
 	stats := &exportedServeStats{
 		List:  []string{},
-		Count: make(map[string]uint64),
+		Count: make(map[string]uint32),
 		Size:  make(map[string]string),
 		Times: make(map[string][]string),
 	}
@@ -333,7 +333,7 @@ func (s *ServeStats) Import(path string) error {
 
 type timesServed struct {
 	File   string
-	Served uint64
+	Served uint32
 	Size   string
 	Times  []string
 }
@@ -1013,7 +1013,7 @@ func ServePage(args []string) error {
 	stats := &ServeStats{
 		mutex: sync.RWMutex{},
 		list:  []string{},
-		count: make(map[string]uint64),
+		count: make(map[string]uint32),
 		size:  make(map[string]string),
 		times: make(map[string][]string),
 	}
