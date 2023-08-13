@@ -1056,7 +1056,7 @@ func ServePage(args []string) error {
 	mux.GET("/version", serveVersion())
 
 	srv := &http.Server{
-		Addr:         net.JoinHostPort(bind, strconv.FormatInt(int64(port), 10)),
+		Addr:         net.JoinHostPort(bind, strconv.Itoa(int(port))),
 		Handler:      mux,
 		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  5 * time.Second,
