@@ -42,7 +42,7 @@ type Concurrency struct {
 }
 
 var (
-	ErrNoImagesFound = fmt.Errorf("no supported image formats found which match all criteria")
+	ErrNoImagesFound = errors.New("no supported image formats found which match all criteria")
 	Extensions       = [9]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".ogv", ".webm"}
 )
 
@@ -63,50 +63,10 @@ func (f *Files) Append(directory, path string) {
 }
 
 type ScanStats struct {
-	filesMatched       uint64
-	filesSkipped       uint64
-	directoriesMatched uint64
-	directoriesSkipped uint64
-}
-
-func (s *ScanStats) FilesTotal() uint64 {
-	return atomic.LoadUint64(&s.filesMatched) + atomic.LoadUint64(&s.filesSkipped)
-}
-
-func (s *ScanStats) incrementFilesMatched(n int) {
-	atomic.AddUint64(&s.filesMatched, uint64(n))
-}
-
-func (s *ScanStats) FilesMatched() uint64 {
-	return atomic.LoadUint64(&s.filesMatched)
-}
-
-func (s *ScanStats) incrementFilesSkipped(n int) {
-	atomic.AddUint64(&s.filesSkipped, uint64(n))
-}
-
-func (s *ScanStats) FilesSkipped() uint64 {
-	return atomic.LoadUint64(&s.filesSkipped)
-}
-
-func (s *ScanStats) DirectoriesTotal() uint64 {
-	return atomic.LoadUint64(&s.directoriesMatched) + atomic.LoadUint64(&s.directoriesSkipped)
-}
-
-func (s *ScanStats) incrementDirectoriesMatched(n int) {
-	atomic.AddUint64(&s.directoriesMatched, uint64(n))
-}
-
-func (s *ScanStats) DirectoriesMatched() uint64 {
-	return atomic.LoadUint64(&s.directoriesMatched)
-}
-
-func (s *ScanStats) incrementDirectoriesSkipped(n int) {
-	atomic.AddUint64(&s.directoriesSkipped, uint64(n))
-}
-
-func (s *ScanStats) DirectoriesSkipped() uint64 {
-	return atomic.LoadUint64(&s.directoriesSkipped)
+	filesMatched       atomic.Uint64
+	filesSkipped       atomic.Uint64
+	directoriesMatched atomic.Uint64
+	directoriesSkipped atomic.Uint64
 }
 
 type Path struct {
@@ -195,7 +155,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 
 	files.Append(directory, path)
 
-	stats.incrementFilesMatched(1)
+	stats.filesMatched.Add(uint64(1))
 
 	return nil
 }
@@ -218,7 +178,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 				filename,
 				filters.excludes[i],
 			) {
-				stats.incrementFilesSkipped(1)
+				stats.filesSkipped.Add(1)
 
 				return nil
 			}
@@ -240,7 +200,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 			}
 		}
 
-		stats.incrementFilesSkipped(1)
+		stats.filesSkipped.Add(1)
 
 		return nil
 	}
@@ -515,13 +475,13 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 
 			if files > 0 && (files < int(minimumFileCount) || files > int(maximumFileCount)) {
 				// This count will not otherwise include the parent directory itself, so increment by one
-				stats.incrementDirectoriesSkipped(directories + 1)
-				stats.incrementFilesSkipped(files)
+				stats.directoriesSkipped.Add(uint64(directories + 1))
+				stats.filesSkipped.Add(uint64(files))
 
 				return filepath.SkipDir
 			}
 
-			stats.incrementDirectoriesMatched(1)
+			stats.directoriesMatched.Add(1)
 		}
 
 		return err
@@ -549,10 +509,10 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	}
 
 	stats := &ScanStats{
-		filesMatched:       0,
-		filesSkipped:       0,
-		directoriesMatched: 0,
-		directoriesSkipped: 0,
+		filesMatched:       atomic.Uint64{},
+		filesSkipped:       atomic.Uint64{},
+		directoriesMatched: atomic.Uint64{},
+		directoriesSkipped: atomic.Uint64{},
 	}
 
 	concurrency := &Concurrency{
@@ -589,10 +549,10 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 	if verbose {
 		fmt.Printf("%s | Indexed %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(LogDate),
-			stats.FilesMatched(),
-			stats.FilesTotal(),
-			stats.DirectoriesMatched(),
-			stats.DirectoriesTotal(),
+			stats.filesMatched.Load(),
+			stats.filesMatched.Load()+stats.filesSkipped.Load(),
+			stats.directoriesMatched.Load(),
+			stats.directoriesMatched.Load()+stats.directoriesSkipped.Load(),
 			time.Since(startTime),
 		)
 	}
