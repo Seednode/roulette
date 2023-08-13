@@ -6,13 +6,12 @@ package cmd
 
 import (
 	"log"
-	"math"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	Version string = "0.56.1"
+	Version string = "0.57.0"
 )
 
 var (
@@ -64,7 +63,7 @@ func init() {
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
-	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", math.MaxUint32, "skip directories with file counts over this value")
+	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
