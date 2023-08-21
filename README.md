@@ -62,6 +62,8 @@ If a positive-value `refresh=<integer><unit>` query parameter is provided, the p
 
 This can be used to generate a sort of slideshow of files.
 
+Minimum accepted value is 500ms, as anything lower seems to cause inconsistent behavior. This might be changed in a future release.
+
 Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
 
 ## Caching
@@ -95,19 +97,20 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
-  -b, --bind string            address to bind to (default "0.0.0.0")
-  -c, --cache                  generate directory cache at startup
-      --cache-file string      path to optional persistent cache file
-  -d, --debug                  expose debug endpoint
-  -f, --filter                 enable filtering
-  -h, --help                   help for roulette
-      --maximum-files uint32   skip directories with file counts over this value (default 4294967295)
-      --minimum-files uint32   skip directories with file counts under this value
-  -p, --port uint16            port to listen on (default 8080)
-  -r, --recursive              recurse into subdirectories
-  -s, --sort                   enable sorting
-      --stats                  expose stats endpoint
-      --stats-file string      path to optional persistent stats file
-  -v, --verbose                log accessed files to stdout
-  -V, --version                display version and exit
+  -b, --bind string               address to bind to (default "0.0.0.0")
+  -c, --cache                     generate directory cache at startup
+      --cache-file string         path to optional persistent cache file
+  -d, --debug                     expose debug endpoint
+  -f, --filter                    enable filtering
+  -h, --help                      help for roulette
+      --maximum-files uint32      skip directories with file counts over this value (default 4294967295)
+      --minimum-files uint32      skip directories with file counts under this value
+  -p, --port uint16               port to listen on (default 8080)
+  -r, --recursive                 recurse into subdirectories
+      --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
+  -s, --sort                      enable sorting
+      --stats                     expose stats endpoint
+      --stats-file string         path to optional persistent stats file
+  -v, --verbose                   log accessed files to stdout
+  -V, --version                   display version and exit
 ```

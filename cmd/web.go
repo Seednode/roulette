@@ -408,18 +408,24 @@ func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) 
 }
 
 func RefreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
-	refreshInterval := r.URL.Query().Get("refresh")
+	var interval string
 
-	if !Regexes.units.MatchString(refreshInterval) {
-		return 0, "0ms"
+	if refreshInterval == "" {
+		interval = r.URL.Query().Get("refresh")
+	} else {
+		interval = refreshInterval
 	}
 
-	duration, err := time.ParseDuration(refreshInterval)
-	if err != nil {
-		return 0, "0ms"
-	}
+	duration, err := time.ParseDuration(interval)
 
-	return duration.Milliseconds(), refreshInterval
+	switch {
+	case err != nil || duration == 0:
+		return 0, "0ms"
+	case duration < 500*time.Millisecond:
+		return 500, "500ms"
+	default:
+		return duration.Milliseconds(), interval
+	}
 }
 
 func SortOrder(r *http.Request) string {

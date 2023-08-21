@@ -5,13 +5,19 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"errors"
 	"log"
+	"time"
 
 	"github.com/spf13/cobra"
 )
 
+var (
+	ErrIncorrectRefreshInterval = errors.New("refresh interval must be a duration string >= 500ms")
+)
+
 const (
-	Version string = "0.57.1"
+	Version string = "0.57.2"
 )
 
 var (
@@ -24,6 +30,7 @@ var (
 	minimumFileCount uint32
 	port             uint16
 	recursive        bool
+	refreshInterval  string
 	sorting          bool
 	statistics       bool
 	statisticsFile   string
@@ -37,6 +44,13 @@ var (
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
 				cmd.MarkFlagRequired("cache")
+			}
+
+			if refreshInterval != "" {
+				interval, err := time.ParseDuration(refreshInterval)
+				if err != nil || interval < 500*time.Millisecond {
+					log.Fatal(ErrIncorrectRefreshInterval)
+				}
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -67,6 +81,7 @@ func init() {
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
+	rootCmd.Flags().StringVar(&refreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&statistics, "stats", false, "expose stats endpoint")
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
