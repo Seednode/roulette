@@ -52,5 +52,5 @@ for platform in "${platforms[@]}"; do
   if [ "${GOOS}" == "windows" ]; then
     output_name+=".exe"
   fi
-  env GOOS="${GOOS}" GOARCH="${GOARCH}" CC="musl-gcc" CGO_ENABLED=0 go build -ldflags "${ld_flags}" -o "builds/${output_name}"
+  env GOOS="${GOOS}" GOARCH="${GOARCH}" CC="musl-gcc" CGO_ENABLED=0 go build -trimpath -ldflags "${ld_flags}" -o "builds/${output_name}"
 done
