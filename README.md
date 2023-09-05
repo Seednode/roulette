@@ -18,7 +18,7 @@ I only test the linux/amd64, linux/arm64, and windows/amd64 builds, the rest are
 
 x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette:latest`.
 
-Dockerfile available [here](https://git.seedno.de/seednode/roulette/docker/Dockerfile).
+Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/master/docker/Dockerfile).
 
 ## Filtering
 
