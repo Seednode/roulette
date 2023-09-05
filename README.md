@@ -18,7 +18,7 @@ I only test the linux/amd64, linux/arm64, and windows/amd64 builds, the rest are
 
 x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette:latest`.
 
-Dockerfile available [here](https://git.seedno.de/seednode/docker-roulette).
+Dockerfile available [here](https://git.seedno.de/seednode/roulette/docker/Dockerfile).
 
 ## Filtering
 
@@ -114,3 +114,8 @@ Flags:
   -v, --verbose                   log accessed files to stdout
   -V, --version                   display version and exit
 ```
+
+## Building the Docker container
+From inside the `docker/` subdirectory, build the image using the following command:
+
+`REGISTRY=<registry url> LATEST=yes TAG=alpine ./build.sh`
