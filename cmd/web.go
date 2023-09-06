@@ -975,21 +975,49 @@ func ServePage(args []string) error {
 		return errors.New("no supported files found in provided paths")
 	}
 
-	Regexes := &Regexes{
-		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
-		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
-	}
-
 	rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	mux := httprouter.New()
 
 	index := &Index{
 		mutex: sync.RWMutex{},
 		list:  []string{},
 	}
 
-	mux := httprouter.New()
+	Regexes := &Regexes{
+		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
+		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
+	}
+
+	srv := &http.Server{
+		Addr:         net.JoinHostPort(bind, strconv.Itoa(int(port))),
+		Handler:      mux,
+		IdleTimeout:  10 * time.Minute,
+		ReadTimeout:  5 * time.Second,
+		WriteTimeout: 5 * time.Minute,
+	}
+
+	stats := &ServeStats{
+		mutex: sync.RWMutex{},
+		list:  []string{},
+		count: make(map[string]uint32),
+		size:  make(map[string]string),
+		times: make(map[string][]string),
+	}
 
 	mux.PanicHandler = serverErrorHandler()
+
+	mux.GET("/", serveRoot(paths, Regexes, index))
+
+	mux.GET("/favicons/*favicon", serveFavicons())
+
+	mux.GET("/favicon.ico", serveFavicons())
+
+	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
+
+	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
+
+	mux.GET("/version", serveVersion())
 
 	if cache {
 		skipIndex := false
@@ -1008,50 +1036,11 @@ func ServePage(args []string) error {
 		mux.GET("/clear_cache", serveCacheClear(args, index))
 	}
 
-	stats := &ServeStats{
-		mutex: sync.RWMutex{},
-		list:  []string{},
-		count: make(map[string]uint32),
-		size:  make(map[string]string),
-		times: make(map[string][]string),
-	}
-
-	if statistics && statisticsFile != "" {
-		stats.Import(statisticsFile)
-
-		gracefulShutdown := make(chan os.Signal, 1)
-		signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
-
-		go func() {
-			<-gracefulShutdown
-
-			stats.Export(statisticsFile)
-
-			os.Exit(0)
-		}()
-	}
-
-	if statistics {
-		mux.GET("/stats", serveStats(args, stats))
-	}
-
 	if debug {
 		mux.GET("/html", serveDebugHtml(args, index))
 
 		mux.GET("/json", serveDebugJson(args, index))
 	}
-
-	mux.GET("/", serveRoot(paths, Regexes, index))
-
-	mux.GET("/favicons/*favicon", serveFavicons())
-
-	mux.GET("/favicon.ico", serveFavicons())
-
-	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
-
-	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
-
-	mux.GET("/version", serveVersion())
 
 	if profile {
 		mux.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
@@ -1061,12 +1050,23 @@ func ServePage(args []string) error {
 		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
 	}
 
-	srv := &http.Server{
-		Addr:         net.JoinHostPort(bind, strconv.Itoa(int(port))),
-		Handler:      mux,
-		IdleTimeout:  10 * time.Minute,
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Minute,
+	if statistics {
+		if statisticsFile != "" {
+			stats.Import(statisticsFile)
+
+			gracefulShutdown := make(chan os.Signal, 1)
+			signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
+
+			go func() {
+				<-gracefulShutdown
+
+				stats.Export(statisticsFile)
+
+				os.Exit(0)
+			}()
+		}
+
+		mux.GET("/stats", serveStats(args, stats))
 	}
 
 	err = srv.ListenAndServe()
