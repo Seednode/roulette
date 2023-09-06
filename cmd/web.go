@@ -44,14 +44,19 @@ const (
 	ImagePrefix        string        = `/view`
 	RedirectStatusCode int           = http.StatusSeeOther
 	Timeout            time.Duration = 10 * time.Second
-)
 
-type Stat int
+	FaviconHtml string = `<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">
+	<link rel="manifest" href="/favicons/site.webmanifest">
+	<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">
+	<meta name="msapplication-TileColor" content="#da532c">
+	<meta name="theme-color" content="#ffffff">`
+)
 
 type Regexes struct {
 	alphanumeric *regexp.Regexp
 	filename     *regexp.Regexp
-	units        *regexp.Regexp
 }
 
 type Filters struct {
@@ -340,25 +345,11 @@ type timesServed struct {
 	Times  []string
 }
 
-func addFavicon() string {
-	var htmlBody strings.Builder
-
-	htmlBody.WriteString(`<link rel="apple-touch-icon" sizes="180x180" href="/favicons/apple-touch-icon.png">`)
-	htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="32x32" href="/favicons/favicon-32x32.png">`)
-	htmlBody.WriteString(`<link rel="icon" type="image/png" sizes="16x16" href="/favicons/favicon-16x16.png">`)
-	htmlBody.WriteString(`<link rel="manifest" href="/favicons/site.webmanifest">`)
-	htmlBody.WriteString(`<link rel="mask-icon" href="/favicons/safari-pinned-tab.svg" color="#5bbad5">`)
-	htmlBody.WriteString(`<meta name="msapplication-TileColor" content="#da532c">`)
-	htmlBody.WriteString(`<meta name="theme-color" content="#ffffff">`)
-
-	return htmlBody.String()
-}
-
 func newErrorPage(title, body string) string {
 	var htmlBody strings.Builder
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(addFavicon())
+	htmlBody.WriteString(FaviconHtml)
 	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
 	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
@@ -409,7 +400,7 @@ func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) 
 	return serverError
 }
 
-func RefreshInterval(r *http.Request, Regexes *Regexes) (int64, string) {
+func RefreshInterval(r *http.Request) (int64, string) {
 	var interval string
 
 	if refreshInterval == "" {
@@ -618,7 +609,7 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(addFavicon())
+		htmlBody.WriteString(FaviconHtml)
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
 		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %s files</title></head><body><table>", fileCount))
@@ -776,7 +767,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 
 		sortOrder := SortOrder(r)
 
-		_, refreshInterval := RefreshInterval(r, Regexes)
+		_, refreshInterval := RefreshInterval(r)
 
 		var filePath string
 
@@ -890,13 +881,13 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 		w.Header().Add("Content-Type", "text/html")
 
-		refreshTimer, refreshInterval := RefreshInterval(r, Regexes)
+		refreshTimer, refreshInterval := RefreshInterval(r)
 
 		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(addFavicon())
+		htmlBody.WriteString(FaviconHtml)
 		htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
@@ -987,7 +978,6 @@ func ServePage(args []string) error {
 	Regexes := &Regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
-		units:        regexp.MustCompile(`^[0-9]+(ns|us|µs|ms|s|m|h)$`),
 	}
 
 	rand.New(rand.NewSource(time.Now().UnixNano()))
