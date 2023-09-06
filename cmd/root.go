@@ -29,6 +29,7 @@ var (
 	maximumFileCount uint32
 	minimumFileCount uint32
 	port             uint16
+	profile          bool
 	recursive        bool
 	refreshInterval  string
 	sorting          bool
@@ -80,6 +81,7 @@ func init() {
 	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
+	rootCmd.Flags().BoolVar(&profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().StringVar(&refreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")

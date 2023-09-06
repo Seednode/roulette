@@ -28,7 +28,7 @@ import (
 	"syscall"
 	"time"
 
-	_ "net/http/pprof"
+	"net/http/pprof"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
@@ -1062,6 +1062,14 @@ func ServePage(args []string) error {
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
 
 	mux.GET("/version", serveVersion())
+
+	if profile {
+		mux.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
+		mux.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
+		mux.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
+		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
+	}
 
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(bind, strconv.Itoa(int(port))),
