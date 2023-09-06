@@ -28,6 +28,8 @@ import (
 	"syscall"
 	"time"
 
+	_ "net/http/pprof"
+
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
