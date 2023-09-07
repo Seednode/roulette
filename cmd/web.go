@@ -986,7 +986,7 @@ func ServePage(args []string) error {
 
 	Regexes := &Regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
-		alphanumeric: regexp.MustCompile(`^[a-zA-Z0-9]*$`),
+		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
 
 	srv := &http.Server{
