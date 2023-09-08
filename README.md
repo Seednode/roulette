@@ -106,6 +106,7 @@ Flags:
       --maximum-files uint32      skip directories with file counts over this value (default 4294967295)
       --minimum-files uint32      skip directories with file counts under this value
   -p, --port uint16               port to listen on (default 8080)
+      --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
   -s, --sort                      enable sorting
