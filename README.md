@@ -105,6 +105,7 @@ Flags:
   -h, --help                      help for roulette
       --maximum-files uint32      skip directories with file counts over this value (default 4294967295)
       --minimum-files uint32      skip directories with file counts under this value
+      --page-length uint16        pagination length for stats page
   -p, --port uint16               port to listen on (default 8080)
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
