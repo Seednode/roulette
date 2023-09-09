@@ -585,7 +585,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		startTime := time.Now()
 
-		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		page, err := strconv.Atoi(p.ByName("page"))
 		if err != nil || page == 0 {
 			page = -1
 		}
