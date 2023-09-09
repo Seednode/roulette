@@ -260,16 +260,34 @@ func (s *ServeStats) toImported(stats *exportedServeStats) {
 	s.mutex.Unlock()
 }
 
-func (s *ServeStats) ListImages() ([]byte, error) {
+func (s *ServeStats) ListImages(page int) ([]byte, error) {
 	stats := s.toExported()
 
 	sort.SliceStable(stats.List, func(p, q int) bool {
 		return strings.ToLower(stats.List[p]) < strings.ToLower(stats.List[q])
 	})
 
-	a := make([]timesServed, len(stats.List))
+	var startIndex, stopIndex int
 
-	for k, v := range stats.List {
+	if page == -1 {
+		startIndex = 0
+		stopIndex = len(stats.List) - 1
+	} else {
+		startIndex = ((page - 1) * int(pageLength))
+		stopIndex = (startIndex + int(pageLength))
+	}
+
+	if startIndex > len(stats.List)-1 {
+		return []byte("{}"), nil
+	}
+
+	if stopIndex > len(stats.List)-1 {
+		stopIndex = len(stats.List) - 1
+	}
+
+	a := make([]timesServed, stopIndex-startIndex)
+
+	for k, v := range stats.List[startIndex:stopIndex] {
 		a[k] = timesServed{v, stats.Count[v], stats.Size[v], stats.Times[v]}
 	}
 
@@ -567,7 +585,12 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		startTime := time.Now()
 
-		response, err := stats.ListImages()
+		page, err := strconv.Atoi(r.URL.Query().Get("page"))
+		if err != nil || page == 0 {
+			page = -1
+		}
+
+		response, err := stats.ListImages(page)
 		if err != nil {
 			fmt.Println(err)
 
@@ -593,13 +616,33 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 	}
 }
 
-func serveDebugHtml(args []string, index *Index) httprouter.Handle {
+func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/html")
 
 		startTime := time.Now()
 
 		indexDump := index.Index()
+
+		var startIndex, stopIndex int
+
+		page, err := strconv.Atoi(p.ByName("page"))
+
+		if err != nil || page <= 0 {
+			startIndex = 0
+			stopIndex = len(indexDump) - 1
+		} else {
+			startIndex = ((page - 1) * int(pageLength))
+			stopIndex = (startIndex + int(pageLength))
+		}
+
+		if startIndex > len(indexDump)-1 {
+			indexDump = []string{}
+		}
+
+		if stopIndex > len(indexDump)-1 {
+			stopIndex = len(indexDump) - 1
+		}
 
 		fileCount := strconv.Itoa(len(indexDump))
 
@@ -613,14 +656,34 @@ func serveDebugHtml(args []string, index *Index) httprouter.Handle {
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
 		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %s files</title></head><body><table>", fileCount))
-		for _, v := range indexDump {
-			var shouldSort = ""
+		if len(indexDump) > 0 {
+			for _, v := range indexDump[startIndex:stopIndex] {
+				var shouldSort = ""
 
-			if sorting {
-				shouldSort = "?sort=asc"
+				if sorting {
+					shouldSort = "?sort=asc"
+				}
+				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", ImagePrefix, v, shouldSort, v))
 			}
-			htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", ImagePrefix, v, shouldSort, v))
 		}
+		if pageLength != 0 {
+			nextPage := page + 1
+			if nextPage > (len(indexDump) / int(pageLength)) {
+				fmt.Printf("Nextpage (%d) is larger than end of index (%d)\n", nextPage, (len(indexDump) / int(pageLength)))
+				nextPage = len(indexDump) / int(pageLength)
+			}
+
+			prevPage := page - 1
+			if prevPage < 1 {
+				prevPage = 1
+			}
+
+			if paginate {
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Prev</button>", prevPage))
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Next</button>", nextPage))
+			}
+		}
+
 		htmlBody.WriteString(`</table></body></html>`)
 
 		b, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -651,7 +714,27 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
 
-		response, err := json.MarshalIndent(indexDump, "", "    ")
+		var startIndex, stopIndex int
+
+		page, err := strconv.Atoi(p.ByName("page"))
+
+		if err != nil || page <= 0 {
+			startIndex = 0
+			stopIndex = len(indexDump) - 1
+		} else {
+			startIndex = ((page - 1) * int(pageLength))
+			stopIndex = (startIndex + int(pageLength))
+		}
+
+		if startIndex > len(indexDump)-1 {
+			indexDump = []string{}
+		}
+
+		if stopIndex > len(indexDump)-1 {
+			stopIndex = len(indexDump) - 1
+		}
+
+		response, err := json.MarshalIndent(indexDump[startIndex:stopIndex], "", "    ")
 		if err != nil {
 			fmt.Println(err)
 
@@ -1037,9 +1120,15 @@ func ServePage(args []string) error {
 	}
 
 	if debug {
-		mux.GET("/html", serveDebugHtml(args, index))
+		mux.GET("/html/", serveDebugHtml(args, index, false))
+		if pageLength != 0 {
+			mux.GET("/html/:page", serveDebugHtml(args, index, true))
+		}
 
 		mux.GET("/json", serveDebugJson(args, index))
+		if pageLength != 0 {
+			mux.GET("/json/:page", serveDebugJson(args, index))
+		}
 	}
 
 	if profile {
@@ -1067,6 +1156,9 @@ func ServePage(args []string) error {
 		}
 
 		mux.GET("/stats", serveStats(args, stats))
+		if pageLength != 0 {
+			mux.GET("/stats/:page", serveStats(args, stats))
+		}
 	}
 
 	err = srv.ListenAndServe()
