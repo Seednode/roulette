@@ -12,7 +12,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"net/url"
@@ -1100,8 +1099,6 @@ func ServePage(args []string) error {
 	if russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
-
-	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	mux := httprouter.New()
 

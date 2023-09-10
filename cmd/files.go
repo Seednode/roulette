@@ -11,8 +11,9 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"math/big"
 
-	"math/rand"
+	"crypto/rand"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -618,16 +619,24 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		return "", ErrNoImagesFound
 	}
 
-	r := rand.Intn(fileCount)
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(fileCount-2)))
+	if err != nil {
+		return "", err
+	}
+
+	val, err := strconv.Atoi(strconv.FormatInt(r.Int64(), 10))
+	if err != nil {
+		return "", err
+	}
 
 	for i := 0; i < fileCount; i++ {
-		if r >= (fileCount - 1) {
-			r = 0
+		if val >= fileCount {
+			val = 0
 		} else {
-			r++
+			val++
 		}
 
-		filePath := fileList[r]
+		filePath := fileList[val]
 
 		if !fromCache {
 			image, err := isSupportedFileType(filePath)
