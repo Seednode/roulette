@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	Version string = "0.59.0"
+	Version string = "0.59.1"
 )
 
 var (

@@ -1098,6 +1098,10 @@ func ServePage(args []string) error {
 		return errors.New("no supported files found in provided paths")
 	}
 
+	if russian {
+		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
+	}
+
 	rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	mux := httprouter.New()
@@ -1177,10 +1181,6 @@ func ServePage(args []string) error {
 		mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
 		mux.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
 		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
-	}
-
-	if russian {
-		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
 	if statistics {
