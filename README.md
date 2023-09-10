@@ -89,7 +89,7 @@ If the `-d|--debug` flag is passed, two additional endpoints—`/html` and `/jso
 
 When accessed, these endpoints return the contents of the index, in HTML and JSON formats respectively. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
-## Roulette
+## Russian
 If the `--russian` flag is passed, everything functions exactly as you would expect.
 
 That is, files will be deleted after being served. This is not a joke, you *will* lose data.
