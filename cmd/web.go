@@ -97,6 +97,30 @@ func (i *Index) Index() []string {
 	return val
 }
 
+func (i *Index) Remove(path string) {
+	i.mutex.RLock()
+	tempIndex := make([]string, len(i.list))
+	copy(tempIndex, i.list)
+	i.mutex.RUnlock()
+
+	var position int
+
+	for k, v := range tempIndex {
+		if path == v {
+			position = k
+
+			break
+		}
+	}
+
+	tempIndex[position] = tempIndex[len(tempIndex)-1]
+
+	i.mutex.Lock()
+	i.list = make([]string, len(tempIndex)-1)
+	copy(i.list, tempIndex[:len(tempIndex)-1])
+	i.mutex.Unlock()
+}
+
 func (i *Index) setIndex(val []string) {
 	i.mutex.Lock()
 	i.list = val
@@ -581,7 +605,6 @@ func serveCacheClear(args []string, index *Index) httprouter.Handle {
 
 func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
 
@@ -598,6 +621,8 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 			return
 		}
+
+		w.Header().Set("Content-Type", "application/json")
 
 		w.Write(response)
 
@@ -624,26 +649,26 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 
 		indexDump := index.Index()
 
+		fileCount := len(indexDump)
+
 		var startIndex, stopIndex int
 
 		page, err := strconv.Atoi(p.ByName("page"))
 		if err != nil || page <= 0 {
 			startIndex = 0
-			stopIndex = len(indexDump) - 1
+			stopIndex = fileCount
 		} else {
 			startIndex = ((page - 1) * int(pageLength))
 			stopIndex = (startIndex + int(pageLength))
 		}
 
-		if startIndex > len(indexDump)-1 {
+		if startIndex > (fileCount - 1) {
 			indexDump = []string{}
 		}
 
-		if stopIndex > len(indexDump)-1 {
-			stopIndex = len(indexDump) - 1
+		if stopIndex > fileCount {
+			stopIndex = fileCount
 		}
-
-		fileCount := strconv.Itoa(len(indexDump))
 
 		sort.SliceStable(indexDump, func(p, q int) bool {
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
@@ -654,7 +679,7 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 		htmlBody.WriteString(FaviconHtml)
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
 		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
-		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %s files</title></head><body><table>", fileCount))
+		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %d files</title></head><body><table>", fileCount))
 		if len(indexDump) > 0 {
 			for _, v := range indexDump[startIndex:stopIndex] {
 				var shouldSort = ""
@@ -667,8 +692,8 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 		}
 		if pageLength != 0 {
 			nextPage := page + 1
-			if nextPage > (len(indexDump) / int(pageLength)) {
-				nextPage = len(indexDump) / int(pageLength)
+			if nextPage > (fileCount / int(pageLength)) {
+				nextPage = fileCount / int(pageLength)
 			}
 
 			prevPage := page - 1
@@ -708,6 +733,8 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 
 		indexDump := index.Index()
 
+		fileCount := len(indexDump)
+
 		sort.SliceStable(indexDump, func(p, q int) bool {
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
@@ -717,18 +744,18 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 		page, err := strconv.Atoi(p.ByName("page"))
 		if err != nil || page <= 0 {
 			startIndex = 0
-			stopIndex = len(indexDump) - 1
+			stopIndex = fileCount
 		} else {
 			startIndex = ((page - 1) * int(pageLength))
 			stopIndex = (startIndex + int(pageLength))
 		}
 
-		if startIndex > len(indexDump)-1 {
+		if startIndex > (fileCount - 1) {
 			indexDump = []string{}
 		}
 
-		if stopIndex > len(indexDump)-1 {
-			stopIndex = len(indexDump) - 1
+		if stopIndex > fileCount {
+			stopIndex = fileCount
 		}
 
 		response, err := json.MarshalIndent(indexDump[startIndex:stopIndex], "", "    ")
@@ -811,6 +838,17 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 
 		fileSize := humanReadableSize(len(buf))
 
+		if russian {
+			err = os.Remove(filePath)
+			if err != nil {
+				fmt.Println(err)
+
+				serverError(w, r, nil)
+
+				return
+			}
+		}
+
 		if verbose {
 			fmt.Printf("%s | Served %s (%s) to %s in %s\n",
 				startTime.Format(LogDate),
@@ -824,6 +862,7 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		if statistics {
 			stats.incrementCounter(filePath, startTime, fileSize)
 		}
+
 	}
 }
 
@@ -998,6 +1037,10 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 			return
 		}
+
+		if russian && cache {
+			index.Remove(filePath)
+		}
 	}
 }
 
@@ -1134,6 +1177,10 @@ func ServePage(args []string) error {
 		mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
 		mux.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
 		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
+	}
+
+	if russian {
+		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
 	if statistics {

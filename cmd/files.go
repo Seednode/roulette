@@ -546,6 +546,10 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 
 	fileList = prepareDirectories(files, sort)
 
+	if stats.filesMatched.Load() < 1 {
+		return []string{}, false
+	}
+
 	if verbose {
 		fmt.Printf("%s | Indexed %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(LogDate),
@@ -614,7 +618,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		return "", ErrNoImagesFound
 	}
 
-	r := rand.Intn(fileCount - 1)
+	r := rand.Intn(fileCount)
 
 	for i := 0; i < fileCount; i++ {
 		if r >= (fileCount - 1) {

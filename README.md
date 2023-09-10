@@ -110,6 +110,7 @@ Flags:
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
+      --russian                   remove selected images after serving
   -s, --sort                      enable sorting
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file

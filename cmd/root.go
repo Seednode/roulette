@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	Version string = "0.58.2"
+	Version string = "0.59.0"
 )
 
 var (
@@ -33,6 +33,7 @@ var (
 	profile          bool
 	recursive        bool
 	refreshInterval  string
+	russian          bool
 	sorting          bool
 	statistics       bool
 	statisticsFile   string
@@ -86,6 +87,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().StringVar(&refreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")
+	rootCmd.Flags().BoolVar(&russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&statistics, "stats", false, "expose stats endpoint")
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
@@ -94,6 +96,8 @@ func init() {
 	rootCmd.Flags().SetInterspersed(true)
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
+	// rootCmd.MarkFlagsMutuallyExclusive("cache", "russian")
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SetHelpCommand(&cobra.Command{
