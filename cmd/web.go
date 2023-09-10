@@ -780,7 +780,7 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 	}
 }
 
-func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
+func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		path := strings.TrimPrefix(r.URL.Path, SourcePrefix)
 
@@ -839,6 +839,10 @@ func serveStaticFile(paths []string, stats *ServeStats) httprouter.Handle {
 		fileSize := humanReadableSize(len(buf))
 
 		if russian {
+			if cache {
+				index.Remove(filePath)
+			}
+
 			err = os.Remove(filePath)
 			if err != nil {
 				fmt.Println(err)
@@ -1037,10 +1041,6 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 			return
 		}
-
-		if russian && cache {
-			index.Remove(filePath)
-		}
 	}
 }
 
@@ -1142,7 +1142,7 @@ func ServePage(args []string) error {
 
 	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
 
-	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats))
+	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
 	mux.GET("/version", serveVersion())
 
