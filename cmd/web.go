@@ -692,8 +692,11 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 		}
 		if pageLength != 0 {
 			nextPage := page + 1
-			if nextPage > (fileCount / int(pageLength)) {
+
+			if nextPage > (fileCount/int(pageLength)) && fileCount%int(pageLength) == 0 {
 				nextPage = fileCount / int(pageLength)
+			} else if nextPage > (fileCount / int(pageLength)) {
+				nextPage = (fileCount / int(pageLength)) + 1
 			}
 
 			prevPage := page - 1
