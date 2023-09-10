@@ -990,17 +990,13 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			return
 		}
 
-		var dimensions *Dimensions
+		dimensions, err := imageDimensions(filePath)
+		if err != nil {
+			fmt.Println(err)
 
-		if image {
-			dimensions, err = imageDimensions(filePath)
-			if err != nil {
-				fmt.Println(err)
+			serverError(w, r, nil)
 
-				serverError(w, r, nil)
-
-				return
-			}
+			return
 		}
 
 		fileName := filepath.Base(filePath)
@@ -1114,7 +1110,7 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
-	Regexes := &Regexes{
+	regexes := &Regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
@@ -1137,13 +1133,13 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, Regexes, index))
+	mux.GET("/", serveRoot(paths, regexes, index))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(ImagePrefix+"/*image", serveImage(paths, Regexes, index))
+	mux.GET(ImagePrefix+"/*image", serveImage(paths, regexes, index))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
