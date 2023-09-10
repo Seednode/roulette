@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	Version string = "0.58.1"
+	Version string = "0.58.2"
 )
 
 var (
@@ -81,7 +81,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
-	rootCmd.Flags().Uint16Var(&pageLength, "page-length", 0, "pagination length for stats page")
+	rootCmd.Flags().Uint16Var(&pageLength, "page-length", 0, "pagination length for statistics and debug pages")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVar(&profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")

@@ -627,7 +627,6 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 		var startIndex, stopIndex int
 
 		page, err := strconv.Atoi(p.ByName("page"))
-
 		if err != nil || page <= 0 {
 			startIndex = 0
 			stopIndex = len(indexDump) - 1
@@ -669,7 +668,6 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 		if pageLength != 0 {
 			nextPage := page + 1
 			if nextPage > (len(indexDump) / int(pageLength)) {
-				fmt.Printf("Nextpage (%d) is larger than end of index (%d)\n", nextPage, (len(indexDump) / int(pageLength)))
 				nextPage = len(indexDump) / int(pageLength)
 			}
 
@@ -717,7 +715,6 @@ func serveDebugJson(args []string, index *Index) httprouter.Handle {
 		var startIndex, stopIndex int
 
 		page, err := strconv.Atoi(p.ByName("page"))
-
 		if err != nil || page <= 0 {
 			startIndex = 0
 			stopIndex = len(indexDump) - 1
