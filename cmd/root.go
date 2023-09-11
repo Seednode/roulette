@@ -17,7 +17,7 @@ var (
 )
 
 const (
-	Version string = "0.62.0"
+	Version string = "0.63.0"
 )
 
 var (
@@ -27,6 +27,7 @@ var (
 	cacheFile        string
 	debug            bool
 	filtering        bool
+	images           bool
 	maximumFileCount uint32
 	minimumFileCount uint32
 	pageLength       uint16
@@ -40,11 +41,11 @@ var (
 	statisticsFile   string
 	verbose          bool
 	version          bool
-	video            bool
+	videos           bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
-		Short: "Serves random images from the specified directories.",
+		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
 			if debug {
@@ -77,12 +78,13 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolVar(&audio, "audio", false, "additionally support audio files")
+	rootCmd.Flags().BoolVar(&audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
+	rootCmd.Flags().BoolVar(&images, "images", true, "enable support for audio files")
 	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16Var(&pageLength, "page-length", 0, "pagination length for statistics and debug pages")
@@ -96,13 +98,11 @@ func init() {
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().BoolVarP(&version, "version", "V", false, "display version and exit")
-	rootCmd.Flags().BoolVar(&video, "video", false, "additionally support video files")
+	rootCmd.Flags().BoolVar(&videos, "videos", false, "enable support for video files")
 
 	rootCmd.Flags().SetInterspersed(true)
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
-
-	// rootCmd.MarkFlagsMutuallyExclusive("cache", "russian")
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SetHelpCommand(&cobra.Command{

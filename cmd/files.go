@@ -405,9 +405,9 @@ func fileType(path string) (bool, string, string, error) {
 	switch {
 	case filetype.IsAudio(head) && audio:
 		return true, "audio", fileType.MIME.Value, nil
-	case filetype.IsImage(head):
+	case filetype.IsImage(head) && images:
 		return true, "image", fileType.MIME.Value, nil
-	case filetype.IsVideo(head) && video:
+	case filetype.IsVideo(head) && videos:
 		return true, "video", fileType.MIME.Value, nil
 	default:
 		return false, "", "", nil

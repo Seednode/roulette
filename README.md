@@ -108,12 +108,14 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
+      --audio                     enable support for audio files
   -b, --bind string               address to bind to (default "0.0.0.0")
   -c, --cache                     generate directory cache at startup
       --cache-file string         path to optional persistent cache file
   -d, --debug                     expose debug endpoint
   -f, --filter                    enable filtering
   -h, --help                      help for roulette
+      --images                    enable support for audio files (default true)
       --maximum-files uint32      skip directories with file counts over this value (default 4294967295)
       --minimum-files uint32      skip directories with file counts under this value
       --page-length uint16        pagination length for statistics and debug pages
@@ -121,12 +123,13 @@ Flags:
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
-      --russian                   remove selected media after serving
+      --russian                   remove selected images after serving
   -s, --sort                      enable sorting
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file
   -v, --verbose                   log accessed files to stdout
   -V, --version                   display version and exit
+      --videos                    enable support for video files
 ```
 
 ## Building the Docker container
