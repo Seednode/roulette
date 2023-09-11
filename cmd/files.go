@@ -144,7 +144,7 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
 	if shouldCache {
-		supported, _, err := isSupportedFileType(path)
+		supported, _, _, err := isSupportedFileType(path)
 		if err != nil {
 			return err
 		}
@@ -358,26 +358,30 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func isSupportedFileType(path string) (bool, string, error) {
+func isSupportedFileType(path string) (bool, string, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return false, "", nil
+		return false, "", "", nil
 	case err != nil:
-		return false, "", err
+		return false, "", "", err
 	}
 	defer file.Close()
 
 	head := make([]byte, 261)
 	file.Read(head)
 
+	extension := strings.TrimPrefix(filepath.Ext(path), ".")
+
+	fileType := filetype.GetType(extension)
+
 	switch {
 	case filetype.IsImage(head):
-		return true, "image", nil
+		return true, "image", fileType.MIME.Value, nil
 	case filetype.IsVideo(head):
-		return true, "video", nil
+		return true, "video", fileType.MIME.Value, nil
 	default:
-		return false, "", nil
+		return false, "", "", nil
 	}
 }
 
@@ -393,7 +397,7 @@ func pathHasSupportedFiles(path string) (bool, error) {
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			supported, _, err := isSupportedFileType(p)
+			supported, _, _, err := isSupportedFileType(p)
 			if err != nil {
 				return err
 			}
@@ -641,7 +645,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		filePath := fileList[val]
 
 		if !fromCache {
-			supported, _, err := isSupportedFileType(filePath)
+			supported, _, _, err := isSupportedFileType(filePath)
 			if err != nil {
 				return "", err
 			}
