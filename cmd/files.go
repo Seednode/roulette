@@ -146,13 +146,11 @@ func imageDimensions(path string) (*Dimensions, error) {
 }
 
 func preparePath(path string) string {
-	path = MediaPrefix + path
-
 	if runtime.GOOS == "windows" {
-		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
+		return fmt.Sprintf("%s/%s", MediaPrefix, filepath.ToSlash(path))
 	}
 
-	return path
+	return MediaPrefix + path
 }
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
