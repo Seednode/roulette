@@ -68,6 +68,7 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 			}
 		}
 		if pageLength != 0 {
+			var firstPage int = 1
 			var lastPage int
 
 			if fileCount%int(pageLength) == 0 {
@@ -80,11 +81,11 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 				var prevStatus, nextStatus string = "", ""
 
 				if page <= 1 {
-					prevStatus = "disabled"
+					prevStatus = " disabled"
 				}
 
 				if page >= lastPage {
-					nextStatus = "disabled"
+					nextStatus = " disabled"
 				}
 
 				prevPage := page - 1
@@ -97,13 +98,19 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 					nextPage = fileCount / int(pageLength)
 				}
 
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\" %s>Prev</button>",
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">First</button>",
+					firstPage))
+
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Prev</button>",
 					prevPage,
 					prevStatus))
 
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\" %s>Next</button>",
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Next</button>",
 					nextPage,
 					nextStatus))
+
+				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Last</button>",
+					lastPage))
 			}
 		}
 
