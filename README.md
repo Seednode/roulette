@@ -8,7 +8,7 @@ A new file will be selected if you open `/` directly, or if you click on any dis
 
 Browser history is preserved, so you can always go back to any previously displayed media.
 
-Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, `webp`, `mp4`, `ogv`, `webm`.
+Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `m4a`, `mp3`, `mp4`, `.ogg`, `.ogv`, `png`, `wav`, `webm`, `webp`.
 
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 

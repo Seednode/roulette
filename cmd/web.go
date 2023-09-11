@@ -974,7 +974,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			return
 		}
 
-		supported, fileType, mime, err := isSupportedFileType(filePath)
+		supported, fileType, mime, err := fileType(filePath)
 		if err != nil {
 			fmt.Println(err)
 
@@ -1020,7 +1020,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 				fileName,
 				dimensions.width,
 				dimensions.height))
-		case "video":
+		default:
 			htmlBody.WriteString(fmt.Sprintf(`<title>%s</title>`,
 				fileName))
 		}
@@ -1033,6 +1033,12 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		}
 
 		switch fileType {
+		case "audio":
+			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><audio controls autoplay><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the audio tag.</audio></a>`,
+				queryParams,
+				generateFilePath(filePath),
+				mime,
+				fileName))
 		case "image":
 			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 				queryParams,
@@ -1041,15 +1047,15 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 				dimensions.height,
 				mime,
 				fileName))
-			htmlBody.WriteString(`</body></html>`)
 		case "video":
 			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><video controls autoplay><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
 				queryParams,
 				generateFilePath(filePath),
 				mime,
 				fileName))
-			htmlBody.WriteString(`</body></html>`)
 		}
+
+		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {

@@ -44,7 +44,20 @@ type Concurrency struct {
 
 var (
 	ErrNoMediaFound = errors.New("no supported media formats found which match all criteria")
-	Extensions      = [9]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".ogv", ".webm"}
+	Extensions      = [12]string{
+		".bmp",
+		".gif",
+		".jpeg",
+		".jpg",
+		".mp3",
+		".mp4",
+		".ogg",
+		".ogv",
+		".png",
+		".wav",
+		".webm",
+		".webp",
+	}
 )
 
 type Dimensions struct {
@@ -144,7 +157,7 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
 	if shouldCache {
-		supported, _, _, err := isSupportedFileType(path)
+		supported, _, _, err := fileType(path)
 		if err != nil {
 			return err
 		}
@@ -358,7 +371,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func isSupportedFileType(path string) (bool, string, string, error) {
+func fileType(path string) (bool, string, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -371,14 +384,30 @@ func isSupportedFileType(path string) (bool, string, string, error) {
 	head := make([]byte, 261)
 	file.Read(head)
 
-	extension := strings.TrimPrefix(filepath.Ext(path), ".")
+	extension := filepath.Ext(path)
 
-	fileType := filetype.GetType(extension)
+	isSupported := false
+
+	for _, e := range Extensions {
+		if e == extension {
+			isSupported = true
+
+			break
+		}
+	}
+
+	if !isSupported {
+		return false, "", "", nil
+	}
+
+	fileType := filetype.GetType(strings.TrimPrefix(extension, "."))
 
 	switch {
+	case filetype.IsAudio(head) && audio:
+		return true, "audio", fileType.MIME.Value, nil
 	case filetype.IsImage(head):
 		return true, "image", fileType.MIME.Value, nil
-	case filetype.IsVideo(head):
+	case filetype.IsVideo(head) && video:
 		return true, "video", fileType.MIME.Value, nil
 	default:
 		return false, "", "", nil
@@ -397,7 +426,7 @@ func pathHasSupportedFiles(path string) (bool, error) {
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			supported, _, _, err := isSupportedFileType(p)
+			supported, _, _, err := fileType(p)
 			if err != nil {
 				return err
 			}
@@ -645,7 +674,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		filePath := fileList[val]
 
 		if !fromCache {
-			supported, _, _, err := isSupportedFileType(filePath)
+			supported, _, _, err := fileType(filePath)
 			if err != nil {
 				return "", err
 			}

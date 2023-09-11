@@ -17,10 +17,11 @@ var (
 )
 
 const (
-	Version string = "0.61.2"
+	Version string = "0.62.0"
 )
 
 var (
+	audio            bool
 	bind             string
 	cache            bool
 	cacheFile        string
@@ -39,6 +40,7 @@ var (
 	statisticsFile   string
 	verbose          bool
 	version          bool
+	video            bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -75,6 +77,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().BoolVar(&audio, "audio", false, "additionally support audio files")
 	rootCmd.Flags().StringVarP(&bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
@@ -93,6 +96,8 @@ func init() {
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().BoolVarP(&version, "version", "V", false, "display version and exit")
+	rootCmd.Flags().BoolVar(&video, "video", false, "additionally support video files")
+
 	rootCmd.Flags().SetInterspersed(true)
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
