@@ -841,10 +841,6 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 		fileSize := humanReadableSize(len(buf))
 
 		if russian {
-			if cache {
-				index.Remove(filePath)
-			}
-
 			err = os.Remove(filePath)
 			if err != nil {
 				fmt.Println(err)
@@ -852,6 +848,10 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 				serverError(w, r, nil)
 
 				return
+			}
+
+			if cache {
+				index.Remove(filePath)
 			}
 		}
 
