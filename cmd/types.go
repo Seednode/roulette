@@ -4,6 +4,15 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 
 package cmd
 
+import (
+	"errors"
+	"os"
+	"path/filepath"
+	"strings"
+
+	"github.com/h2non/filetype"
+)
+
 type SupportedType struct {
 	title      func(queryParams, filePath, mime, fileName string, width, height int) string
 	body       func(queryParams, filePath, mime, fileName string, width, height int) string
@@ -55,4 +64,31 @@ func (s *SupportedTypes) IsSupported(head []byte) bool {
 	}
 
 	return r
+}
+
+func fileType(path string, types *SupportedTypes) (bool, *SupportedType, string, error) {
+	file, err := os.Open(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		return false, nil, "", nil
+	case err != nil:
+		return false, nil, "", err
+	}
+	defer file.Close()
+
+	head := make([]byte, 261)
+	file.Read(head)
+
+	extension := filepath.Ext(path)
+
+	fileType := types.Type(extension)
+
+	isSupported := types.IsSupported(head)
+	if !isSupported {
+		return false, nil, "", nil
+	}
+
+	mimeType := (filetype.GetType(strings.TrimPrefix(extension, "."))).MIME.Value
+
+	return isSupported, fileType, mimeType, nil
 }
