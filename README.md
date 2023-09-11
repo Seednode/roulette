@@ -1,14 +1,14 @@
 ## About
 
-Sometimes, you just need a way to randomly display images from your filesystem.
+Sometimes, you just need a way to randomly display media from your filesystem.
 
 Simply point this tool at one or more directories, and then open the specified port (default `8080`) in your browser.
 
-A new file will be selected if you open `/` directly, or if you click on any displayed images.
+A new file will be selected if you open `/` directly, or if you click on any displayed files.
 
-Browser history is preserved, so you can always go back to any previously displayed images.
+Browser history is preserved, so you can always go back to any previously displayed media.
 
-Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, and `webp`.
+Supported file types and extensions are `bmp`, `gif`, `jp[e]g`, `png`, `webp`, `mp4`, `ogv`, `webm`.
 
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 
@@ -102,7 +102,7 @@ Enjoy!
 
 ## Usage output
 ```
-Serves random images from the specified directories.
+Serves random media from the specified directories.
 
 Usage:
   roulette <path> [path]... [flags]
@@ -121,7 +121,7 @@ Flags:
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
-      --russian                   remove selected images after serving
+      --russian                   remove selected media after serving
   -s, --sort                      enable sorting
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file

@@ -43,8 +43,8 @@ type Concurrency struct {
 }
 
 var (
-	ErrNoImagesFound = errors.New("no supported image formats found which match all criteria")
-	Extensions       = [8]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".webm"}
+	ErrNoMediaFound = errors.New("no supported media formats found which match all criteria")
+	Extensions      = [9]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".ogv", ".webm"}
 )
 
 type Dimensions struct {
@@ -133,7 +133,7 @@ func imageDimensions(path string) (*Dimensions, error) {
 }
 
 func preparePath(path string) string {
-	path = ImagePrefix + path
+	path = MediaPrefix + path
 
 	if runtime.GOOS == "windows" {
 		path = fmt.Sprintf("/%s", filepath.ToSlash(path))
@@ -618,7 +618,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 
 	fileCount := len(fileList)
 	if fileCount < 1 {
-		return "", ErrNoImagesFound
+		return "", ErrNoMediaFound
 	}
 
 	r, err := rand.Int(rand.Reader, big.NewInt(int64(fileCount-2)))
@@ -656,7 +656,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		return filePath, nil
 	}
 
-	return "", ErrNoImagesFound
+	return "", ErrNoMediaFound
 }
 
 func normalizePath(path string) (string, error) {

@@ -40,7 +40,7 @@ var favicons embed.FS
 const (
 	LogDate            string        = `2006-01-02T15:04:05.000-07:00`
 	SourcePrefix       string        = `/source`
-	ImagePrefix        string        = `/view`
+	MediaPrefix        string        = `/view`
 	RedirectStatusCode int           = http.StatusSeeOther
 	Timeout            time.Duration = 10 * time.Second
 
@@ -213,20 +213,20 @@ type exportedServeStats struct {
 	Times map[string][]string
 }
 
-func (s *ServeStats) incrementCounter(image string, timestamp time.Time, filesize string) {
+func (s *ServeStats) incrementCounter(file string, timestamp time.Time, filesize string) {
 	s.mutex.Lock()
 
-	s.count[image]++
+	s.count[file]++
 
-	s.times[image] = append(s.times[image], timestamp.Format(LogDate))
+	s.times[file] = append(s.times[file], timestamp.Format(LogDate))
 
-	_, exists := s.size[image]
+	_, exists := s.size[file]
 	if !exists {
-		s.size[image] = filesize
+		s.size[file] = filesize
 	}
 
-	if !contains(s.list, image) {
-		s.list = append(s.list, image)
+	if !contains(s.list, file) {
+		s.list = append(s.list, file)
 	}
 
 	s.mutex.Unlock()
@@ -283,7 +283,7 @@ func (s *ServeStats) toImported(stats *exportedServeStats) {
 	s.mutex.Unlock()
 }
 
-func (s *ServeStats) ListImages(page int) ([]byte, error) {
+func (s *ServeStats) ListFiles(page int) ([]byte, error) {
 	stats := s.toExported()
 
 	sort.SliceStable(stats.List, func(p, q int) bool {
@@ -612,7 +612,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 			page = -1
 		}
 
-		response, err := stats.ListImages(page)
+		response, err := stats.ListFiles(page)
 		if err != nil {
 			fmt.Println(err)
 
@@ -686,7 +686,7 @@ func serveDebugHtml(args []string, index *Index, paginate bool) httprouter.Handl
 				if sorting {
 					shouldSort = "?sort=asc"
 				}
-				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", ImagePrefix, v, shouldSort, v))
+				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", MediaPrefix, v, shouldSort, v))
 			}
 		}
 		if pageLength != 0 {
@@ -883,7 +883,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 			return
 		}
 
-		strippedRefererUri := strings.TrimPrefix(refererUri, ImagePrefix)
+		strippedRefererUri := strings.TrimPrefix(refererUri, MediaPrefix)
 
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -921,7 +921,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 
 			filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
 			switch {
-			case err != nil && err == ErrNoImagesFound:
+			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, filePath)
 
 				return
@@ -945,7 +945,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 	}
 }
 
-func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
+func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -954,7 +954,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 		sortOrder := SortOrder(r)
 
-		filePath := strings.TrimPrefix(r.URL.Path, ImagePrefix)
+		filePath := strings.TrimPrefix(r.URL.Path, MediaPrefix)
 
 		if runtime.GOOS == "windows" {
 			filePath = strings.TrimPrefix(filePath, "/")
@@ -1154,7 +1154,7 @@ func ServePage(args []string) error {
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(ImagePrefix+"/*image", serveImage(paths, regexes, index))
+	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
