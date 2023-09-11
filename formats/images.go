@@ -5,30 +5,48 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package formats
 
 import (
+	"errors"
 	"fmt"
+	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"os"
 
 	"github.com/h2non/filetype"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 )
 
+type Dimensions struct {
+	Width  int
+	Height int
+}
+
 func RegisterImageFormats() *SupportedFormat {
 	return &SupportedFormat{
-		Title: func(queryParams, filePath, mime, fileName string, width, height int) string {
+		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
+			dimensions, err := ImageDimensions(filePath)
+			if err != nil {
+				fmt.Println(err)
+			}
+
 			return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 				fileName,
-				width,
-				height)
+				dimensions.Width,
+				dimensions.Height)
 		},
-		Body: func(queryParams, filePath, mime, fileName string, width, height int) string {
+		Body: func(queryParams, fileUri, filePath, fileName, mime string) string {
+			dimensions, err := ImageDimensions(filePath)
+			if err != nil {
+				fmt.Println(err)
+			}
+
 			return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 				queryParams,
-				filePath,
-				width,
-				height,
+				fileUri,
+				dimensions.Width,
+				dimensions.Height,
 				mime,
 				fileName)
 		},
@@ -44,4 +62,29 @@ func RegisterImageFormats() *SupportedFormat {
 			return filetype.IsImage(head)
 		},
 	}
+}
+
+func ImageDimensions(path string) (*Dimensions, error) {
+	file, err := os.Open(path)
+	switch {
+	case errors.Is(err, os.ErrNotExist):
+		fmt.Printf("File %s does not exist\n", path)
+		return &Dimensions{}, nil
+	case err != nil:
+		fmt.Printf("File %s open returned error: %s\n", path, err)
+		return &Dimensions{}, err
+	}
+	defer file.Close()
+
+	myImage, _, err := image.DecodeConfig(file)
+	switch {
+	case errors.Is(err, image.ErrFormat):
+		fmt.Printf("File %s has invalid image format\n", path)
+		return &Dimensions{Width: 0, Height: 0}, nil
+	case err != nil:
+		fmt.Printf("File %s decode returned error: %s\n", path, err)
+		return &Dimensions{}, err
+	}
+
+	return &Dimensions{Width: myImage.Width, Height: myImage.Height}, nil
 }

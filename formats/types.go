@@ -13,11 +13,14 @@ import (
 	"github.com/h2non/filetype"
 )
 
+type FormatFunction func(queryParams, fileUri, filePath, fileName, mime string) string
+type ValidatorFunction func([]byte) bool
+
 type SupportedFormat struct {
-	Title      func(queryParams, filePath, mime, fileName string, width, height int) string
-	Body       func(queryParams, filePath, mime, fileName string, width, height int) string
+	Title      FormatFunction
+	Body       FormatFunction
 	Extensions []string
-	validator  func([]byte) bool
+	validator  ValidatorFunction
 }
 
 type SupportedFormats struct {

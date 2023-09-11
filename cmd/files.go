@@ -7,10 +7,6 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-	_ "image/png"
 	"math/big"
 
 	"crypto/rand"
@@ -23,8 +19,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	_ "golang.org/x/image/bmp"
-	_ "golang.org/x/image/webp"
 	"seedno.de/seednode/roulette/formats"
 )
 
@@ -43,26 +37,7 @@ type Concurrency struct {
 
 var (
 	ErrNoMediaFound = errors.New("no supported media formats found which match all criteria")
-	Extensions      = [12]string{
-		".bmp",
-		".gif",
-		".jpeg",
-		".jpg",
-		".mp3",
-		".mp4",
-		".ogg",
-		".ogv",
-		".png",
-		".wav",
-		".webm",
-		".webp",
-	}
 )
-
-type Dimensions struct {
-	width  int
-	height int
-}
 
 type Files struct {
 	mutex sync.RWMutex
@@ -123,27 +98,6 @@ func humanReadableSize(bytes int) string {
 		float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-func imageDimensions(path string) (*Dimensions, error) {
-	file, err := os.Open(path)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return &Dimensions{}, nil
-	case err != nil:
-		return &Dimensions{}, err
-	}
-	defer file.Close()
-
-	myImage, _, err := image.DecodeConfig(file)
-	switch {
-	case errors.Is(err, image.ErrFormat):
-		return &Dimensions{width: 0, height: 0}, nil
-	case err != nil:
-		return &Dimensions{}, err
-	}
-
-	return &Dimensions{width: myImage.Width, height: myImage.Height}, nil
-}
-
 func preparePath(path string) string {
 	if runtime.GOOS == "windows" {
 		return fmt.Sprintf("%s/%s", MediaPrefix, filepath.ToSlash(path))
@@ -154,12 +108,12 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, registeredFormats *formats.SupportedFormats, shouldCache bool) error {
 	if shouldCache {
-		supported, _, _, err := formats.FileType(path, registeredFormats)
+		registered, _, _, err := formats.FileType(path, registeredFormats)
 		if err != nil {
 			return err
 		}
 
-		if !supported {
+		if !registered {
 			return nil
 		}
 	}
@@ -224,8 +178,8 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, 
 	return nil
 }
 
-func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *Index, types *formats.SupportedFormats) (string, error) {
-	filePath, err := pickFile(paths, filters, sortOrder, index, types)
+func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *Index, registeredFormats *formats.SupportedFormats) (string, error) {
+	filePath, err := pickFile(paths, filters, sortOrder, index, registeredFormats)
 	if err != nil {
 		return "", nil
 	}
@@ -239,7 +193,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 
 	switch {
 	case sortOrder == "asc":
-		filePath, err = tryExtensions(path)
+		filePath, err = tryExtensions(path, registeredFormats)
 		if err != nil {
 			return "", err
 		}
@@ -247,7 +201,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 		for {
 			path.increment()
 
-			filePath, err = tryExtensions(path)
+			filePath, err = tryExtensions(path, registeredFormats)
 			if err != nil {
 				return "", err
 			}
@@ -255,7 +209,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 			if filePath == "" {
 				path.decrement()
 
-				filePath, err = tryExtensions(path)
+				filePath, err = tryExtensions(path, registeredFormats)
 				if err != nil {
 					return "", err
 				}
@@ -268,7 +222,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 	return filePath, nil
 }
 
-func nextFile(filePath, sortOrder string, Regexes *Regexes) (string, error) {
+func nextFile(filePath, sortOrder string, Regexes *Regexes, registeredFormats *formats.SupportedFormats) (string, error) {
 	path, err := splitPath(filePath, Regexes)
 	if err != nil {
 		return "", err
@@ -283,7 +237,7 @@ func nextFile(filePath, sortOrder string, Regexes *Regexes) (string, error) {
 		return "", nil
 	}
 
-	fileName, err := tryExtensions(path)
+	fileName, err := tryExtensions(path, registeredFormats)
 	if err != nil {
 		return "", err
 	}
@@ -313,10 +267,10 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 	return &p, nil
 }
 
-func tryExtensions(p *Path) (string, error) {
+func tryExtensions(p *Path, registeredFormats *formats.SupportedFormats) (string, error) {
 	var fileName string
 
-	for _, extension := range Extensions {
+	for _, extension := range registeredFormats.Extensions() {
 		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 
 		exists, err := fileExists(fileName)
@@ -368,8 +322,8 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func pathHasSupportedFiles(path string, types *formats.SupportedFormats) (bool, error) {
-	hasSupportedFiles := make(chan bool, 1)
+func pathHasSupportedFiles(path string, registeredFormats *formats.SupportedFormats) (bool, error) {
+	hasRegisteredFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		if err != nil {
@@ -380,13 +334,13 @@ func pathHasSupportedFiles(path string, types *formats.SupportedFormats) (bool, 
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			supported, _, _, err := formats.FileType(p, types)
+			registered, _, _, err := formats.FileType(p, registeredFormats)
 			if err != nil {
 				return err
 			}
 
-			if supported {
-				hasSupportedFiles <- true
+			if registered {
+				hasRegisteredFiles <- true
 				return filepath.SkipAll
 			}
 		}
@@ -398,7 +352,7 @@ func pathHasSupportedFiles(path string, types *formats.SupportedFormats) (bool, 
 	}
 
 	select {
-	case <-hasSupportedFiles:
+	case <-hasRegisteredFiles:
 		return true, nil
 	default:
 		return false, nil
@@ -628,12 +582,12 @@ func pickFile(args []string, filters *Filters, sort string, index *Index, regist
 		filePath := fileList[val]
 
 		if !fromCache {
-			supported, _, _, err := formats.FileType(filePath, registeredFormats)
+			registered, _, _, err := formats.FileType(filePath, registeredFormats)
 			if err != nil {
 				return "", err
 			}
 
-			if supported {
+			if registered {
 				return filePath, nil
 			}
 
