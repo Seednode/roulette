@@ -84,7 +84,7 @@ func init() {
 	rootCmd.Flags().StringVar(&cacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
-	rootCmd.Flags().BoolVar(&images, "images", true, "enable support for audio files")
+	rootCmd.Flags().BoolVar(&images, "images", true, "enable support for image files")
 	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
 	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
 	rootCmd.Flags().Uint16Var(&pageLength, "page-length", 0, "pagination length for statistics and debug pages")
@@ -98,7 +98,7 @@ func init() {
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().BoolVarP(&version, "version", "V", false, "display version and exit")
-	rootCmd.Flags().BoolVar(&videos, "videos", false, "enable support for video files")
+	rootCmd.Flags().BoolVar(&videos, "video", false, "enable support for video files")
 
 	rootCmd.Flags().SetInterspersed(true)
 

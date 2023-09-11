@@ -1119,7 +1119,7 @@ func ServePage(args []string) error {
 	}
 
 	if len(paths) == 0 {
-		return errors.New("no supported files found in provided paths")
+		return ErrNoMediaFound
 	}
 
 	if russian {
