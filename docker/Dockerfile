@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
-    go build -ldflags "-s -w" -o $app \
+    go build -trimpath -ldflags "-s -w" -o $app \
     && upx --best --lzma $app \
     && chmod 500 $app
 
