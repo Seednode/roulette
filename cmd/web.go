@@ -974,7 +974,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			return
 		}
 
-		image, err := isSupportedFileType(filePath)
+		supported, fileType, err := isSupportedFileType(filePath)
 		if err != nil {
 			fmt.Println(err)
 
@@ -983,7 +983,7 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			return
 		}
 
-		if !image {
+		if !supported {
 			notFound(w, r, filePath)
 
 			return
@@ -1013,23 +1013,41 @@ func serveImage(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-		htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-			fileName,
-			dimensions.width,
-			dimensions.height))
+
+		switch fileType {
+		case "image":
+			htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
+				fileName,
+				dimensions.width,
+				dimensions.height))
+		case "video":
+			htmlBody.WriteString(fmt.Sprintf(`<title>%s</title>`,
+				fileName))
+		}
+
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 				queryParams,
 				refreshTimer))
 		}
-		htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
-			queryParams,
-			generateFilePath(filePath),
-			dimensions.width,
-			dimensions.height,
-			fileName))
-		htmlBody.WriteString(`</body></html>`)
+
+		switch fileType {
+		case "image":
+			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" alt="Roulette selected: %s"></a>`,
+				queryParams,
+				generateFilePath(filePath),
+				dimensions.width,
+				dimensions.height,
+				fileName))
+			htmlBody.WriteString(`</body></html>`)
+		case "video":
+			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><video controls autoplay><source src="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
+				queryParams,
+				generateFilePath(filePath),
+				fileName))
+			htmlBody.WriteString(`</body></html>`)
+		}
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {

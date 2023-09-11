@@ -44,7 +44,7 @@ type Concurrency struct {
 
 var (
 	ErrNoImagesFound = errors.New("no supported image formats found which match all criteria")
-	Extensions       = [9]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".ogv", ".webm"}
+	Extensions       = [8]string{".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".mp4", ".webm"}
 )
 
 type Dimensions struct {
@@ -144,12 +144,12 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
 	if shouldCache {
-		image, err := isSupportedFileType(path)
+		supported, _, err := isSupportedFileType(path)
 		if err != nil {
 			return err
 		}
 
-		if !image {
+		if !supported {
 			return nil
 		}
 	}
@@ -358,13 +358,13 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func isSupportedFileType(path string) (bool, error) {
+func isSupportedFileType(path string) (bool, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return false, nil
+		return false, "", nil
 	case err != nil:
-		return false, err
+		return false, "", err
 	}
 	defer file.Close()
 
@@ -373,9 +373,11 @@ func isSupportedFileType(path string) (bool, error) {
 
 	switch {
 	case filetype.IsImage(head):
-		return true, nil
+		return true, "image", nil
+	case filetype.IsVideo(head):
+		return true, "video", nil
 	default:
-		return false, nil
+		return false, "", nil
 	}
 }
 
@@ -391,12 +393,12 @@ func pathHasSupportedFiles(path string) (bool, error) {
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			image, err := isSupportedFileType(p)
+			supported, _, err := isSupportedFileType(p)
 			if err != nil {
 				return err
 			}
 
-			if image {
+			if supported {
 				hasSupportedFiles <- true
 				return filepath.SkipAll
 			}
@@ -639,12 +641,12 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		filePath := fileList[val]
 
 		if !fromCache {
-			image, err := isSupportedFileType(filePath)
+			supported, _, err := isSupportedFileType(filePath)
 			if err != nil {
 				return "", err
 			}
 
-			if image {
+			if supported {
 				return filePath, nil
 			}
 
