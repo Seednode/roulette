@@ -13,7 +13,6 @@ import (
 	_ "image/png"
 	"os"
 
-	"github.com/h2non/filetype"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
 )
@@ -53,13 +52,17 @@ func RegisterImageFormats() *SupportedFormat {
 		Extensions: []string{
 			`.bmp`,
 			`.gif`,
-			`.jpeg`,
 			`.jpg`,
+			`.jpeg`,
 			`.png`,
 			`.webp`,
 		},
-		validator: func(head []byte) bool {
-			return filetype.IsImage(head)
+		MimeTypes: []string{
+			`image/bmp`,
+			`image/gif`,
+			`image/jpeg`,
+			`image/png`,
+			`image/webp`,
 		},
 	}
 }
@@ -76,7 +79,7 @@ func ImageDimensions(path string) (*Dimensions, error) {
 	}
 	defer file.Close()
 
-	myImage, _, err := image.DecodeConfig(file)
+	decodedConfig, _, err := image.DecodeConfig(file)
 	switch {
 	case errors.Is(err, image.ErrFormat):
 		fmt.Printf("File %s has invalid image format\n", path)
@@ -86,5 +89,5 @@ func ImageDimensions(path string) (*Dimensions, error) {
 		return &Dimensions{}, err
 	}
 
-	return &Dimensions{Width: myImage.Width, Height: myImage.Height}, nil
+	return &Dimensions{Width: decodedConfig.Width, Height: decodedConfig.Height}, nil
 }

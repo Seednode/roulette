@@ -6,8 +6,6 @@ package formats
 
 import (
 	"fmt"
-
-	"github.com/h2non/filetype"
 )
 
 func RegisterVideoFormats() *SupportedFormat {
@@ -27,8 +25,10 @@ func RegisterVideoFormats() *SupportedFormat {
 			`.ogv`,
 			`.webm`,
 		},
-		validator: func(head []byte) bool {
-			return filetype.IsVideo(head)
+		MimeTypes: []string{
+			`video/mp4`,
+			`video/ogg`,
+			`video/webm`,
 		},
 	}
 }

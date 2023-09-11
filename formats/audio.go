@@ -6,8 +6,6 @@ package formats
 
 import (
 	"fmt"
-
-	"github.com/h2non/filetype"
 )
 
 func RegisterAudioFormats() *SupportedFormat {
@@ -25,10 +23,13 @@ func RegisterAudioFormats() *SupportedFormat {
 		Extensions: []string{
 			`.mp3`,
 			`.ogg`,
+			`.oga`,
 			`.wav`,
 		},
-		validator: func(head []byte) bool {
-			return filetype.IsAudio(head)
+		MimeTypes: []string{
+			`audio/mpeg`,
+			`audio/ogg`,
+			`audio/wav`,
 		},
 	}
 }

@@ -6,21 +6,17 @@ package formats
 
 import (
 	"errors"
+	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
-
-	"github.com/h2non/filetype"
 )
 
 type FormatFunction func(queryParams, fileUri, filePath, fileName, mime string) string
-type ValidatorFunction func([]byte) bool
 
 type SupportedFormat struct {
 	Title      FormatFunction
 	Body       FormatFunction
 	Extensions []string
-	validator  ValidatorFunction
+	MimeTypes  []string
 }
 
 type SupportedFormats struct {
@@ -32,37 +28,35 @@ func (s *SupportedFormats) Add(t *SupportedFormat) {
 }
 
 func (s *SupportedFormats) Extensions() []string {
-	var r []string
+	var extensions []string
 
 	for _, t := range s.types {
-		r = append(r, t.Extensions...)
+		extensions = append(extensions, t.Extensions...)
 	}
 
-	return r
+	return extensions
 }
 
-func (s *SupportedFormats) Type(extension string) *SupportedFormat {
+func (s *SupportedFormats) MimeTypes() []string {
+	var mimeTypes []string
+
+	for _, t := range s.types {
+		mimeTypes = append(mimeTypes, t.MimeTypes...)
+	}
+
+	return mimeTypes
+}
+
+func (s *SupportedFormats) Type(mimeType string) *SupportedFormat {
 	for i := range s.types {
-		for _, e := range s.types[i].Extensions {
-			if extension == e {
+		for _, m := range s.types[i].MimeTypes {
+			if mimeType == m {
 				return s.types[i]
 			}
 		}
 	}
 
 	return nil
-}
-
-func (s *SupportedFormats) IsSupported(head []byte) bool {
-	r := false
-
-	for i := range s.types {
-		if s.types[i].validator(head) {
-			r = true
-		}
-	}
-
-	return r
 }
 
 func FileType(path string, types *SupportedFormats) (bool, *SupportedFormat, string, error) {
@@ -75,20 +69,16 @@ func FileType(path string, types *SupportedFormats) (bool, *SupportedFormat, str
 	}
 	defer file.Close()
 
-	head := make([]byte, 261)
+	head := make([]byte, 512)
 	file.Read(head)
 
-	if types.IsSupported(head) {
-		extension := filepath.Ext(path)
+	mimeType := http.DetectContentType(head)
 
-		for _, v := range types.Extensions() {
-			if extension == v {
-				fileType := types.Type(extension)
+	for _, v := range types.MimeTypes() {
+		if mimeType == v {
+			fileType := types.Type(mimeType)
 
-				mimeType := (filetype.GetType(strings.TrimPrefix(extension, "."))).MIME.Value
-
-				return true, fileType, mimeType, nil
-			}
+			return true, fileType, mimeType, nil
 		}
 	}
 
