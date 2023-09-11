@@ -32,6 +32,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
+	"seedno.de/seednode/roulette/formats"
 )
 
 //go:embed favicons/*
@@ -126,12 +127,12 @@ func (i *Index) setIndex(val []string) {
 	i.mutex.Unlock()
 }
 
-func (i *Index) generateCache(args []string, types *SupportedTypes) {
+func (i *Index) generateCache(args []string, supportedFormats *formats.SupportedFormats) {
 	i.mutex.Lock()
 	i.list = []string{}
 	i.mutex.Unlock()
 
-	fileList(args, &Filters{}, "", i, types)
+	fileList(args, &Filters{}, "", i, supportedFormats)
 
 	if cache && cacheFile != "" {
 		i.Export(cacheFile)
@@ -592,9 +593,9 @@ func realIP(r *http.Request) string {
 	}
 }
 
-func serveCacheClear(args []string, index *Index, types *SupportedTypes) httprouter.Handle {
+func serveCacheClear(args []string, index *Index, supportedFormats *formats.SupportedFormats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		index.generateCache(args, types)
+		index.generateCache(args, supportedFormats)
 
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -872,7 +873,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 	}
 }
 
-func serveRoot(paths []string, Regexes *Regexes, index *Index, types *SupportedTypes) httprouter.Handle {
+func serveRoot(paths []string, Regexes *Regexes, index *Index, supportedFormats *formats.SupportedFormats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -919,7 +920,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index, types *SupportedT
 				break loop
 			}
 
-			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, types)
+			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, supportedFormats)
 			switch {
 			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, filePath)
@@ -945,7 +946,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index, types *SupportedT
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *Index, types *SupportedTypes) httprouter.Handle {
+func serveMedia(paths []string, Regexes *Regexes, index *Index, supportedFormats *formats.SupportedFormats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -974,7 +975,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, types *Supported
 			return
 		}
 
-		supported, fileType, mime, err := fileType(filePath, types)
+		supported, fileType, mime, err := formats.FileType(filePath, supportedFormats)
 		if err != nil {
 			fmt.Println(err)
 
@@ -1015,14 +1016,14 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, types *Supported
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-		htmlBody.WriteString((fileType.title(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
+		htmlBody.WriteString((fileType.Title(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 				queryParams,
 				refreshTimer))
 		}
-		htmlBody.WriteString((fileType.body(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
+		htmlBody.WriteString((fileType.Body(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -1081,21 +1082,21 @@ func ServePage(args []string) error {
 		return errors.New("invalid bind address provided")
 	}
 
-	types := &SupportedTypes{}
+	supportedFormats := &formats.SupportedFormats{}
 
 	if audio {
-		types.Add(RegisterAudioFormats())
+		supportedFormats.Add(formats.RegisterAudioFormats())
 	}
 
 	if images {
-		types.Add(RegisterImageFormats())
+		supportedFormats.Add(formats.RegisterImageFormats())
 	}
 
 	if videos {
-		types.Add(RegisterVideoFormats())
+		supportedFormats.Add(formats.RegisterVideoFormats())
 	}
 
-	paths, err := normalizePaths(args, types)
+	paths, err := normalizePaths(args, supportedFormats)
 	if err != nil {
 		return err
 	}
@@ -1138,13 +1139,13 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, regexes, index, types))
+	mux.GET("/", serveRoot(paths, regexes, index, supportedFormats))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, types))
+	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, supportedFormats))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
@@ -1161,10 +1162,10 @@ func ServePage(args []string) error {
 		}
 
 		if !skipIndex {
-			index.generateCache(args, types)
+			index.generateCache(args, supportedFormats)
 		}
 
-		mux.GET("/clear_cache", serveCacheClear(args, index, types))
+		mux.GET("/clear_cache", serveCacheClear(args, index, supportedFormats))
 	}
 
 	if debug {

@@ -2,7 +2,7 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package cmd
+package formats
 
 import (
 	"fmt"
@@ -15,15 +15,15 @@ import (
 	_ "golang.org/x/image/webp"
 )
 
-func RegisterImageFormats() *SupportedType {
-	return &SupportedType{
-		title: func(queryParams, filePath, mime, fileName string, width, height int) string {
+func RegisterImageFormats() *SupportedFormat {
+	return &SupportedFormat{
+		Title: func(queryParams, filePath, mime, fileName string, width, height int) string {
 			return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 				fileName,
 				width,
 				height)
 		},
-		body: func(queryParams, filePath, mime, fileName string, width, height int) string {
+		Body: func(queryParams, filePath, mime, fileName string, width, height int) string {
 			return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 				queryParams,
 				filePath,
@@ -32,7 +32,7 @@ func RegisterImageFormats() *SupportedType {
 				mime,
 				fileName)
 		},
-		extensions: []string{
+		Extensions: []string{
 			`.bmp`,
 			`.gif`,
 			`.jpeg`,
