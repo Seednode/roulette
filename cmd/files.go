@@ -35,10 +35,6 @@ type Concurrency struct {
 	fileScans      chan int
 }
 
-var (
-	ErrNoMediaFound = errors.New("no supported media formats found which match all criteria")
-)
-
 type Files struct {
 	mutex sync.RWMutex
 	list  map[string][]string

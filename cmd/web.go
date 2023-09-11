@@ -214,13 +214,13 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 
 		sortOrder := SortOrder(r)
 
-		path := strings.TrimPrefix(r.URL.Path, MediaPrefix)
+		filePath := strings.TrimPrefix(r.URL.Path, MediaPrefix)
 
 		if runtime.GOOS == "windows" {
-			path = strings.TrimPrefix(path, "/")
+			filePath = strings.TrimPrefix(filePath, "/")
 		}
 
-		exists, err := fileExists(path)
+		exists, err := fileExists(filePath)
 		if err != nil {
 			fmt.Println(err)
 
@@ -229,12 +229,12 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 			return
 		}
 		if !exists {
-			notFound(w, r, path)
+			notFound(w, r, filePath)
 
 			return
 		}
 
-		registered, fileType, mime, err := formats.FileType(path, registeredFormats)
+		registered, fileType, mimeType, err := formats.FileType(filePath, registeredFormats)
 		if err != nil {
 			fmt.Println(err)
 
@@ -244,14 +244,14 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 		}
 
 		if !registered {
-			notFound(w, r, path)
+			notFound(w, r, filePath)
 
 			return
 		}
 
-		fileUri := generateFileUri(path)
+		fileUri := generateFileUri(filePath)
 
-		fileName := filepath.Base(path)
+		fileName := filepath.Base(filePath)
 
 		w.Header().Add("Content-Type", "text/html")
 
@@ -266,14 +266,14 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-		htmlBody.WriteString((fileType.Title(queryParams, fileUri, path, fileName, mime)))
+		htmlBody.WriteString((fileType.Title(queryParams, fileUri, filePath, fileName, mimeType)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 				queryParams,
 				refreshTimer))
 		}
-		htmlBody.WriteString((fileType.Body(queryParams, fileUri, path, fileName, mime)))
+		htmlBody.WriteString((fileType.Body(queryParams, fileUri, filePath, fileName, mimeType)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))

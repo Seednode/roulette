@@ -5,6 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -12,6 +13,11 @@ import (
 	"time"
 
 	"github.com/yosssi/gohtml"
+)
+
+var (
+	ErrIncorrectRefreshInterval = errors.New("refresh interval must be a duration string >= 500ms")
+	ErrNoMediaFound             = errors.New("no supported media formats found which match all criteria")
 )
 
 func newErrorPage(title, body string) string {

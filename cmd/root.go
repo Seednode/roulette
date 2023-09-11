@@ -5,15 +5,10 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"errors"
 	"log"
 	"time"
 
 	"github.com/spf13/cobra"
-)
-
-var (
-	ErrIncorrectRefreshInterval = errors.New("refresh interval must be a duration string >= 500ms")
 )
 
 const (
