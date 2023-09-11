@@ -126,12 +126,12 @@ func (i *Index) setIndex(val []string) {
 	i.mutex.Unlock()
 }
 
-func (i *Index) generateCache(args []string) {
+func (i *Index) generateCache(args []string, types *SupportedTypes) {
 	i.mutex.Lock()
 	i.list = []string{}
 	i.mutex.Unlock()
 
-	fileList(args, &Filters{}, "", i)
+	fileList(args, &Filters{}, "", i, types)
 
 	if cache && cacheFile != "" {
 		i.Export(cacheFile)
@@ -592,9 +592,9 @@ func realIP(r *http.Request) string {
 	}
 }
 
-func serveCacheClear(args []string, index *Index) httprouter.Handle {
+func serveCacheClear(args []string, index *Index, types *SupportedTypes) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		index.generateCache(args)
+		index.generateCache(args, types)
 
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -872,7 +872,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 	}
 }
 
-func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
+func serveRoot(paths []string, Regexes *Regexes, index *Index, types *SupportedTypes) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -919,7 +919,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 				break loop
 			}
 
-			filePath, err = newFile(paths, filters, sortOrder, Regexes, index)
+			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, types)
 			switch {
 			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, filePath)
@@ -945,7 +945,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index) httprouter.Handle
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handle {
+func serveMedia(paths []string, Regexes *Regexes, index *Index, types *SupportedTypes) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -974,7 +974,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 			return
 		}
 
-		supported, fileType, mime, err := fileType(filePath)
+		supported, fileType, mime, err := fileType(filePath, types)
 		if err != nil {
 			fmt.Println(err)
 
@@ -1006,6 +1006,8 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 
 		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
+		path := generateFilePath(filePath)
+
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(FaviconHtml)
@@ -1013,48 +1015,14 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index) httprouter.Handl
 		htmlBody.WriteString(`a{display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}</style>`)
-
-		switch fileType {
-		case "image":
-			htmlBody.WriteString(fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-				fileName,
-				dimensions.width,
-				dimensions.height))
-		default:
-			htmlBody.WriteString(fmt.Sprintf(`<title>%s</title>`,
-				fileName))
-		}
-
+		htmlBody.WriteString((fileType.title(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 				queryParams,
 				refreshTimer))
 		}
-
-		switch fileType {
-		case "audio":
-			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><audio controls autoplay><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the audio tag.</audio></a>`,
-				queryParams,
-				generateFilePath(filePath),
-				mime,
-				fileName))
-		case "image":
-			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
-				queryParams,
-				generateFilePath(filePath),
-				dimensions.width,
-				dimensions.height,
-				mime,
-				fileName))
-		case "video":
-			htmlBody.WriteString(fmt.Sprintf(`<a href="/%s"><video controls autoplay><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
-				queryParams,
-				generateFilePath(filePath),
-				mime,
-				fileName))
-		}
-
+		htmlBody.WriteString((fileType.body(queryParams, path, mime, fileName, dimensions.height, dimensions.width)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -1113,7 +1081,21 @@ func ServePage(args []string) error {
 		return errors.New("invalid bind address provided")
 	}
 
-	paths, err := normalizePaths(args)
+	types := &SupportedTypes{}
+
+	if audio {
+		types.Add(RegisterAudioFormats())
+	}
+
+	if images {
+		types.Add(RegisterImageFormats())
+	}
+
+	if videos {
+		types.Add(RegisterVideoFormats())
+	}
+
+	paths, err := normalizePaths(args, types)
 	if err != nil {
 		return err
 	}
@@ -1156,13 +1138,13 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, regexes, index))
+	mux.GET("/", serveRoot(paths, regexes, index, types))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index))
+	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, types))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
@@ -1179,10 +1161,10 @@ func ServePage(args []string) error {
 		}
 
 		if !skipIndex {
-			index.generateCache(args)
+			index.generateCache(args, types)
 		}
 
-		mux.GET("/clear_cache", serveCacheClear(args, index))
+		mux.GET("/clear_cache", serveCacheClear(args, index, types))
 	}
 
 	if debug {

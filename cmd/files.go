@@ -153,9 +153,9 @@ func preparePath(path string) string {
 	return MediaPrefix + path
 }
 
-func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCache bool) error {
+func appendPath(directory, path string, files *Files, stats *ScanStats, types *SupportedTypes, shouldCache bool) error {
 	if shouldCache {
-		supported, _, _, err := fileType(path)
+		supported, _, _, err := fileType(path, types)
 		if err != nil {
 			return err
 		}
@@ -172,7 +172,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, shouldCa
 	return nil
 }
 
-func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) error {
+func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, types *SupportedTypes) error {
 	shouldCache := cache && filters.IsEmpty()
 
 	absolutePath, err := filepath.Abs(path)
@@ -203,7 +203,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 				filename,
 				filters.includes[i],
 			) {
-				err := appendPath(directory, path, files, stats, shouldCache)
+				err := appendPath(directory, path, files, stats, types, shouldCache)
 				if err != nil {
 					return err
 				}
@@ -217,7 +217,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 		return nil
 	}
 
-	err = appendPath(directory, path, files, stats, shouldCache)
+	err = appendPath(directory, path, files, stats, types, shouldCache)
 	if err != nil {
 		return err
 	}
@@ -225,8 +225,8 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats) 
 	return nil
 }
 
-func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *Index) (string, error) {
-	filePath, err := pickFile(paths, filters, sortOrder, index)
+func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *Index, types *SupportedTypes) (string, error) {
+	filePath, err := pickFile(paths, filters, sortOrder, index, types)
 	if err != nil {
 		return "", nil
 	}
@@ -369,13 +369,13 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func fileType(path string) (bool, string, string, error) {
+func fileType(path string, types *SupportedTypes) (bool, *SupportedType, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
-		return false, "", "", nil
+		return false, nil, "", nil
 	case err != nil:
-		return false, "", "", err
+		return false, nil, "", err
 	}
 	defer file.Close()
 
@@ -384,35 +384,19 @@ func fileType(path string) (bool, string, string, error) {
 
 	extension := filepath.Ext(path)
 
-	isSupported := false
+	fileType := types.Type(extension)
 
-	for _, e := range Extensions {
-		if e == extension {
-			isSupported = true
-
-			break
-		}
-	}
-
+	isSupported := types.IsSupported(head)
 	if !isSupported {
-		return false, "", "", nil
+		return false, nil, "", nil
 	}
 
-	fileType := filetype.GetType(strings.TrimPrefix(extension, "."))
+	mimeType := (filetype.GetType(strings.TrimPrefix(extension, "."))).MIME.Value
 
-	switch {
-	case filetype.IsAudio(head) && audio:
-		return true, "audio", fileType.MIME.Value, nil
-	case filetype.IsImage(head) && images:
-		return true, "image", fileType.MIME.Value, nil
-	case filetype.IsVideo(head) && videos:
-		return true, "video", fileType.MIME.Value, nil
-	default:
-		return false, "", "", nil
-	}
+	return isSupported, fileType, mimeType, nil
 }
 
-func pathHasSupportedFiles(path string) (bool, error) {
+func pathHasSupportedFiles(path string, types *SupportedTypes) (bool, error) {
 	hasSupportedFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -424,7 +408,7 @@ func pathHasSupportedFiles(path string) (bool, error) {
 		case !recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			supported, _, _, err := fileType(p)
+			supported, _, _, err := fileType(p, types)
 			if err != nil {
 				return err
 			}
@@ -469,7 +453,7 @@ func pathCount(path string) (uint32, uint32, error) {
 	return files, directories, nil
 }
 
-func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency) error {
+func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency, types *SupportedTypes) error {
 	var wg sync.WaitGroup
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -496,7 +480,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 					fmt.Println(err)
 				}
 
-				err = appendPaths(path, files, filters, stats)
+				err = appendPaths(path, files, filters, stats, types)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -530,7 +514,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func fileList(paths []string, filters *Filters, sort string, index *Index) ([]string, bool) {
+func fileList(paths []string, filters *Filters, sort string, index *Index, types *SupportedTypes) ([]string, bool) {
 	if cache && filters.IsEmpty() && !index.IsEmpty() {
 		return index.Index(), true
 	}
@@ -569,7 +553,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index) ([]st
 				wg.Done()
 			}()
 
-			err := scanPath(paths[i], files, filters, stats, concurrency)
+			err := scanPath(paths[i], files, filters, stats, concurrency, types)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -644,8 +628,8 @@ func prepareDirectories(files *Files, sort string) []string {
 	return directories
 }
 
-func pickFile(args []string, filters *Filters, sort string, index *Index) (string, error) {
-	fileList, fromCache := fileList(args, filters, sort, index)
+func pickFile(args []string, filters *Filters, sort string, index *Index, types *SupportedTypes) (string, error) {
+	fileList, fromCache := fileList(args, filters, sort, index, types)
 
 	fileCount := len(fileList)
 	if fileCount < 1 {
@@ -672,7 +656,7 @@ func pickFile(args []string, filters *Filters, sort string, index *Index) (strin
 		filePath := fileList[val]
 
 		if !fromCache {
-			supported, _, _, err := fileType(filePath)
+			supported, _, _, err := fileType(filePath, types)
 			if err != nil {
 				return "", err
 			}
@@ -704,7 +688,7 @@ func normalizePath(path string) (string, error) {
 	return absolutePath, nil
 }
 
-func normalizePaths(args []string) ([]string, error) {
+func normalizePaths(args []string, types *SupportedTypes) ([]string, error) {
 	var paths []string
 
 	var pathList strings.Builder
@@ -718,7 +702,7 @@ func normalizePaths(args []string) ([]string, error) {
 
 		pathMatches := (args[i] == path)
 
-		hasSupportedFiles, err := pathHasSupportedFiles(path)
+		hasSupportedFiles, err := pathHasSupportedFiles(path, types)
 		if err != nil {
 			return nil, err
 		}
