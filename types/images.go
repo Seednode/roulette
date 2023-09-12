@@ -2,7 +2,7 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package formats
+package types
 
 import (
 	"errors"
@@ -12,6 +12,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"os"
+	"strings"
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
@@ -22,9 +23,18 @@ type Dimensions struct {
 	Height int
 }
 
-func RegisterImageFormats() *SupportedFormat {
-	return &SupportedFormat{
-		Css:  ``,
+func RegisterImages() *Type {
+	return &Type{
+		Css: func() string {
+			var css strings.Builder
+
+			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
+			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+			css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
+			css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
+
+			return css.String()
+		},
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			dimensions, err := ImageDimensions(filePath)
 			if err != nil {

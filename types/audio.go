@@ -2,15 +2,23 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package formats
+package types
 
 import (
 	"fmt"
+	"strings"
 )
 
-func RegisterAudioFormats() *SupportedFormat {
-	return &SupportedFormat{
-		Css:  ``,
+func RegisterAudio() *Type {
+	return &Type{
+		Css: func() string {
+			var css strings.Builder
+
+			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
+			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+
+			return css.String()
+		},
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			return fmt.Sprintf(`<title>%s</title>`, fileName)
 		},

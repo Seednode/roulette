@@ -20,7 +20,7 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
-	"seedno.de/seednode/roulette/formats"
+	"seedno.de/seednode/roulette/types"
 )
 
 type FileIndex struct {
@@ -66,12 +66,12 @@ func (i *FileIndex) setIndex(val []string) {
 	i.mutex.Unlock()
 }
 
-func (i *FileIndex) generateCache(args []string, registeredFormats *formats.SupportedFormats) {
+func (i *FileIndex) generateCache(args []string, formats *types.Types) {
 	i.mutex.Lock()
 	i.list = []string{}
 	i.mutex.Unlock()
 
-	fileList(args, &Filters{}, "", i, registeredFormats)
+	fileList(args, &Filters{}, "", i, formats)
 
 	if Cache && CacheFile != "" {
 		i.Export(CacheFile)
@@ -138,9 +138,9 @@ func (i *FileIndex) Import(path string) error {
 	return nil
 }
 
-func serveCacheClear(args []string, index *FileIndex, registeredFormats *formats.SupportedFormats) httprouter.Handle {
+func serveCacheClear(args []string, index *FileIndex, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		index.generateCache(args, registeredFormats)
+		index.generateCache(args, formats)
 
 		w.Header().Set("Content-Type", "text/plain")
 

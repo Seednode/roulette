@@ -26,7 +26,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/yosssi/gohtml"
-	"seedno.de/seednode/roulette/formats"
+	"seedno.de/seednode/roulette/types"
 )
 
 const (
@@ -127,7 +127,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httpro
 	}
 }
 
-func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) httprouter.Handle {
+func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -152,7 +152,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, registeredFor
 		var filePath string
 
 		if refererUri != "" {
-			filePath, err = nextFile(strippedRefererUri, sortOrder, Regexes, registeredFormats)
+			filePath, err = nextFile(strippedRefererUri, sortOrder, Regexes, formats)
 			if err != nil {
 				fmt.Println(err)
 
@@ -174,7 +174,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, registeredFor
 				break loop
 			}
 
-			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, registeredFormats)
+			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, formats)
 			switch {
 			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, filePath)
@@ -200,7 +200,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, registeredFor
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) httprouter.Handle {
+func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -229,7 +229,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, registeredFo
 			return
 		}
 
-		registered, fileType, mimeType, err := formats.FileType(filePath, registeredFormats)
+		registered, fileType, mimeType, err := types.FileType(filePath, formats)
 		if err != nil {
 			fmt.Println(err)
 
@@ -257,12 +257,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, registeredFo
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(FaviconHtml)
-		htmlBody.WriteString(`<style>html,body{margin:0;padding:0;height:100%;}`)
-		htmlBody.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
-		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
-		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
-		htmlBody.WriteString(fileType.Css)
-		htmlBody.WriteString(`</style>`)
+		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, fileType.Css()))
 		htmlBody.WriteString((fileType.Title(queryParams, fileUri, filePath, fileName, mimeType)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
@@ -316,32 +311,32 @@ func ServePage(args []string) error {
 
 	mux := httprouter.New()
 
-	registeredFormats := &formats.SupportedFormats{
-		Extensions: make(map[string]*formats.SupportedFormat),
-		MimeTypes:  make(map[string]*formats.SupportedFormat),
+	formats := &types.Types{
+		Extensions: make(map[string]*types.Type),
+		MimeTypes:  make(map[string]*types.Type),
 	}
 
 	if Audio || All {
-		registeredFormats.Add(formats.RegisterAudioFormats())
+		formats.Add(types.RegisterAudio())
 	}
 
 	if Flash || All {
-		registeredFormats.Add(formats.RegisterFlashFormats())
+		formats.Add(types.RegisterFlash())
 	}
 
 	if Images || All {
-		registeredFormats.Add(formats.RegisterImageFormats())
+		formats.Add(types.RegisterImages())
 	}
 
 	if Text || All {
-		registeredFormats.Add(formats.RegisterTextFormats())
+		formats.Add(types.RegisterText())
 	}
 
 	if Videos || All {
-		registeredFormats.Add(formats.RegisterVideoFormats())
+		formats.Add(types.RegisterVideos())
 	}
 
-	paths, err := normalizePaths(args, registeredFormats)
+	paths, err := normalizePaths(args, formats)
 	if err != nil {
 		return err
 	}
@@ -382,13 +377,13 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, regexes, index, registeredFormats))
+	mux.GET("/", serveRoot(paths, regexes, index, formats))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, registeredFormats))
+	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, formats))
 
 	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
 
@@ -405,10 +400,10 @@ func ServePage(args []string) error {
 		}
 
 		if !skipIndex {
-			index.generateCache(args, registeredFormats)
+			index.generateCache(args, formats)
 		}
 
-		mux.GET("/clear_cache", serveCacheClear(args, index, registeredFormats))
+		mux.GET("/clear_cache", serveCacheClear(args, index, formats))
 	}
 
 	if Index {

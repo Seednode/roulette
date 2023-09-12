@@ -2,7 +2,7 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package formats
+package types
 
 import (
 	"errors"
@@ -11,8 +11,8 @@ import (
 	"path/filepath"
 )
 
-type SupportedFormat struct {
-	Css        string
+type Type struct {
+	Css        func() string
 	Title      func(queryParams, fileUri, filePath, fileName, mime string) string
 	Body       func(queryParams, fileUri, filePath, fileName, mime string) string
 	Extensions []string
@@ -20,12 +20,12 @@ type SupportedFormat struct {
 	Validate   func(filePath string) bool
 }
 
-type SupportedFormats struct {
-	Extensions map[string]*SupportedFormat
-	MimeTypes  map[string]*SupportedFormat
+type Types struct {
+	Extensions map[string]*Type
+	MimeTypes  map[string]*Type
 }
 
-func (s *SupportedFormats) Add(t *SupportedFormat) {
+func (s *Types) Add(t *Type) {
 	for _, v := range t.Extensions {
 		_, exists := s.Extensions[v]
 		if !exists {
@@ -41,7 +41,7 @@ func (s *SupportedFormats) Add(t *SupportedFormat) {
 	}
 }
 
-func FileType(path string, registeredFormats *SupportedFormats) (bool, *SupportedFormat, string, error) {
+func FileType(path string, registeredFormats *Types) (bool, *Type, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.70.3"
+	ReleaseVersion string = "0.71.0"
 )
 
 var (
@@ -45,7 +45,7 @@ var (
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// enable image support if no other flags are passed, to retain backwards compatibility
 			// to be replaced with MarkFlagsOneRequired on next spf13/cobra update
 			if !(All || Audio || Flash || Images || Text || Videos) {
@@ -59,9 +59,11 @@ var (
 			if RefreshInterval != "" {
 				interval, err := time.ParseDuration(RefreshInterval)
 				if err != nil || interval < 500*time.Millisecond {
-					log.Fatal(ErrIncorrectRefreshInterval)
+					return ErrIncorrectRefreshInterval
 				}
 			}
+
+			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServePage(args)

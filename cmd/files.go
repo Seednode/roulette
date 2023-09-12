@@ -20,7 +20,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"seedno.de/seednode/roulette/formats"
+	"seedno.de/seednode/roulette/types"
 )
 
 type maxConcurrency int
@@ -108,9 +108,9 @@ func preparePath(path string) string {
 	return MediaPrefix + path
 }
 
-func appendPath(directory, path string, files *Files, stats *ScanStats, registeredFormats *formats.SupportedFormats, shouldCache bool) error {
+func appendPath(directory, path string, files *Files, stats *ScanStats, formats *types.Types, shouldCache bool) error {
 	if shouldCache {
-		registered, _, _, err := formats.FileType(path, registeredFormats)
+		registered, _, _, err := types.FileType(path, formats)
 		if err != nil {
 			return err
 		}
@@ -127,7 +127,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, register
 	return nil
 }
 
-func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, types *formats.SupportedFormats) error {
+func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, formats *types.Types) error {
 	shouldCache := Cache && filters.IsEmpty()
 
 	absolutePath, err := filepath.Abs(path)
@@ -158,7 +158,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, 
 				filename,
 				filters.includes[i],
 			) {
-				err := appendPath(directory, path, files, stats, types, shouldCache)
+				err := appendPath(directory, path, files, stats, formats, shouldCache)
 				if err != nil {
 					return err
 				}
@@ -172,7 +172,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, 
 		return nil
 	}
 
-	err = appendPath(directory, path, files, stats, types, shouldCache)
+	err = appendPath(directory, path, files, stats, formats, shouldCache)
 	if err != nil {
 		return err
 	}
@@ -180,8 +180,8 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, 
 	return nil
 }
 
-func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) (string, error) {
-	filePath, err := pickFile(paths, filters, sortOrder, index, registeredFormats)
+func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *FileIndex, formats *types.Types) (string, error) {
+	filePath, err := pickFile(paths, filters, sortOrder, index, formats)
 	if err != nil {
 		return "", nil
 	}
@@ -195,7 +195,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 
 	switch {
 	case sortOrder == "asc":
-		filePath, err = tryExtensions(path, registeredFormats)
+		filePath, err = tryExtensions(path, formats)
 		if err != nil {
 			return "", err
 		}
@@ -203,7 +203,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 		for {
 			path.increment()
 
-			filePath, err = tryExtensions(path, registeredFormats)
+			filePath, err = tryExtensions(path, formats)
 			if err != nil {
 				return "", err
 			}
@@ -211,7 +211,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 			if filePath == "" {
 				path.decrement()
 
-				filePath, err = tryExtensions(path, registeredFormats)
+				filePath, err = tryExtensions(path, formats)
 				if err != nil {
 					return "", err
 				}
@@ -224,7 +224,7 @@ func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexe
 	return filePath, nil
 }
 
-func nextFile(filePath, sortOrder string, Regexes *Regexes, registeredFormats *formats.SupportedFormats) (string, error) {
+func nextFile(filePath, sortOrder string, Regexes *Regexes, formats *types.Types) (string, error) {
 	path, err := splitPath(filePath, Regexes)
 	if err != nil {
 		return "", err
@@ -239,7 +239,7 @@ func nextFile(filePath, sortOrder string, Regexes *Regexes, registeredFormats *f
 		return "", nil
 	}
 
-	fileName, err := tryExtensions(path, registeredFormats)
+	fileName, err := tryExtensions(path, formats)
 	if err != nil {
 		return "", err
 	}
@@ -269,10 +269,10 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 	return &p, nil
 }
 
-func tryExtensions(p *Path, registeredFormats *formats.SupportedFormats) (string, error) {
+func tryExtensions(p *Path, formats *types.Types) (string, error) {
 	var fileName string
 
-	for _, format := range registeredFormats.Extensions {
+	for _, format := range formats.Extensions {
 		for _, extension := range format.Extensions {
 			fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 		}
@@ -326,7 +326,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 }
 
-func pathHasSupportedFiles(path string, registeredFormats *formats.SupportedFormats) (bool, error) {
+func pathHasSupportedFiles(path string, formats *types.Types) (bool, error) {
 	hasRegisteredFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -338,7 +338,7 @@ func pathHasSupportedFiles(path string, registeredFormats *formats.SupportedForm
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			registered, _, _, err := formats.FileType(p, registeredFormats)
+			registered, _, _, err := types.FileType(p, formats)
 			if err != nil {
 				return err
 			}
@@ -383,7 +383,7 @@ func pathCount(path string) (uint64, uint64, error) {
 	return files, directories, nil
 }
 
-func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency, types *formats.SupportedFormats) error {
+func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, concurrency *Concurrency, formats *types.Types) error {
 	var wg sync.WaitGroup
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -410,7 +410,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 					fmt.Println(err)
 				}
 
-				err = appendPaths(path, files, filters, stats, types)
+				err = appendPaths(path, files, filters, stats, formats)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -444,7 +444,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func fileList(paths []string, filters *Filters, sort string, index *FileIndex, types *formats.SupportedFormats) ([]string, bool) {
+func fileList(paths []string, filters *Filters, sort string, index *FileIndex, formats *types.Types) ([]string, bool) {
 	if Cache && filters.IsEmpty() && !index.IsEmpty() {
 		return index.Index(), true
 	}
@@ -483,7 +483,7 @@ func fileList(paths []string, filters *Filters, sort string, index *FileIndex, t
 				wg.Done()
 			}()
 
-			err := scanPath(paths[i], files, filters, stats, concurrency, types)
+			err := scanPath(paths[i], files, filters, stats, concurrency, formats)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -558,8 +558,8 @@ func prepareDirectories(files *Files, sort string) []string {
 	return directories
 }
 
-func pickFile(args []string, filters *Filters, sort string, index *FileIndex, registeredFormats *formats.SupportedFormats) (string, error) {
-	fileList, fromCache := fileList(args, filters, sort, index, registeredFormats)
+func pickFile(args []string, filters *Filters, sort string, index *FileIndex, formats *types.Types) (string, error) {
+	fileList, fromCache := fileList(args, filters, sort, index, formats)
 
 	fileCount := len(fileList)
 	if fileCount < 1 {
@@ -586,7 +586,7 @@ func pickFile(args []string, filters *Filters, sort string, index *FileIndex, re
 		filePath := fileList[val]
 
 		if !fromCache {
-			registered, _, _, err := formats.FileType(filePath, registeredFormats)
+			registered, _, _, err := types.FileType(filePath, formats)
 			if err != nil {
 				return "", err
 			}
@@ -618,7 +618,7 @@ func normalizePath(path string) (string, error) {
 	return absolutePath, nil
 }
 
-func normalizePaths(args []string, types *formats.SupportedFormats) ([]string, error) {
+func normalizePaths(args []string, formats *types.Types) ([]string, error) {
 	var paths []string
 
 	var pathList strings.Builder
@@ -632,7 +632,7 @@ func normalizePaths(args []string, types *formats.SupportedFormats) ([]string, e
 
 		pathMatches := (args[i] == path)
 
-		hasSupportedFiles, err := pathHasSupportedFiles(path, types)
+		hasSupportedFiles, err := pathHasSupportedFiles(path, formats)
 		if err != nil {
 			return nil, err
 		}
