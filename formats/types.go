@@ -13,6 +13,7 @@ import (
 type FormatFunction func(queryParams, fileUri, filePath, fileName, mime string) string
 
 type SupportedFormat struct {
+	Css        FormatFunction
 	Title      FormatFunction
 	Body       FormatFunction
 	Extensions []string

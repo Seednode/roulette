@@ -12,10 +12,11 @@ import (
 )
 
 const (
-	Version string = "0.67.0"
+	Version string = "0.68.0"
 )
 
 var (
+	all              bool
 	audio            bool
 	bind             string
 	cache            bool
@@ -34,6 +35,7 @@ var (
 	sorting          bool
 	statistics       bool
 	statisticsFile   string
+	text             bool
 	verbose          bool
 	version          bool
 	videos           bool
@@ -73,6 +75,7 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().BoolVar(&all, "all", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&cache, "cache", "c", false, "generate directory cache at startup")
@@ -91,6 +94,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&statistics, "stats", false, "expose stats endpoint")
 	rootCmd.Flags().StringVar(&statisticsFile, "stats-file", "", "path to optional persistent stats file")
+	rootCmd.Flags().BoolVar(&text, "text", true, "enable support for text files")
 	rootCmd.Flags().BoolVarP(&verbose, "verbose", "v", false, "log accessed files to stdout")
 	rootCmd.Flags().BoolVarP(&version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().BoolVar(&videos, "video", false, "enable support for video files")

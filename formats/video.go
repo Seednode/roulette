@@ -10,6 +10,9 @@ import (
 
 func RegisterVideoFormats() *SupportedFormat {
 	return &SupportedFormat{
+		Css: func(queryParams, fileUri, filePath, fileName, mime string) string {
+			return ``
+		},
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			return fmt.Sprintf(`<title>%s</title>`, fileName)
 		},

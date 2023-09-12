@@ -24,6 +24,9 @@ type Dimensions struct {
 
 func RegisterImageFormats() *SupportedFormat {
 	return &SupportedFormat{
+		Css: func(queryParams, fileUri, filePath, fileName, mime string) string {
+			return ``
+		},
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			dimensions, err := ImageDimensions(filePath)
 			if err != nil {

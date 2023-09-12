@@ -108,6 +108,7 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
+      --all                       enable all supported file types
       --audio                     enable support for audio files
   -b, --bind string               address to bind to (default "0.0.0.0")
   -c, --cache                     generate directory cache at startup
@@ -127,6 +128,7 @@ Flags:
   -s, --sort                      enable sorting
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file
+      --text                      enable support for text files (default true)
   -v, --verbose                   log accessed files to stdout
   -V, --version                   display version and exit
       --video                     enable support for video files
