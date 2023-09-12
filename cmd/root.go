@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	Version string = "0.69.1"
+	Version string = "0.69.2"
 )
 
 var (
@@ -24,9 +24,9 @@ var (
 	debug            bool
 	filtering        bool
 	images           bool
-	maximumFileCount uint32
-	minimumFileCount uint32
-	pageLength       uint16
+	maximumFileCount uint64
+	minimumFileCount uint64
+	pageLength       uint64
 	port             uint16
 	profile          bool
 	recursive        bool
@@ -83,9 +83,9 @@ func init() {
 	rootCmd.Flags().BoolVarP(&debug, "debug", "d", false, "expose debug endpoint")
 	rootCmd.Flags().BoolVarP(&filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&images, "images", true, "enable support for image files")
-	rootCmd.Flags().Uint32Var(&maximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts over this value")
-	rootCmd.Flags().Uint32Var(&minimumFileCount, "minimum-files", 0, "skip directories with file counts under this value")
-	rootCmd.Flags().Uint16Var(&pageLength, "page-length", 0, "pagination length for statistics and debug pages")
+	rootCmd.Flags().Uint64Var(&maximumFileCount, "maximum-files", 1<<64-1, "skip directories with file counts above this value")
+	rootCmd.Flags().Uint64Var(&minimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
+	rootCmd.Flags().Uint64Var(&pageLength, "page-length", 0, "pagination length for statistics and debug pages")
 	rootCmd.Flags().Uint16VarP(&port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVar(&profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&recursive, "recursive", "r", false, "recurse into subdirectories")

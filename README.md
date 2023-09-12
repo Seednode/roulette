@@ -117,9 +117,9 @@ Flags:
   -f, --filter                    enable filtering
   -h, --help                      help for roulette
       --images                    enable support for image files (default true)
-      --maximum-files uint32      skip directories with file counts over this value (default 4294967295)
-      --minimum-files uint32      skip directories with file counts under this value
-      --page-length uint16        pagination length for statistics and debug pages
+      --maximum-files uint        skip directories with file counts above this value (default 18446744073709551615)
+      --minimum-files uint        skip directories with file counts below this value (default 1)
+      --page-length uint          pagination length for statistics and debug pages
   -p, --port uint16               port to listen on (default 8080)
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
@@ -128,7 +128,7 @@ Flags:
   -s, --sort                      enable sorting
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file
-      --text                      enable support for text files (default true)
+      --text                      enable support for text files
   -v, --verbose                   log accessed files to stdout
   -V, --version                   display version and exit
       --video                     enable support for video files

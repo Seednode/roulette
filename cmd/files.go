@@ -47,10 +47,10 @@ func (f *Files) Append(directory, path string) {
 }
 
 type ScanStats struct {
-	filesMatched       atomic.Uint32
-	filesSkipped       atomic.Uint32
-	directoriesMatched atomic.Uint32
-	directoriesSkipped atomic.Uint32
+	filesMatched       atomic.Uint64
+	filesSkipped       atomic.Uint64
+	directoriesMatched atomic.Uint64
+	directoriesSkipped atomic.Uint64
 }
 
 type Path struct {
@@ -355,9 +355,9 @@ func pathHasSupportedFiles(path string, registeredFormats *formats.SupportedForm
 	}
 }
 
-func pathCount(path string) (uint32, uint32, error) {
-	var directories uint32 = 0
-	var files uint32 = 0
+func pathCount(path string) (uint64, uint64, error) {
+	var directories uint64 = 0
+	var files uint64 = 0
 
 	nodes, err := os.ReadDir(path)
 	if err != nil {
@@ -449,10 +449,10 @@ func fileList(paths []string, filters *Filters, sort string, index *Index, types
 	}
 
 	stats := &ScanStats{
-		filesMatched:       atomic.Uint32{},
-		filesSkipped:       atomic.Uint32{},
-		directoriesMatched: atomic.Uint32{},
-		directoriesSkipped: atomic.Uint32{},
+		filesMatched:       atomic.Uint64{},
+		filesSkipped:       atomic.Uint64{},
+		directoriesMatched: atomic.Uint64{},
+		directoriesSkipped: atomic.Uint64{},
 	}
 
 	concurrency := &Concurrency{
