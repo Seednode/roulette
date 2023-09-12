@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.70.2"
+	ReleaseVersion string = "0.70.3"
 )
 
 var (
@@ -46,6 +46,12 @@ var (
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRun: func(cmd *cobra.Command, args []string) {
+			// enable image support if no other flags are passed, to retain backwards compatibility
+			// to be replaced with MarkFlagsOneRequired on next spf13/cobra update
+			if !(All || Audio || Flash || Images || Text || Videos) {
+				Images = true
+			}
+
 			if Index {
 				cmd.MarkFlagRequired("cache")
 			}
@@ -82,8 +88,8 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
-	rootCmd.Flags().BoolVar(&Flash, "flash", true, "enable support for shockwave flash files (via ruffle)")
-	rootCmd.Flags().BoolVar(&Images, "images", true, "enable support for image files")
+	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle)")
+	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Index, "index", "i", false, "expose index endpoints")
 	rootCmd.Flags().Uint64Var(&MaximumFileCount, "maximum-files", 1<<64-1, "skip directories with file counts above this value")
 	rootCmd.Flags().Uint64Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
