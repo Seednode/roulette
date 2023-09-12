@@ -26,7 +26,7 @@ func RegisterFlash() *Type {
 			var html strings.Builder
 
 			html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
-			html.WriteString(fmt.Sprintf(`<br /><button onclick=\"window.location.href = '/%s';\">Next</button>`, queryParams))
+			html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '/%s';">Next</button>`, queryParams))
 
 			return html.String()
 		},
