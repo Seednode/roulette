@@ -23,6 +23,7 @@ func RegisterVideoFormats() *SupportedFormat {
 		},
 		Extensions: []string{
 			`.mp4`,
+			`.ogm`,
 			`.ogv`,
 			`.webm`,
 		},
