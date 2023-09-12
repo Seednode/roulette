@@ -128,7 +128,7 @@ func appendPath(directory, path string, files *Files, stats *ScanStats, register
 }
 
 func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, types *formats.SupportedFormats) error {
-	shouldCache := cache && filters.IsEmpty()
+	shouldCache := Cache && filters.IsEmpty()
 
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
@@ -180,7 +180,7 @@ func appendPaths(path string, files *Files, filters *Filters, stats *ScanStats, 
 	return nil
 }
 
-func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *Index, registeredFormats *formats.SupportedFormats) (string, error) {
+func newFile(paths []string, filters *Filters, sortOrder string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) (string, error) {
 	filePath, err := pickFile(paths, filters, sortOrder, index, registeredFormats)
 	if err != nil {
 		return "", nil
@@ -272,8 +272,10 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 func tryExtensions(p *Path, registeredFormats *formats.SupportedFormats) (string, error) {
 	var fileName string
 
-	for _, extension := range registeredFormats.Extensions() {
-		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
+	for _, format := range registeredFormats.Extensions {
+		for _, extension := range format.Extensions {
+			fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
+		}
 
 		exists, err := fileExists(fileName)
 		if err != nil {
@@ -310,7 +312,7 @@ func pathIsValid(filePath string, paths []string) bool {
 	}
 
 	switch {
-	case verbose && !matchesPrefix:
+	case Verbose && !matchesPrefix:
 		fmt.Printf("%s | Error: Failed to serve file outside specified path(s): %s\n",
 			time.Now().Format(LogDate),
 			filePath,
@@ -333,7 +335,7 @@ func pathHasSupportedFiles(path string, registeredFormats *formats.SupportedForm
 		}
 
 		switch {
-		case !recursive && info.IsDir() && p != path:
+		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
 			registered, _, _, err := formats.FileType(p, registeredFormats)
@@ -390,7 +392,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 		}
 
 		switch {
-		case !recursive && info.IsDir() && p != path:
+		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
 			wg.Add(1)
@@ -419,7 +421,7 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 				fmt.Println(err)
 			}
 
-			if files > 0 && (files < minimumFileCount) || (files > maximumFileCount) {
+			if files > 0 && (files < MinimumFileCount) || (files > MaximumFileCount) {
 				// This count will not otherwise include the parent directory itself, so increment by one
 				stats.directoriesSkipped.Add(directories + 1)
 				stats.filesSkipped.Add(files)
@@ -442,8 +444,8 @@ func scanPath(path string, files *Files, filters *Filters, stats *ScanStats, con
 	return nil
 }
 
-func fileList(paths []string, filters *Filters, sort string, index *Index, types *formats.SupportedFormats) ([]string, bool) {
-	if cache && filters.IsEmpty() && !index.IsEmpty() {
+func fileList(paths []string, filters *Filters, sort string, index *FileIndex, types *formats.SupportedFormats) ([]string, bool) {
+	if Cache && filters.IsEmpty() && !index.IsEmpty() {
 		return index.Index(), true
 	}
 
@@ -496,7 +498,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index, types
 		return []string{}, false
 	}
 
-	if verbose {
+	if Verbose {
 		fmt.Printf("%s | Indexed %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(LogDate),
 			stats.filesMatched.Load(),
@@ -507,7 +509,7 @@ func fileList(paths []string, filters *Filters, sort string, index *Index, types
 		)
 	}
 
-	if cache && filters.IsEmpty() {
+	if Cache && filters.IsEmpty() {
 		index.setIndex(fileList)
 	}
 
@@ -556,7 +558,7 @@ func prepareDirectories(files *Files, sort string) []string {
 	return directories
 }
 
-func pickFile(args []string, filters *Filters, sort string, index *Index, registeredFormats *formats.SupportedFormats) (string, error) {
+func pickFile(args []string, filters *Filters, sort string, index *FileIndex, registeredFormats *formats.SupportedFormats) (string, error) {
 	fileList, fromCache := fileList(args, filters, sort, index, registeredFormats)
 
 	fileCount := len(fileList)

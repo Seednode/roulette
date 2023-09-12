@@ -8,9 +8,11 @@ import (
 	"errors"
 	"net/http"
 	"os"
+	"path/filepath"
 )
 
 type SupportedFormat struct {
+	Name       string
 	Css        string
 	Title      func(queryParams, fileUri, filePath, fileName, mime string) string
 	Body       func(queryParams, fileUri, filePath, fileName, mime string) string
@@ -19,47 +21,30 @@ type SupportedFormat struct {
 	Validate   func(filePath string) bool
 }
 
+// func (s *SupportedFormat) ListExtensions() []string
+
 type SupportedFormats struct {
-	types []*SupportedFormat
+	Extensions map[string]*SupportedFormat
+	MimeTypes  map[string]*SupportedFormat
 }
 
 func (s *SupportedFormats) Add(t *SupportedFormat) {
-	s.types = append(s.types, t)
-}
-
-func (s *SupportedFormats) Extensions() []string {
-	var extensions []string
-
-	for _, t := range s.types {
-		extensions = append(extensions, t.Extensions...)
-	}
-
-	return extensions
-}
-
-func (s *SupportedFormats) MimeTypes() []string {
-	var mimeTypes []string
-
-	for _, t := range s.types {
-		mimeTypes = append(mimeTypes, t.MimeTypes...)
-	}
-
-	return mimeTypes
-}
-
-func (s *SupportedFormats) Type(mimeType string) *SupportedFormat {
-	for i := range s.types {
-		for _, m := range s.types[i].MimeTypes {
-			if mimeType == m {
-				return s.types[i]
-			}
+	for _, v := range t.Extensions {
+		_, exists := s.Extensions[v]
+		if !exists {
+			s.Extensions[v] = t
 		}
 	}
 
-	return nil
+	for _, v := range t.MimeTypes {
+		_, exists := s.Extensions[v]
+		if !exists {
+			s.MimeTypes[v] = t
+		}
+	}
 }
 
-func FileType(path string, types *SupportedFormats) (bool, *SupportedFormat, string, error) {
+func FileType(path string, registeredFormats *SupportedFormats) (bool, *SupportedFormat, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -74,12 +59,16 @@ func FileType(path string, types *SupportedFormats) (bool, *SupportedFormat, str
 
 	mimeType := http.DetectContentType(head)
 
-	for _, v := range types.MimeTypes() {
-		if mimeType == v {
-			fileType := types.Type(mimeType)
+	// try identifying files by mime types first
+	fileType, exists := registeredFormats.MimeTypes[mimeType]
+	if exists {
+		return fileType.Validate(path), fileType, mimeType, nil
+	}
 
-			return fileType.Validate(path), fileType, mimeType, nil
-		}
+	// if mime type detection fails, use the file extension
+	fileType, exists = registeredFormats.Extensions[filepath.Ext(path)]
+	if exists {
+		return fileType.Validate(path), fileType, mimeType, nil
 	}
 
 	return false, nil, "", nil

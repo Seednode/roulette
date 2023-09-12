@@ -118,8 +118,8 @@ func (s *ServeStats) ListFiles(page int) ([]byte, error) {
 		startIndex = 0
 		stopIndex = len(stats.List) - 1
 	} else {
-		startIndex = ((page - 1) * int(pageLength))
-		stopIndex = (startIndex + int(pageLength))
+		startIndex = ((page - 1) * int(PageLength))
+		stopIndex = (startIndex + int(PageLength))
 	}
 
 	if startIndex > len(stats.List)-1 {
@@ -231,7 +231,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		w.Write(response)
 
-		if verbose {
+		if Verbose {
 			fmt.Printf("%s | Served statistics page (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
@@ -240,8 +240,8 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 			)
 		}
 
-		if statisticsFile != "" {
-			stats.Export(statisticsFile)
+		if StatisticsFile != "" {
+			stats.Export(StatisticsFile)
 		}
 	}
 }

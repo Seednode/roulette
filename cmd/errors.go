@@ -35,7 +35,7 @@ func newErrorPage(title, body string) string {
 func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 	startTime := time.Now()
 
-	if verbose {
+	if Verbose {
 		fmt.Printf("%s | Unavailable file %s requested by %s\n",
 			startTime.Format(LogDate),
 			filePath,
@@ -57,7 +57,7 @@ func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
 func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
-	if verbose {
+	if Verbose {
 		fmt.Printf("%s | Invalid request for %s from %s\n",
 			startTime.Format(LogDate),
 			r.URL.Path,

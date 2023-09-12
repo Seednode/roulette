@@ -13,13 +13,13 @@ import (
 	"time"
 )
 
-func RefreshInterval(r *http.Request) (int64, string) {
+func refreshInterval(r *http.Request) (int64, string) {
 	var interval string
 
-	if refreshInterval == "" {
+	if RefreshInterval == "" {
 		interval = r.URL.Query().Get("refresh")
 	} else {
-		interval = refreshInterval
+		interval = RefreshInterval
 	}
 
 	duration, err := time.ParseDuration(interval)
@@ -68,7 +68,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 
 	queryParams.WriteString("?")
 
-	if filtering {
+	if Filtering {
 		queryParams.WriteString("include=")
 		if filters.HasIncludes() {
 			queryParams.WriteString(filters.Includes())
@@ -82,7 +82,7 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 		hasParams = true
 	}
 
-	if sorting {
+	if Sorting {
 		if hasParams {
 			queryParams.WriteString("&")
 		}

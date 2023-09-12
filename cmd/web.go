@@ -37,7 +37,7 @@ const (
 	Timeout            time.Duration = 10 * time.Second
 )
 
-func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter.Handle {
+func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		path := strings.TrimPrefix(r.URL.Path, SourcePrefix)
 
@@ -95,7 +95,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 
 		fileSize := humanReadableSize(len(buf))
 
-		if russian {
+		if Russian {
 			err = os.Remove(filePath)
 			if err != nil {
 				fmt.Println(err)
@@ -105,12 +105,12 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 				return
 			}
 
-			if cache {
+			if Cache {
 				index.Remove(filePath)
 			}
 		}
 
-		if verbose {
+		if Verbose {
 			fmt.Printf("%s | Served %s (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				filePath,
@@ -120,14 +120,14 @@ func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter
 			)
 		}
 
-		if statistics {
+		if Statistics {
 			stats.incrementCounter(filePath, startTime, fileSize)
 		}
 
 	}
 }
 
-func serveRoot(paths []string, Regexes *Regexes, index *Index, registeredFormats *formats.SupportedFormats) httprouter.Handle {
+func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -147,7 +147,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index, registeredFormats
 
 		sortOrder := SortOrder(r)
 
-		_, refreshInterval := RefreshInterval(r)
+		_, refreshInterval := refreshInterval(r)
 
 		var filePath string
 
@@ -200,7 +200,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *Index, registeredFormats
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormats *formats.SupportedFormats) httprouter.Handle {
+func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, registeredFormats *formats.SupportedFormats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &Filters{
 			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
@@ -250,7 +250,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 
 		w.Header().Add("Content-Type", "text/html")
 
-		refreshTimer, refreshInterval := RefreshInterval(r)
+		refreshTimer, refreshInterval := refreshInterval(r)
 
 		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
@@ -286,7 +286,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 
 func serveVersion() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		data := []byte(fmt.Sprintf("roulette v%s\n", Version))
+		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
 
 		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
 
@@ -304,7 +304,7 @@ func ServePage(args []string) error {
 		}
 	}
 
-	bindHost, err := net.LookupHost(bind)
+	bindHost, err := net.LookupHost(Bind)
 	if err != nil {
 		return err
 	}
@@ -314,21 +314,32 @@ func ServePage(args []string) error {
 		return errors.New("invalid bind address provided")
 	}
 
-	registeredFormats := &formats.SupportedFormats{}
+	mux := httprouter.New()
 
-	if audio || all {
+	registeredFormats := &formats.SupportedFormats{
+		Extensions: make(map[string]*formats.SupportedFormat),
+		MimeTypes:  make(map[string]*formats.SupportedFormat),
+	}
+
+	if Audio || All {
 		registeredFormats.Add(formats.RegisterAudioFormats())
 	}
 
-	if images || all {
+	if Flash || All {
+		registeredFormats.Add(formats.RegisterFlashFormats())
+
+		mux.GET("/ruffle/*ruffle", formats.ServeRuffle())
+	}
+
+	if Images || All {
 		registeredFormats.Add(formats.RegisterImageFormats())
 	}
 
-	if text || all {
+	if Text || All {
 		registeredFormats.Add(formats.RegisterTextFormats())
 	}
 
-	if videos || all {
+	if Videos || All {
 		registeredFormats.Add(formats.RegisterVideoFormats())
 	}
 
@@ -341,13 +352,11 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
-	if russian {
+	if Russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
-	mux := httprouter.New()
-
-	index := &Index{
+	index := &FileIndex{
 		mutex: sync.RWMutex{},
 		list:  []string{},
 	}
@@ -358,7 +367,7 @@ func ServePage(args []string) error {
 	}
 
 	srv := &http.Server{
-		Addr:         net.JoinHostPort(bind, strconv.Itoa(int(port))),
+		Addr:         net.JoinHostPort(Bind, strconv.Itoa(int(Port))),
 		Handler:      mux,
 		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  5 * time.Second,
@@ -387,11 +396,11 @@ func ServePage(args []string) error {
 
 	mux.GET("/version", serveVersion())
 
-	if cache {
+	if Cache {
 		skipIndex := false
 
-		if cacheFile != "" {
-			err := index.Import(cacheFile)
+		if CacheFile != "" {
+			err := index.Import(CacheFile)
 			if err == nil {
 				skipIndex = true
 			}
@@ -404,19 +413,19 @@ func ServePage(args []string) error {
 		mux.GET("/clear_cache", serveCacheClear(args, index, registeredFormats))
 	}
 
-	if debug {
-		mux.GET("/html/", serveDebugHtml(args, index, false))
-		if pageLength != 0 {
-			mux.GET("/html/:page", serveDebugHtml(args, index, true))
+	if Index {
+		mux.GET("/html/", serveIndexHtml(args, index, false))
+		if PageLength != 0 {
+			mux.GET("/html/:page", serveIndexHtml(args, index, true))
 		}
 
-		mux.GET("/json", serveDebugJson(args, index))
-		if pageLength != 0 {
-			mux.GET("/json/:page", serveDebugJson(args, index))
+		mux.GET("/json", serveIndexJson(args, index))
+		if PageLength != 0 {
+			mux.GET("/json/:page", serveIndexJson(args, index))
 		}
 	}
 
-	if profile {
+	if Profile {
 		mux.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
 		mux.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
 		mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
@@ -424,9 +433,9 @@ func ServePage(args []string) error {
 		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
 	}
 
-	if statistics {
-		if statisticsFile != "" {
-			stats.Import(statisticsFile)
+	if Statistics {
+		if StatisticsFile != "" {
+			stats.Import(StatisticsFile)
 
 			gracefulShutdown := make(chan os.Signal, 1)
 			signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
@@ -434,14 +443,14 @@ func ServePage(args []string) error {
 			go func() {
 				<-gracefulShutdown
 
-				stats.Export(statisticsFile)
+				stats.Export(StatisticsFile)
 
 				os.Exit(0)
 			}()
 		}
 
 		mux.GET("/stats", serveStats(args, stats))
-		if pageLength != 0 {
+		if PageLength != 0 {
 			mux.GET("/stats/:page", serveStats(args, stats))
 		}
 	}
