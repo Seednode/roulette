@@ -327,8 +327,6 @@ func ServePage(args []string) error {
 
 	if Flash || All {
 		registeredFormats.Add(formats.RegisterFlashFormats())
-
-		mux.GET("/ruffle/*ruffle", formats.ServeRuffle())
 	}
 
 	if Images || All {
