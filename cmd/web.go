@@ -266,7 +266,7 @@ func serveMedia(paths []string, Regexes *Regexes, index *Index, registeredFormat
 		htmlBody.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
 		htmlBody.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;object-fit:scale-down;`)
 		htmlBody.WriteString(`position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
-		htmlBody.WriteString((fileType.Css(queryParams, fileUri, filePath, fileName, mimeType)))
+		htmlBody.WriteString(fileType.Css)
 		htmlBody.WriteString(`</style>`)
 		htmlBody.WriteString((fileType.Title(queryParams, fileUri, filePath, fileName, mimeType)))
 		htmlBody.WriteString(`</head><body>`)

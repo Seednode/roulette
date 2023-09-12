@@ -10,16 +10,13 @@ import (
 	"os"
 )
 
-type FormatFunction func(queryParams, fileUri, filePath, fileName, mime string) string
-type ValidateFunction func(filePath string) bool
-
 type SupportedFormat struct {
-	Css        FormatFunction
-	Title      FormatFunction
-	Body       FormatFunction
+	Css        string
+	Title      func(queryParams, fileUri, filePath, fileName, mime string) string
+	Body       func(queryParams, fileUri, filePath, fileName, mime string) string
 	Extensions []string
 	MimeTypes  []string
-	Validate   ValidateFunction
+	Validate   func(filePath string) bool
 }
 
 type SupportedFormats struct {

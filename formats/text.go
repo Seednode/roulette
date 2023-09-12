@@ -13,9 +13,7 @@ import (
 
 func RegisterTextFormats() *SupportedFormat {
 	return &SupportedFormat{
-		Css: func(queryParams, fileUri, filePath, fileName, mime string) string {
-			return `pre{margin:.5rem;}`
-		},
+		Css: `pre{margin:.5rem;}`,
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			return fmt.Sprintf(`<title>%s</title>`, fileName)
 		},
