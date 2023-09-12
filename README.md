@@ -78,16 +78,15 @@ The cache can be regenerated at any time by accessing the `/clear_cache` endpoin
 
 If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
+If the `-i|--index` flag is passed, two additional endpoints—`/html` and `/json`—are registered.
+
+When accessed, these endpoints return the contents of the index, in HTML and JSON formats respectively. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
+
 ## Statistics
 
 If the `--stats` flag is passed, an additional endpoint, `/stats`, is registered.
 
 When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served, its filesize, and timestamps of when it was served.
-
-## Debug
-If the `-d|--debug` flag is passed, two additional endpoints—`/html` and `/json`—are registered.
-
-When accessed, these endpoints return the contents of the index, in HTML and JSON formats respectively. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
 ## Russian
 If the `--russian` flag is passed, everything functions exactly as you would expect.
@@ -114,7 +113,7 @@ Flags:
   -c, --cache                     generate directory cache at startup
       --cache-file string         path to optional persistent cache file
   -f, --filter                    enable filtering
-      --flash                     enable support for shockwave flash files (via ruffle) (default true)
+      --flash                     enable support for shockwave flash files (via ruffle.rs) (default true)
   -h, --help                      help for roulette
       --images                    enable support for image files (default true)
   -i, --index                     expose index endpoints

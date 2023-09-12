@@ -88,7 +88,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
-	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle)")
+	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Index, "index", "i", false, "expose index endpoints")
 	rootCmd.Flags().Uint64Var(&MaximumFileCount, "maximum-files", 1<<64-1, "skip directories with file counts above this value")
