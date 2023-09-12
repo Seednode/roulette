@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.71.0"
+	ReleaseVersion string = "0.72.0"
 )
 
 var (
@@ -25,9 +25,9 @@ var (
 	Flash            bool
 	Images           bool
 	Index            bool
-	MaximumFileCount uint64
-	MinimumFileCount uint64
-	PageLength       uint64
+	MaximumFileCount uint32
+	MinimumFileCount uint32
+	PageLength       uint32
 	Port             uint16
 	Profile          bool
 	Recursive        bool
@@ -93,9 +93,9 @@ func init() {
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Index, "index", "i", false, "expose index endpoints")
-	rootCmd.Flags().Uint64Var(&MaximumFileCount, "maximum-files", 1<<64-1, "skip directories with file counts above this value")
-	rootCmd.Flags().Uint64Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
-	rootCmd.Flags().Uint64Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
+	rootCmd.Flags().Uint32Var(&MaximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts above this value")
+	rootCmd.Flags().Uint32Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
+	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")

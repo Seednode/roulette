@@ -117,9 +117,9 @@ Flags:
   -h, --help                      help for roulette
       --images                    enable support for image files
   -i, --index                     expose index endpoints
-      --maximum-files uint        skip directories with file counts above this value (default 18446744073709551615)
-      --minimum-files uint        skip directories with file counts below this value (default 1)
-      --page-length uint          pagination length for statistics and debug pages
+      --maximum-files uint32      skip directories with file counts above this value (default 4294967295)
+      --minimum-files uint32      skip directories with file counts below this value (default 1)
+      --page-length uint32        pagination length for statistics and debug pages
   -p, --port uint16               port to listen on (default 8080)
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
