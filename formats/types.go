@@ -12,7 +12,6 @@ import (
 )
 
 type SupportedFormat struct {
-	Name       string
 	Css        string
 	Title      func(queryParams, fileUri, filePath, fileName, mime string) string
 	Body       func(queryParams, fileUri, filePath, fileName, mime string) string
@@ -20,8 +19,6 @@ type SupportedFormat struct {
 	MimeTypes  []string
 	Validate   func(filePath string) bool
 }
-
-// func (s *SupportedFormat) ListExtensions() []string
 
 type SupportedFormats struct {
 	Extensions map[string]*SupportedFormat

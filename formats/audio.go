@@ -10,7 +10,6 @@ import (
 
 func RegisterAudioFormats() *SupportedFormat {
 	return &SupportedFormat{
-		Name: "audio",
 		Css:  ``,
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			return fmt.Sprintf(`<title>%s</title>`, fileName)

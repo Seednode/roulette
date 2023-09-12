@@ -11,7 +11,6 @@ import (
 
 func RegisterFlashFormats() *SupportedFormat {
 	return &SupportedFormat{
-		Name: `flash`,
 		Css:  ``,
 		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
 			return fmt.Sprintf(`<title>%s</title>`, fileName)
