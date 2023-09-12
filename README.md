@@ -113,10 +113,11 @@ Flags:
   -b, --bind string               address to bind to (default "0.0.0.0")
   -c, --cache                     generate directory cache at startup
       --cache-file string         path to optional persistent cache file
-  -d, --debug                     expose debug endpoint
   -f, --filter                    enable filtering
+      --flash                     enable support for shockwave flash files (via ruffle) (default true)
   -h, --help                      help for roulette
       --images                    enable support for image files (default true)
+  -i, --index                     expose index endpoints
       --maximum-files uint        skip directories with file counts above this value (default 18446744073709551615)
       --minimum-files uint        skip directories with file counts below this value (default 1)
       --page-length uint          pagination length for statistics and debug pages
