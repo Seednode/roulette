@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"regexp"
 
 	"crypto/rand"
 	"os"
@@ -29,6 +30,11 @@ const (
 	maxDirectoryScans maxConcurrency = 32
 	maxFileScans      maxConcurrency = 256
 )
+
+type Regexes struct {
+	alphanumeric *regexp.Regexp
+	filename     *regexp.Regexp
+}
 
 type Concurrency struct {
 	directoryScans chan int

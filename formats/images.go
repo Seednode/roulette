@@ -51,18 +51,27 @@ func RegisterImageFormats() *SupportedFormat {
 				fileName)
 		},
 		Extensions: []string{
+			`.apng`,
+			`.avif`,
 			`.bmp`,
 			`.gif`,
 			`.jpg`,
 			`.jpeg`,
+			`.jfif`,
+			`.pjp`,
+			`.pjpeg`,
 			`.png`,
+			`.svg`,
 			`.webp`,
 		},
 		MimeTypes: []string{
+			`image/apng`,
+			`image/avif`,
 			`image/bmp`,
 			`image/gif`,
 			`image/jpeg`,
 			`image/png`,
+			`image/svg+xml`,
 			`image/webp`,
 		},
 		Validate: func(filePath string) bool {

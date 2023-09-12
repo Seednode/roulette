@@ -37,11 +37,6 @@ const (
 	Timeout            time.Duration = 10 * time.Second
 )
 
-type Regexes struct {
-	alphanumeric *regexp.Regexp
-	filename     *regexp.Regexp
-}
-
 func serveStaticFile(paths []string, stats *ServeStats, index *Index) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		path := strings.TrimPrefix(r.URL.Path, SourcePrefix)
