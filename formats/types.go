@@ -11,6 +11,7 @@ import (
 )
 
 type FormatFunction func(queryParams, fileUri, filePath, fileName, mime string) string
+type ValidateFunction func(filePath string) bool
 
 type SupportedFormat struct {
 	Css        FormatFunction
@@ -18,6 +19,7 @@ type SupportedFormat struct {
 	Body       FormatFunction
 	Extensions []string
 	MimeTypes  []string
+	Validate   ValidateFunction
 }
 
 type SupportedFormats struct {
@@ -79,7 +81,7 @@ func FileType(path string, types *SupportedFormats) (bool, *SupportedFormat, str
 		if mimeType == v {
 			fileType := types.Type(mimeType)
 
-			return true, fileType, mimeType, nil
+			return fileType.Validate(path), fileType, mimeType, nil
 		}
 	}
 

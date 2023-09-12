@@ -67,6 +67,9 @@ func RegisterImageFormats() *SupportedFormat {
 			`image/png`,
 			`image/webp`,
 		},
+		Validate: func(filePath string) bool {
+			return true
+		},
 	}
 }
 

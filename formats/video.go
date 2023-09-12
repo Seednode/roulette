@@ -33,5 +33,8 @@ func RegisterVideoFormats() *SupportedFormat {
 			`video/ogg`,
 			`video/webm`,
 		},
+		Validate: func(filePath string) bool {
+			return true
+		},
 	}
 }

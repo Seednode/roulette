@@ -34,5 +34,8 @@ func RegisterAudioFormats() *SupportedFormat {
 			`audio/ogg`,
 			`audio/wav`,
 		},
+		Validate: func(filePath string) bool {
+			return true
+		},
 	}
 }

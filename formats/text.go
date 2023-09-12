@@ -5,6 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package formats
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"unicode/utf8"
@@ -22,10 +23,6 @@ func RegisterTextFormats() *SupportedFormat {
 			body, err := os.ReadFile(filePath)
 			if err != nil {
 				body = []byte{}
-			}
-
-			if !utf8.Valid(body) {
-				body = []byte(`Unable to parse binary file as text.`)
 			}
 
 			return fmt.Sprintf(`<a href="/%s"><pre>%s</pre></a>`,
@@ -51,6 +48,21 @@ func RegisterTextFormats() *SupportedFormat {
 			`text/javascript`,
 			`text/plain`,
 			`text/plain; charset=utf-8`,
+		},
+		Validate: func(path string) bool {
+			file, err := os.Open(path)
+			switch {
+			case errors.Is(err, os.ErrNotExist):
+				return false
+			case err != nil:
+				return false
+			}
+			defer file.Close()
+
+			head := make([]byte, 512)
+			file.Read(head)
+
+			return utf8.Valid(head)
 		},
 	}
 }
