@@ -113,9 +113,9 @@ Flags:
   -c, --cache                     generate directory cache at startup
       --cache-file string         path to optional persistent cache file
   -f, --filter                    enable filtering
-      --flash                     enable support for shockwave flash files (via ruffle.rs) (default true)
+      --flash                     enable support for shockwave flash files (via ruffle.rs)
   -h, --help                      help for roulette
-      --images                    enable support for image files (default true)
+      --images                    enable support for image files
   -i, --index                     expose index endpoints
       --maximum-files uint        skip directories with file counts above this value (default 18446744073709551615)
       --minimum-files uint        skip directories with file counts below this value (default 1)
