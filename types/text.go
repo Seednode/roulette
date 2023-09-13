@@ -18,8 +18,8 @@ func RegisterText() *Type {
 			var css strings.Builder
 
 			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
-			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
-			css.WriteString(`pre{margin:.5rem;}`)
+			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;overflow:hidden;}`)
+			css.WriteString(`textarea{border:none;caret-color:transparent;outline:none;margin:0 .5rem 0 .5rem;height:100%;width:99%;overflow:auto;}`)
 
 			return css.String()
 		},
@@ -32,7 +32,7 @@ func RegisterText() *Type {
 				body = []byte{}
 			}
 
-			return fmt.Sprintf(`<a href="/%s"><pre>%s</pre></a>`,
+			return fmt.Sprintf(`<a href="/%s"><textarea autofocus readonly>%s</textarea></a>`,
 				queryParams,
 				body)
 		},
