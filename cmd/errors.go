@@ -24,7 +24,7 @@ func newErrorPage(title, body string) string {
 	var htmlBody strings.Builder
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(FaviconHtml)
+	htmlBody.WriteString(faviconHtml)
 	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
 	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
@@ -32,13 +32,13 @@ func newErrorPage(title, body string) string {
 	return htmlBody.String()
 }
 
-func notFound(w http.ResponseWriter, r *http.Request, filePath string) error {
+func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	startTime := time.Now()
 
 	if Verbose {
 		fmt.Printf("%s | Unavailable file %s requested by %s\n",
-			startTime.Format(LogDate),
-			filePath,
+			startTime.Format(logDate),
+			path,
 			r.RemoteAddr,
 		)
 	}
@@ -59,7 +59,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 
 	if Verbose {
 		fmt.Printf("%s | Invalid request for %s from %s\n",
-			startTime.Format(LogDate),
+			startTime.Format(logDate),
 			r.URL.Path,
 			r.RemoteAddr,
 		)

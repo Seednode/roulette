@@ -35,16 +35,16 @@ import (
 )
 
 const (
-	LogDate            string        = `2006-01-02T15:04:05.000-07:00`
-	SourcePrefix       string        = `/source`
-	MediaPrefix        string        = `/view`
+	logDate            string        = `2006-01-02T15:04:05.000-07:00`
+	sourcePrefix       string        = `/source`
+	mediaPrefix        string        = `/view`
 	RedirectStatusCode int           = http.StatusSeeOther
-	Timeout            time.Duration = 10 * time.Second
+	timeout            time.Duration = 10 * time.Second
 )
 
-func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httprouter.Handle {
+func serveStaticFile(paths []string, stats *ServeStats, cache *fileCache) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		path := strings.TrimPrefix(r.URL.Path, SourcePrefix)
+		path := strings.TrimPrefix(r.URL.Path, sourcePrefix)
 
 		prefixedFilePath, err := stripQueryParams(path)
 		if err != nil {
@@ -55,7 +55,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httpro
 			return
 		}
 
-		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, SourcePrefix))
+		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, sourcePrefix))
 		if err != nil {
 			fmt.Println(err)
 
@@ -111,13 +111,13 @@ func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httpro
 			}
 
 			if Cache {
-				index.Remove(filePath)
+				cache.remove(filePath)
 			}
 		}
 
 		if Verbose {
 			fmt.Printf("%s | Served %s (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				filePath,
 				fileSize,
 				realIP(r),
@@ -132,7 +132,7 @@ func serveStaticFile(paths []string, stats *ServeStats, index *FileIndex) httpro
 	}
 }
 
-func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *types.Types) httprouter.Handle {
+func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -143,21 +143,21 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *type
 			return
 		}
 
-		strippedRefererUri := strings.TrimPrefix(refererUri, MediaPrefix)
+		strippedRefererUri := strings.TrimPrefix(refererUri, mediaPrefix)
 
-		filters := &Filters{
-			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
-			excludes: splitQueryParams(r.URL.Query().Get("exclude"), Regexes),
+		filters := &filters{
+			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
+			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
 		}
 
-		sortOrder := SortOrder(r)
+		sortOrder := sortOrder(r)
 
 		_, refreshInterval := refreshInterval(r)
 
 		var filePath string
 
 		if refererUri != "" {
-			filePath, err = nextFile(strippedRefererUri, sortOrder, Regexes, formats)
+			filePath, err = nextFile(strippedRefererUri, sortOrder, regexes, formats)
 			if err != nil {
 				fmt.Println(err)
 
@@ -168,7 +168,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *type
 		}
 
 	loop:
-		for timeout := time.After(Timeout); ; {
+		for timeout := time.After(timeout); ; {
 			select {
 			case <-timeout:
 				break loop
@@ -179,7 +179,7 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *type
 				break loop
 			}
 
-			filePath, err = newFile(paths, filters, sortOrder, Regexes, index, formats)
+			filePath, err = newFile(paths, filters, sortOrder, regexes, cache, formats)
 			switch {
 			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, filePath)
@@ -205,22 +205,22 @@ func serveRoot(paths []string, Regexes *Regexes, index *FileIndex, formats *type
 	}
 }
 
-func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, formats *types.Types) httprouter.Handle {
+func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		filters := &Filters{
-			includes: splitQueryParams(r.URL.Query().Get("include"), Regexes),
-			excludes: splitQueryParams(r.URL.Query().Get("exclude"), Regexes),
+		filters := &filters{
+			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
+			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
 		}
 
-		sortOrder := SortOrder(r)
+		sortOrder := sortOrder(r)
 
-		filePath := strings.TrimPrefix(r.URL.Path, MediaPrefix)
+		path := strings.TrimPrefix(r.URL.Path, mediaPrefix)
 
 		if runtime.GOOS == "windows" {
-			filePath = strings.TrimPrefix(filePath, "/")
+			path = strings.TrimPrefix(path, "/")
 		}
 
-		exists, err := fileExists(filePath)
+		exists, err := fileExists(path)
 		if err != nil {
 			fmt.Println(err)
 
@@ -229,12 +229,12 @@ func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, formats *typ
 			return
 		}
 		if !exists {
-			notFound(w, r, filePath)
+			notFound(w, r, path)
 
 			return
 		}
 
-		registered, fileType, mimeType, err := types.FileType(filePath, formats)
+		registered, fileType, mimeType, err := formats.FileType(path)
 		if err != nil {
 			fmt.Println(err)
 
@@ -244,14 +244,14 @@ func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, formats *typ
 		}
 
 		if !registered {
-			notFound(w, r, filePath)
+			notFound(w, r, path)
 
 			return
 		}
 
-		fileUri := generateFileUri(filePath)
+		fileUri := generateFileUri(path)
 
-		fileName := filepath.Base(filePath)
+		fileName := filepath.Base(path)
 
 		w.Header().Add("Content-Type", "text/html")
 
@@ -261,16 +261,16 @@ func serveMedia(paths []string, Regexes *Regexes, index *FileIndex, formats *typ
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(FaviconHtml)
+		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, fileType.Css()))
-		htmlBody.WriteString((fileType.Title(queryParams, fileUri, filePath, fileName, mimeType)))
+		htmlBody.WriteString((fileType.Title(queryParams, fileUri, path, fileName, mimeType)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
 				queryParams,
 				refreshTimer))
 		}
-		htmlBody.WriteString((fileType.Body(queryParams, fileUri, filePath, fileName, mimeType)))
+		htmlBody.WriteString((fileType.Body(queryParams, fileUri, path, fileName, mimeType)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -322,25 +322,25 @@ func ServePage(args []string) error {
 	}
 
 	if Audio || All {
-		formats.Add(audio.Format{})
+		formats.Add(audio.New())
 	}
 
 	if Flash || All {
-		formats.Add(flash.Format{})
+		formats.Add(flash.New())
 	}
 
 	if Text || All {
-		formats.Add(text.Format{})
+		formats.Add(text.New())
 	}
 
 	if Videos || All {
-		formats.Add(video.Format{})
+		formats.Add(video.New())
 	}
 
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
 	if Images || All || len(formats.Extensions) == 0 {
-		formats.Add(images.Format{})
+		formats.Add(images.New())
 	}
 
 	paths, err := normalizePaths(args, formats)
@@ -356,12 +356,12 @@ func ServePage(args []string) error {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
-	index := &FileIndex{
+	cache := &fileCache{
 		mutex: sync.RWMutex{},
 		list:  []string{},
 	}
 
-	regexes := &Regexes{
+	regexes := &regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
@@ -384,15 +384,15 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, regexes, index, formats))
+	mux.GET("/", serveRoot(paths, regexes, cache, formats))
 
 	mux.GET("/favicons/*favicon", serveFavicons())
 
 	mux.GET("/favicon.ico", serveFavicons())
 
-	mux.GET(MediaPrefix+"/*media", serveMedia(paths, regexes, index, formats))
+	mux.GET(mediaPrefix+"/*media", serveMedia(paths, regexes, formats))
 
-	mux.GET(SourcePrefix+"/*static", serveStaticFile(paths, stats, index))
+	mux.GET(sourcePrefix+"/*static", serveStaticFile(paths, stats, cache))
 
 	mux.GET("/version", serveVersion())
 
@@ -400,29 +400,29 @@ func ServePage(args []string) error {
 		skipIndex := false
 
 		if CacheFile != "" {
-			err := index.Import(CacheFile)
+			err := cache.Import(CacheFile)
 			if err == nil {
 				skipIndex = true
 			}
 		}
 
 		if !skipIndex {
-			index.generateCache(args, formats)
+			cache.generate(args, formats)
 		}
 
-		mux.GET("/clear_cache", serveCacheClear(args, index, formats))
+		mux.GET("/clear_cache", serveCacheClear(args, cache, formats))
 	}
 
 	if Info {
 		if Cache {
-			mux.GET("/html/", serveIndexHtml(args, index, false))
+			mux.GET("/html/", serveIndexHtml(args, cache, false))
 			if PageLength != 0 {
-				mux.GET("/html/:page", serveIndexHtml(args, index, true))
+				mux.GET("/html/:page", serveIndexHtml(args, cache, true))
 			}
 
-			mux.GET("/json", serveIndexJson(args, index))
+			mux.GET("/json", serveIndexJson(args, cache))
 			if PageLength != 0 {
-				mux.GET("/json/:page", serveIndexJson(args, index))
+				mux.GET("/json/:page", serveIndexJson(args, cache))
 			}
 		}
 

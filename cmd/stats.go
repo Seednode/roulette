@@ -40,7 +40,7 @@ func (s *ServeStats) incrementCounter(file string, timestamp time.Time, filesize
 
 	s.count[file]++
 
-	s.times[file] = append(s.times[file], timestamp.Format(LogDate))
+	s.times[file] = append(s.times[file], timestamp.Format(logDate))
 
 	_, exists := s.size[file]
 	if !exists {
@@ -233,7 +233,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served statistics page (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),

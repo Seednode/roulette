@@ -15,24 +15,24 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type FileIndex struct {
+type fileCache struct {
 	mutex sync.RWMutex
 	list  []string
 }
 
-func (i *FileIndex) Index() []string {
-	i.mutex.RLock()
-	val := i.list
-	i.mutex.RUnlock()
+func (cache *fileCache) List() []string {
+	cache.mutex.RLock()
+	val := cache.list
+	cache.mutex.RUnlock()
 
 	return val
 }
 
-func (i *FileIndex) Remove(path string) {
-	i.mutex.RLock()
-	tempIndex := make([]string, len(i.list))
-	copy(tempIndex, i.list)
-	i.mutex.RUnlock()
+func (cache *fileCache) remove(path string) {
+	cache.mutex.RLock()
+	tempIndex := make([]string, len(cache.list))
+	copy(tempIndex, cache.list)
+	cache.mutex.RUnlock()
 
 	var position int
 
@@ -46,39 +46,39 @@ func (i *FileIndex) Remove(path string) {
 
 	tempIndex[position] = tempIndex[len(tempIndex)-1]
 
-	i.mutex.Lock()
-	i.list = make([]string, len(tempIndex)-1)
-	copy(i.list, tempIndex[:len(tempIndex)-1])
-	i.mutex.Unlock()
+	cache.mutex.Lock()
+	cache.list = make([]string, len(tempIndex)-1)
+	copy(cache.list, tempIndex[:len(tempIndex)-1])
+	cache.mutex.Unlock()
 }
 
-func (i *FileIndex) setIndex(val []string) {
-	i.mutex.Lock()
-	i.list = val
-	i.mutex.Unlock()
+func (cache *fileCache) set(val []string) {
+	cache.mutex.Lock()
+	cache.list = val
+	cache.mutex.Unlock()
 }
 
-func (i *FileIndex) generateCache(args []string, formats *types.Types) {
-	i.mutex.Lock()
-	i.list = []string{}
-	i.mutex.Unlock()
+func (cache *fileCache) generate(args []string, formats *types.Types) {
+	cache.mutex.Lock()
+	cache.list = []string{}
+	cache.mutex.Unlock()
 
-	fileList(args, &Filters{}, "", i, formats)
+	fileList(args, &filters{}, "", cache, formats)
 
 	if Cache && CacheFile != "" {
-		i.Export(CacheFile)
+		cache.Export(CacheFile)
 	}
 }
 
-func (i *FileIndex) IsEmpty() bool {
-	i.mutex.RLock()
-	length := len(i.list)
-	i.mutex.RUnlock()
+func (cache *fileCache) isEmpty() bool {
+	cache.mutex.RLock()
+	length := len(cache.list)
+	cache.mutex.RUnlock()
 
 	return length == 0
 }
 
-func (i *FileIndex) Export(path string) error {
+func (cache *fileCache) Export(path string) error {
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
@@ -93,16 +93,14 @@ func (i *FileIndex) Export(path string) error {
 
 	enc := gob.NewEncoder(z)
 
-	i.mutex.RLock()
-
-	enc.Encode(&i.list)
-
-	i.mutex.RUnlock()
+	cache.mutex.RLock()
+	enc.Encode(&cache.list)
+	cache.mutex.RUnlock()
 
 	return nil
 }
 
-func (i *FileIndex) Import(path string) error {
+func (cache *fileCache) Import(path string) error {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		return err
@@ -117,11 +115,11 @@ func (i *FileIndex) Import(path string) error {
 
 	dec := gob.NewDecoder(z)
 
-	i.mutex.Lock()
+	cache.mutex.Lock()
 
-	err = dec.Decode(&i.list)
+	err = dec.Decode(&cache.list)
 
-	i.mutex.Unlock()
+	cache.mutex.Unlock()
 
 	if err != nil {
 		return err
@@ -130,9 +128,9 @@ func (i *FileIndex) Import(path string) error {
 	return nil
 }
 
-func serveCacheClear(args []string, index *FileIndex, formats *types.Types) httprouter.Handle {
+func serveCacheClear(args []string, cache *fileCache, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		index.generateCache(args, formats)
+		cache.generate(args, formats)
 
 		w.Header().Set("Content-Type", "text/plain")
 

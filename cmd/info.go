@@ -19,13 +19,13 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-func serveIndexHtml(args []string, index *FileIndex, paginate bool) httprouter.Handle {
+func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/html")
 
 		startTime := time.Now()
 
-		indexDump := index.Index()
+		indexDump := cache.List()
 
 		fileCount := len(indexDump)
 
@@ -54,7 +54,7 @@ func serveIndexHtml(args []string, index *FileIndex, paginate bool) httprouter.H
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(FaviconHtml)
+		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
 		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %d files</title></head><body><table>", fileCount))
@@ -65,7 +65,7 @@ func serveIndexHtml(args []string, index *FileIndex, paginate bool) httprouter.H
 				if Sorting {
 					shouldSort = "?sort=asc"
 				}
-				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", MediaPrefix, v, shouldSort, v))
+				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", mediaPrefix, v, shouldSort, v))
 			}
 		}
 		if PageLength != 0 {
@@ -124,7 +124,7 @@ func serveIndexHtml(args []string, index *FileIndex, paginate bool) httprouter.H
 
 		if Verbose {
 			fmt.Printf("%s | Served HTML index page (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(b),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
@@ -133,18 +133,18 @@ func serveIndexHtml(args []string, index *FileIndex, paginate bool) httprouter.H
 	}
 }
 
-func serveIndexJson(args []string, index *FileIndex) httprouter.Handle {
+func serveIndexJson(args []string, index *fileCache) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
 
-		indexDump := index.Index()
+		cachedFiles := index.List()
 
-		fileCount := len(indexDump)
+		fileCount := len(cachedFiles)
 
-		sort.SliceStable(indexDump, func(p, q int) bool {
-			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
+		sort.SliceStable(cachedFiles, func(p, q int) bool {
+			return strings.ToLower(cachedFiles[p]) < strings.ToLower(cachedFiles[q])
 		})
 
 		var startIndex, stopIndex int
@@ -159,14 +159,14 @@ func serveIndexJson(args []string, index *FileIndex) httprouter.Handle {
 		}
 
 		if startIndex > (fileCount - 1) {
-			indexDump = []string{}
+			cachedFiles = []string{}
 		}
 
 		if stopIndex > fileCount {
 			stopIndex = fileCount
 		}
 
-		response, err := json.MarshalIndent(indexDump[startIndex:stopIndex], "", "    ")
+		response, err := json.MarshalIndent(cachedFiles[startIndex:stopIndex], "", "    ")
 		if err != nil {
 			fmt.Println(err)
 
@@ -179,7 +179,7 @@ func serveIndexJson(args []string, index *FileIndex) httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served JSON index page (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
@@ -200,7 +200,7 @@ func serveAvailableExtensions() httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served available extensions list (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
@@ -221,7 +221,7 @@ func serveEnabledExtensions(formats *types.Types) httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served registered extensions list (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
@@ -242,7 +242,7 @@ func serveAvailableMimeTypes() httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served available MIME types list (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
@@ -263,7 +263,7 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served registered MIME types list (%s) to %s in %s\n",
-				startTime.Format(LogDate),
+				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),

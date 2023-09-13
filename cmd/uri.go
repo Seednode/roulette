@@ -34,7 +34,7 @@ func refreshInterval(r *http.Request) (int64, string) {
 	}
 }
 
-func SortOrder(r *http.Request) string {
+func sortOrder(r *http.Request) string {
 	sortOrder := r.URL.Query().Get("sort")
 	if sortOrder == "asc" || sortOrder == "desc" {
 		return sortOrder
@@ -43,7 +43,7 @@ func SortOrder(r *http.Request) string {
 	return ""
 }
 
-func splitQueryParams(query string, Regexes *Regexes) []string {
+func splitQueryParams(query string, regexes *regexes) []string {
 	results := []string{}
 
 	if query == "" {
@@ -53,7 +53,7 @@ func splitQueryParams(query string, Regexes *Regexes) []string {
 	params := strings.Split(query, ",")
 
 	for i := 0; i < len(params); i++ {
-		if Regexes.alphanumeric.MatchString(params[i]) {
+		if regexes.alphanumeric.MatchString(params[i]) {
 			results = append(results, strings.ToLower(params[i]))
 		}
 	}
@@ -61,7 +61,7 @@ func splitQueryParams(query string, Regexes *Regexes) []string {
 	return results
 }
 
-func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) string {
+func generateQueryParams(filters *filters, sortOrder, refreshInterval string) string {
 	var hasParams bool
 
 	var queryParams strings.Builder
@@ -70,13 +70,13 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 
 	if Filtering {
 		queryParams.WriteString("include=")
-		if filters.HasIncludes() {
-			queryParams.WriteString(filters.Includes())
+		if filters.hasIncludes() {
+			queryParams.WriteString(filters.includes())
 		}
 
 		queryParams.WriteString("&exclude=")
-		if filters.HasExcludes() {
-			queryParams.WriteString(filters.Excludes())
+		if filters.hasExcludes() {
+			queryParams.WriteString(filters.excludes())
 		}
 
 		hasParams = true
@@ -100,8 +100,8 @@ func generateQueryParams(filters *Filters, sortOrder, refreshInterval string) st
 	return queryParams.String()
 }
 
-func stripQueryParams(u string) (string, error) {
-	uri, err := url.Parse(u)
+func stripQueryParams(request string) (string, error) {
+	uri, err := url.Parse(request)
 	if err != nil {
 		return "", err
 	}
@@ -123,7 +123,7 @@ func stripQueryParams(u string) (string, error) {
 func generateFileUri(path string) string {
 	var uri strings.Builder
 
-	uri.WriteString(SourcePrefix)
+	uri.WriteString(sourcePrefix)
 	if runtime.GOOS == "windows" {
 		uri.WriteString(`/`)
 	}

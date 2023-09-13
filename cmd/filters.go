@@ -6,27 +6,27 @@ package cmd
 
 import "strings"
 
-type Filters struct {
-	includes []string
-	excludes []string
+type filters struct {
+	included []string
+	excluded []string
 }
 
-func (f *Filters) IsEmpty() bool {
-	return !(f.HasIncludes() || f.HasExcludes())
+func (filters *filters) isEmpty() bool {
+	return !(filters.hasIncludes() || filters.hasExcludes())
 }
 
-func (f *Filters) HasIncludes() bool {
-	return len(f.includes) != 0
+func (filters *filters) hasIncludes() bool {
+	return len(filters.included) != 0
 }
 
-func (f *Filters) Includes() string {
-	return strings.Join(f.includes, ",")
+func (filters *filters) includes() string {
+	return strings.Join(filters.included, ",")
 }
 
-func (f *Filters) HasExcludes() bool {
-	return len(f.excludes) != 0
+func (filters *filters) hasExcludes() bool {
+	return len(filters.excluded) != 0
 }
 
-func (f *Filters) Excludes() string {
-	return strings.Join(f.excludes, ",")
+func (filters *filters) excludes() string {
+	return strings.Join(filters.excluded, ",")
 }

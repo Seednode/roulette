@@ -51,8 +51,10 @@ func (t Format) Validate(filePath string) bool {
 	return true
 }
 
-func init() {
-	format := Format{}
+func New() Format {
+	return Format{}
+}
 
-	types.Register(format)
+func init() {
+	types.SupportedFormats.Register(New())
 }

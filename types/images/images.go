@@ -123,8 +123,10 @@ func ImageDimensions(path string) (*dimensions, error) {
 	return &dimensions{width: decodedConfig.Width, height: decodedConfig.Height}, nil
 }
 
-func init() {
-	format := Format{}
+func New() Format {
+	return Format{}
+}
 
-	types.Register(format)
+func init() {
+	types.SupportedFormats.Register(New())
 }

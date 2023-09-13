@@ -32,23 +32,23 @@ type Types struct {
 	MimeTypes  map[string]Type
 }
 
-func (s *Types) Add(t Type) {
-	for k, v := range t.Extensions() {
-		_, exists := s.Extensions[k]
+func (t *Types) Add(format Type) {
+	for k, v := range format.Extensions() {
+		_, exists := t.Extensions[k]
 		if !exists {
-			s.Extensions[k] = v
+			t.Extensions[k] = v
 		}
 	}
 
-	for _, v := range t.MimeTypes() {
-		_, exists := s.Extensions[v]
+	for _, v := range format.MimeTypes() {
+		_, exists := t.Extensions[v]
 		if !exists {
-			s.MimeTypes[v] = t
+			t.MimeTypes[v] = format
 		}
 	}
 }
 
-func FileType(path string, registeredFormats *Types) (bool, Type, string, error) {
+func (t *Types) FileType(path string) (bool, Type, string, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -64,15 +64,15 @@ func FileType(path string, registeredFormats *Types) (bool, Type, string, error)
 	mimeType := http.DetectContentType(head)
 
 	// try identifying files by mime types first
-	fileType, exists := registeredFormats.MimeTypes[mimeType]
+	fileType, exists := t.MimeTypes[mimeType]
 	if exists {
 		return fileType.Validate(path), fileType, mimeType, nil
 	}
 
 	// if mime type detection fails, use the file extension
-	mimeType, exists = registeredFormats.Extensions[filepath.Ext(path)]
+	mimeType, exists = t.Extensions[filepath.Ext(path)]
 	if exists {
-		fileType, exists := registeredFormats.MimeTypes[mimeType]
+		fileType, exists := t.MimeTypes[mimeType]
 
 		if exists {
 			return fileType.Validate(path), fileType, mimeType, nil
@@ -82,11 +82,11 @@ func FileType(path string, registeredFormats *Types) (bool, Type, string, error)
 	return false, nil, "", nil
 }
 
-func Register(t Type) {
-	SupportedFormats.Add(t)
+func (t *Types) Register(format Type) {
+	t.Add(format)
 }
 
-func (t Types) GetExtensions() string {
+func (t *Types) GetExtensions() string {
 	var output strings.Builder
 
 	extensions := make([]string, len(t.Extensions))
@@ -107,7 +107,7 @@ func (t Types) GetExtensions() string {
 	return output.String()
 }
 
-func (t Types) GetMimeTypes() string {
+func (t *Types) GetMimeTypes() string {
 	var output strings.Builder
 
 	mimeTypes := make([]string, len(t.MimeTypes))
