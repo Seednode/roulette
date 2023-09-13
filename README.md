@@ -18,6 +18,18 @@ x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette
 
 Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/master/docker/Dockerfile).
 
+## Caching
+
+If the `-c|--cache` flag is passed, the indices of all specified paths will be cached on start.
+
+This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
+
+If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
+
+The cache can be regenerated at any time by accessing the `/clear_cache` endpoint.
+
+If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
+
 ## Filtering
 
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
@@ -31,6 +43,39 @@ Filenames matching any of these patterns will not be served.
 You can also combine these two parameters, with exclusions taking priority over inclusions.
 
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
+
+## Info
+
+If the `-i|--info` flag is passed, six additional endpoints are registered.
+
+The first of these—`/html` and `/json`—return the contents of the index, in HTML and JSON formats respectively. 
+
+If `--page-length` is also set, these can be viewed in paginated form by appending `/n`, e.g. `/html/5` for the fifth page.
+
+This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
+
+The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `/available_mime_types` and `/enabled_mime_types`—return information about the registered file types.
+
+## Refresh
+
+If a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
+
+This can be used to generate a sort of slideshow of files.
+
+Minimum accepted value is 500ms, as anything lower seems to cause inconsistent behavior. This might be changed in a future release.
+
+Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
+
+## Russian
+If the `--russian` flag is passed, everything functions exactly as you would expect.
+
+That is, files will be deleted after being served. This is not a joke, you *will* lose data.
+
+This uses `os.Remove()` and checks to ensure the specified file is inside one of the paths passed to `roulette`.
+
+That said, this has not been tested to any real extent, so only pass this flag on systems you don't care about.
+
+Enjoy!
 
 ## Sorting
 
@@ -53,59 +98,6 @@ For `sort=desc`, the highest-numbered file will be served instead.
 If any other (or no) value is provided, the selected file will be random.
 
 Note: These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
-
-## Refresh
-
-If a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
-
-This can be used to generate a sort of slideshow of files.
-
-Minimum accepted value is 500ms, as anything lower seems to cause inconsistent behavior. This might be changed in a future release.
-
-Supported units are `ns`, `us`/`µs`, `ms`, `s`, `m`, and `h`.
-
-## Caching
-
-If the `-c|--cache` flag is passed, the indices of all specified paths will be cached on start.
-
-This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
-
-If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
-
-The cache can be regenerated at any time by accessing the `/clear_cache` endpoint.
-
-If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
-
-## Info
-
-If the `-i|--info` flag is passed, six additional endpoints are registered.
-
-The first of these—`/html` and `/json`—return the contents of the index, in HTML and JSON formats respectively. 
-
-If `--page-length` is also set, these can be viewed in paginated form by appending `/n`, e.g. `/html/5` for the fifth page.
-
-This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
-
-The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `/available_mime_types` and `/enabled_mime_types`—return information about the registered file types.
-
-## Statistics
-
-If the `--stats` flag is passed, an additional endpoint, `/stats`, is registered.
-
-When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served, its filesize, and timestamps of when it was served.
-
-If `--page-length` is also set, this can be viewed in paginated form by appending `/n`, e.g. `/stats/5` for the fifth page.
-
-## Russian
-If the `--russian` flag is passed, everything functions exactly as you would expect.
-
-That is, files will be deleted after being served. This is not a joke, you *will* lose data.
-
-This uses `os.Remove()` and checks to ensure the specified file is inside one of the paths passed to `roulette`.
-
-That said, this has not been tested to any real extent, so only pass this flag on systems you don't care about.
-
-Enjoy!
 
 ## Usage output
 ```
@@ -134,8 +126,6 @@ Flags:
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
       --russian                   remove selected images after serving
   -s, --sort                      enable sorting
-      --stats                     expose stats endpoint
-      --stats-file string         path to optional persistent stats file
       --text                      enable support for text files
   -v, --verbose                   log accessed files and other information to stdout
   -V, --version                   display version and exit

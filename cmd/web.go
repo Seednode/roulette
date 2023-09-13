@@ -12,14 +12,12 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -40,7 +38,7 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func serveStaticFile(paths []string, stats *serveStats, cache *fileCache) httprouter.Handle {
+func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		path := strings.TrimPrefix(r.URL.Path, sourcePrefix)
 
@@ -122,11 +120,6 @@ func serveStaticFile(paths []string, stats *serveStats, cache *fileCache) httpro
 				time.Since(startTime).Round(time.Microsecond),
 			)
 		}
-
-		if Statistics {
-			stats.incrementCounter(filePath, startTime, fileSize)
-		}
-
 	}
 }
 
@@ -368,14 +361,6 @@ func ServePage(args []string) error {
 		WriteTimeout: 5 * time.Minute,
 	}
 
-	stats := &serveStats{
-		mutex: sync.RWMutex{},
-		list:  []string{},
-		count: make(map[string]uint32),
-		size:  make(map[string]string),
-		times: make(map[string][]string),
-	}
-
 	mux.PanicHandler = serverErrorHandler()
 
 	mux.GET("/", serveRoot(paths, regexes, cache, formats))
@@ -386,7 +371,7 @@ func ServePage(args []string) error {
 
 	mux.GET(mediaPrefix+"/*media", serveMedia(paths, regexes, formats))
 
-	mux.GET(sourcePrefix+"/*static", serveStaticFile(paths, stats, cache))
+	mux.GET(sourcePrefix+"/*static", serveStaticFile(paths, cache))
 
 	mux.GET("/version", serveVersion())
 
@@ -404,33 +389,6 @@ func ServePage(args []string) error {
 
 	if Russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
-	}
-
-	if Statistics {
-		if StatisticsFile != "" {
-			StatisticsFile, err = normalizePath(StatisticsFile)
-			if err != nil {
-				return err
-			}
-
-			err := stats.importFile(StatisticsFile)
-			if err != nil {
-				return err
-			}
-
-			gracefulShutdown := make(chan os.Signal, 1)
-			signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
-
-			go func() {
-				<-gracefulShutdown
-
-				stats.exportFile(StatisticsFile)
-
-				os.Exit(0)
-			}()
-		}
-
-		registerStatsHandlers(mux, args, stats)
 	}
 
 	err = srv.ListenAndServe()

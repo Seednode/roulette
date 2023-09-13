@@ -73,15 +73,6 @@ func (splitPath *splitPath) decrement() {
 	splitPath.number = splitPath.number - 1
 }
 
-func contains(slice []string, value string) bool {
-	for _, v := range slice {
-		if v == value {
-			return true
-		}
-	}
-	return false
-}
-
 func humanReadableSize(bytes int) string {
 	const unit = 1000
 

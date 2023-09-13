@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.78.2"
+	ReleaseVersion string = "0.79.0"
 )
 
 var (
@@ -34,8 +34,6 @@ var (
 	RefreshInterval  string
 	Russian          bool
 	Sorting          bool
-	Statistics       bool
-	StatisticsFile   string
 	Text             bool
 	Verbose          bool
 	Version          bool
@@ -92,8 +90,6 @@ func init() {
 	rootCmd.Flags().StringVar(&RefreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
-	rootCmd.Flags().BoolVar(&Statistics, "stats", false, "expose stats endpoint")
-	rootCmd.Flags().StringVar(&StatisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files and other information to stdout")
 	rootCmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
