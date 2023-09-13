@@ -2,16 +2,18 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package types
+package video
 
 import (
 	"fmt"
 	"strings"
+
+	"seedno.de/seednode/roulette/types"
 )
 
-type Video struct{}
+type Format struct{}
 
-func (t Video) Css() string {
+func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -22,11 +24,11 @@ func (t Video) Css() string {
 	return css.String()
 }
 
-func (t Video) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<title>%s</title>`, fileName)
 }
 
-func (t Video) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<a href="/%s"><video controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
 		queryParams,
 		fileUri,
@@ -34,7 +36,7 @@ func (t Video) Body(queryParams, fileUri, filePath, fileName, mime string) strin
 		fileName)
 }
 
-func (t Video) Extensions() map[string]string {
+func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.mp4`:  `video/mp4`,
 		`.ogm`:  `video/ogg`,
@@ -43,7 +45,7 @@ func (t Video) Extensions() map[string]string {
 	}
 }
 
-func (t Video) MimeTypes() []string {
+func (t Format) MimeTypes() []string {
 	return []string{
 		`video/mp4`,
 		`video/ogg`,
@@ -51,6 +53,12 @@ func (t Video) MimeTypes() []string {
 	}
 }
 
-func (t Video) Validate(filePath string) bool {
+func (t Format) Validate(filePath string) bool {
 	return true
+}
+
+func init() {
+	format := Format{}
+
+	types.Register(format)
 }

@@ -78,19 +78,25 @@ The cache can be regenerated at any time by accessing the `/clear_cache` endpoin
 
 If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
-If the `-i|--index` flag is passed, four additional endpoints are registered.
+## Info
+
+If the `-i|--info` flag is passed, six additional endpoints are registered.
 
 The first of these—`/html` and `/json`—return the contents of the index, in HTML and JSON formats respectively. 
 
+If `--page-length` is also set, these can be viewed in paginated form by appending `/n`, e.g. `/html/5` for the fifth page.
+
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
-The other two endpoints—`/extensions` and `/mime_types`—return the registered file types.
+The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `/available_mime_types` and `/enabled_mime_types`—return information about the registered file types.
 
 ## Statistics
 
 If the `--stats` flag is passed, an additional endpoint, `/stats`, is registered.
 
 When accessed, this endpoint returns a JSON document listing every file served, along with the number of times it has been served, its filesize, and timestamps of when it was served.
+
+If `--page-length` is also set, this can be viewed in paginated form by appending `/n`, e.g. `/stats/5` for the fifth page.
 
 ## Russian
 If the `--russian` flag is passed, everything functions exactly as you would expect.
@@ -111,7 +117,7 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
-      --all                       enable all supported file types
+  -a, --all                       enable all supported file types
       --audio                     enable support for audio files
   -b, --bind string               address to bind to (default "0.0.0.0")
   -c, --cache                     generate directory cache at startup
@@ -120,7 +126,7 @@ Flags:
       --flash                     enable support for shockwave flash files (via ruffle.rs)
   -h, --help                      help for roulette
       --images                    enable support for image files
-  -i, --index                     expose index endpoints
+  -i, --info                      expose informational endpoints
       --maximum-files uint32      skip directories with file counts above this value (default 4294967295)
       --minimum-files uint32      skip directories with file counts below this value (default 1)
       --page-length uint32        pagination length for statistics and debug pages
@@ -133,7 +139,7 @@ Flags:
       --stats                     expose stats endpoint
       --stats-file string         path to optional persistent stats file
       --text                      enable support for text files
-  -v, --verbose                   log accessed files to stdout
+  -v, --verbose                   log accessed files and other information to stdout
   -V, --version                   display version and exit
       --video                     enable support for video files
 ```

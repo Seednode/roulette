@@ -9,7 +9,14 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
+	"strings"
 )
+
+var SupportedFormats = &Types{
+	Extensions: make(map[string]string),
+	MimeTypes:  make(map[string]Type),
+}
 
 type Type interface {
 	Css() string
@@ -73,4 +80,50 @@ func FileType(path string, registeredFormats *Types) (bool, Type, string, error)
 	}
 
 	return false, nil, "", nil
+}
+
+func Register(t Type) {
+	SupportedFormats.Add(t)
+}
+
+func (t Types) GetExtensions() string {
+	var output strings.Builder
+
+	extensions := make([]string, len(t.Extensions))
+
+	i := 0
+
+	for k := range t.Extensions {
+		extensions[i] = k
+		i++
+	}
+
+	slices.Sort(extensions)
+
+	for _, v := range extensions {
+		output.WriteString(v + "\n")
+	}
+
+	return output.String()
+}
+
+func (t Types) GetMimeTypes() string {
+	var output strings.Builder
+
+	mimeTypes := make([]string, len(t.MimeTypes))
+
+	i := 0
+
+	for k := range t.MimeTypes {
+		mimeTypes[i] = k
+		i++
+	}
+
+	slices.Sort(mimeTypes)
+
+	for _, v := range mimeTypes {
+		output.WriteString(v + "\n")
+	}
+
+	return output.String()
 }

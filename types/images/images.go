@@ -2,7 +2,7 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package types
+package images
 
 import (
 	"errors"
@@ -16,16 +16,17 @@ import (
 
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
+	"seedno.de/seednode/roulette/types"
 )
 
-type Dimensions struct {
-	Width  int
-	Height int
+type dimensions struct {
+	width  int
+	height int
 }
 
-type Images struct{}
+type Format struct{}
 
-func (t Images) Css() string {
+func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -36,7 +37,7 @@ func (t Images) Css() string {
 	return css.String()
 }
 
-func (t Images) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -44,11 +45,11 @@ func (t Images) Title(queryParams, fileUri, filePath, fileName, mime string) str
 
 	return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 		fileName,
-		dimensions.Width,
-		dimensions.Height)
+		dimensions.width,
+		dimensions.height)
 }
 
-func (t Images) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -57,13 +58,13 @@ func (t Images) Body(queryParams, fileUri, filePath, fileName, mime string) stri
 	return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 		queryParams,
 		fileUri,
-		dimensions.Width,
-		dimensions.Height,
+		dimensions.width,
+		dimensions.height,
 		mime,
 		fileName)
 }
 
-func (t Images) Extensions() map[string]string {
+func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.apng`:  `image/apng`,
 		`.avif`:  `image/avif`,
@@ -80,7 +81,7 @@ func (t Images) Extensions() map[string]string {
 	}
 }
 
-func (t Images) MimeTypes() []string {
+func (t Format) MimeTypes() []string {
 	return []string{
 		`image/apng`,
 		`image/avif`,
@@ -93,19 +94,19 @@ func (t Images) MimeTypes() []string {
 	}
 }
 
-func (t Images) Validate(filePath string) bool {
+func (t Format) Validate(filePath string) bool {
 	return true
 }
 
-func ImageDimensions(path string) (*Dimensions, error) {
+func ImageDimensions(path string) (*dimensions, error) {
 	file, err := os.Open(path)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 		fmt.Printf("File %s does not exist\n", path)
-		return &Dimensions{}, nil
+		return &dimensions{}, nil
 	case err != nil:
 		fmt.Printf("File %s open returned error: %s\n", path, err)
-		return &Dimensions{}, err
+		return &dimensions{}, err
 	}
 	defer file.Close()
 
@@ -113,11 +114,17 @@ func ImageDimensions(path string) (*Dimensions, error) {
 	switch {
 	case errors.Is(err, image.ErrFormat):
 		fmt.Printf("File %s has invalid image format\n", path)
-		return &Dimensions{Width: 0, Height: 0}, nil
+		return &dimensions{width: 0, height: 0}, nil
 	case err != nil:
 		fmt.Printf("File %s decode returned error: %s\n", path, err)
-		return &Dimensions{}, err
+		return &dimensions{}, err
 	}
 
-	return &Dimensions{Width: decodedConfig.Width, Height: decodedConfig.Height}, nil
+	return &dimensions{width: decodedConfig.Width, height: decodedConfig.Height}, nil
+}
+
+func init() {
+	format := Format{}
+
+	types.Register(format)
 }

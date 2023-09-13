@@ -2,16 +2,18 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package types
+package flash
 
 import (
 	"fmt"
 	"strings"
+
+	"seedno.de/seednode/roulette/types"
 )
 
-type Flash struct{}
+type Format struct{}
 
-func (t Flash) Css() string {
+func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -20,11 +22,11 @@ func (t Flash) Css() string {
 	return css.String()
 }
 
-func (t Flash) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<title>%s</title>`, fileName)
 }
 
-func (t Flash) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
 	var html strings.Builder
 
 	html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
@@ -33,18 +35,24 @@ func (t Flash) Body(queryParams, fileUri, filePath, fileName, mime string) strin
 	return html.String()
 }
 
-func (t Flash) Extensions() map[string]string {
+func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.swf`: `application/x-shockwave-flash`,
 	}
 }
 
-func (t Flash) MimeTypes() []string {
+func (t Format) MimeTypes() []string {
 	return []string{
 		`application/x-shockwave-flash`,
 	}
 }
 
-func (t Flash) Validate(filePath string) bool {
+func (t Format) Validate(filePath string) bool {
 	return true
+}
+
+func init() {
+	format := Format{}
+
+	types.Register(format)
 }

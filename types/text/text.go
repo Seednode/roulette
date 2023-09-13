@@ -2,7 +2,7 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package types
+package text
 
 import (
 	"errors"
@@ -10,11 +10,13 @@ import (
 	"os"
 	"strings"
 	"unicode/utf8"
+
+	"seedno.de/seednode/roulette/types"
 )
 
-type Text struct{}
+type Format struct{}
 
-func (t Text) Css() string {
+func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -25,11 +27,11 @@ func (t Text) Css() string {
 	return css.String()
 }
 
-func (t Text) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<title>%s</title>`, fileName)
 }
 
-func (t Text) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
 	body, err := os.ReadFile(filePath)
 	if err != nil {
 		body = []byte{}
@@ -40,7 +42,7 @@ func (t Text) Body(queryParams, fileUri, filePath, fileName, mime string) string
 		body)
 }
 
-func (t Text) Extensions() map[string]string {
+func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.css`:  `text/css`,
 		`.csv`:  `text/csv`,
@@ -54,7 +56,7 @@ func (t Text) Extensions() map[string]string {
 	}
 }
 
-func (t Text) MimeTypes() []string {
+func (t Format) MimeTypes() []string {
 	return []string{
 		`application/json`,
 		`application/xml`,
@@ -67,7 +69,7 @@ func (t Text) MimeTypes() []string {
 	}
 }
 
-func (t Text) Validate(filePath string) bool {
+func (t Format) Validate(filePath string) bool {
 	file, err := os.Open(filePath)
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -81,4 +83,10 @@ func (t Text) Validate(filePath string) bool {
 	file.Read(head)
 
 	return utf8.Valid(head)
+}
+
+func init() {
+	format := Format{}
+
+	types.Register(format)
 }

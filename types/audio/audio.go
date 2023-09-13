@@ -2,16 +2,18 @@
 Copyright © 2023 Seednode <seednode@seedno.de>
 */
 
-package types
+package audio
 
 import (
 	"fmt"
 	"strings"
+
+	"seedno.de/seednode/roulette/types"
 )
 
-type Audio struct{}
+type Format struct{}
 
-func (t Audio) Css() string {
+func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -20,11 +22,11 @@ func (t Audio) Css() string {
 	return css.String()
 }
 
-func (t Audio) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<title>%s</title>`, fileName)
 }
 
-func (t Audio) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
 	return fmt.Sprintf(`<a href="/%s"><audio controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the audio tag.</audio></a>`,
 		queryParams,
 		fileUri,
@@ -32,7 +34,7 @@ func (t Audio) Body(queryParams, fileUri, filePath, fileName, mime string) strin
 		fileName)
 }
 
-func (t Audio) Extensions() map[string]string {
+func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.mp3`: `audio/mpeg`,
 		`.ogg`: `audio/ogg`,
@@ -40,7 +42,7 @@ func (t Audio) Extensions() map[string]string {
 	}
 }
 
-func (t Audio) MimeTypes() []string {
+func (t Format) MimeTypes() []string {
 	return []string{
 		`application/ogg`,
 		`audio/mp3`,
@@ -51,6 +53,12 @@ func (t Audio) MimeTypes() []string {
 	}
 }
 
-func (t Audio) Validate(filePath string) bool {
+func (t Format) Validate(filePath string) bool {
 	return true
+}
+
+func init() {
+	format := Format{}
+
+	types.Register(format)
 }

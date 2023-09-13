@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.75.0"
+	ReleaseVersion string = "0.76.0"
 )
 
 var (
@@ -24,7 +24,7 @@ var (
 	Filtering        bool
 	Flash            bool
 	Images           bool
-	Index            bool
+	Info             bool
 	MaximumFileCount uint32
 	MinimumFileCount uint32
 	PageLength       uint32
@@ -46,10 +46,6 @@ var (
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if Index {
-				cmd.MarkFlagRequired("cache")
-			}
-
 			if RefreshInterval != "" {
 				interval, err := time.ParseDuration(RefreshInterval)
 				if err != nil || interval < 500*time.Millisecond {
@@ -78,7 +74,7 @@ func Execute() {
 }
 
 func init() {
-	rootCmd.Flags().BoolVar(&All, "all", false, "enable all supported file types")
+	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
@@ -86,7 +82,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
-	rootCmd.Flags().BoolVarP(&Index, "index", "i", false, "expose index endpoints")
+	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().Uint32Var(&MaximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts above this value")
 	rootCmd.Flags().Uint32Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
@@ -99,7 +95,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Statistics, "stats", false, "expose stats endpoint")
 	rootCmd.Flags().StringVar(&StatisticsFile, "stats-file", "", "path to optional persistent stats file")
 	rootCmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
-	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files to stdout")
+	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files and other information to stdout")
 	rootCmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().BoolVar(&Videos, "video", false, "enable support for video files")
 

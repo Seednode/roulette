@@ -27,6 +27,11 @@ import (
 	"github.com/julienschmidt/httprouter"
 	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
+	"seedno.de/seednode/roulette/types/audio"
+	"seedno.de/seednode/roulette/types/flash"
+	"seedno.de/seednode/roulette/types/images"
+	"seedno.de/seednode/roulette/types/text"
+	"seedno.de/seednode/roulette/types/video"
 )
 
 const (
@@ -317,25 +322,25 @@ func ServePage(args []string) error {
 	}
 
 	if Audio || All {
-		formats.Add(types.Audio{})
+		formats.Add(audio.Format{})
 	}
 
 	if Flash || All {
-		formats.Add(types.Flash{})
+		formats.Add(flash.Format{})
 	}
 
 	if Text || All {
-		formats.Add(types.Text{})
+		formats.Add(text.Format{})
 	}
 
 	if Videos || All {
-		formats.Add(types.Video{})
+		formats.Add(video.Format{})
 	}
 
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
 	if Images || All || len(formats.Extensions) == 0 {
-		formats.Add(types.Images{})
+		formats.Add(images.Format{})
 	}
 
 	paths, err := normalizePaths(args, formats)
@@ -408,20 +413,23 @@ func ServePage(args []string) error {
 		mux.GET("/clear_cache", serveCacheClear(args, index, formats))
 	}
 
-	if Index {
-		mux.GET("/html/", serveIndexHtml(args, index, false))
-		if PageLength != 0 {
-			mux.GET("/html/:page", serveIndexHtml(args, index, true))
+	if Info {
+		if Cache {
+			mux.GET("/html/", serveIndexHtml(args, index, false))
+			if PageLength != 0 {
+				mux.GET("/html/:page", serveIndexHtml(args, index, true))
+			}
+
+			mux.GET("/json", serveIndexJson(args, index))
+			if PageLength != 0 {
+				mux.GET("/json/:page", serveIndexJson(args, index))
+			}
 		}
 
-		mux.GET("/json", serveIndexJson(args, index))
-		if PageLength != 0 {
-			mux.GET("/json/:page", serveIndexJson(args, index))
-		}
-
-		mux.GET("/extensions", serveExtensions(formats))
-
-		mux.GET("/mime_types", serveMimeTypes(formats))
+		mux.GET("/available_extensions", serveAvailableExtensions())
+		mux.GET("/enabled_extensions", serveEnabledExtensions(formats))
+		mux.GET("/available_mime_types", serveAvailableMimeTypes())
+		mux.GET("/enabled_mime_types", serveEnabledMimeTypes(formats))
 	}
 
 	if Profile {
