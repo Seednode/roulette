@@ -312,7 +312,7 @@ func ServePage(args []string) error {
 	mux := httprouter.New()
 
 	formats := &types.Types{
-		Extensions: make(map[string]*types.Type),
+		Extensions: make(map[string]string),
 		MimeTypes:  make(map[string]*types.Type),
 	}
 

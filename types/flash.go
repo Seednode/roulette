@@ -30,8 +30,8 @@ func RegisterFlash() *Type {
 
 			return html.String()
 		},
-		Extensions: []string{
-			`.swf`,
+		Extensions: map[string]string{
+			`.swf`: `application/x-shockwave-flash`,
 		},
 		MimeTypes: []string{
 			`application/x-shockwave-flash`,

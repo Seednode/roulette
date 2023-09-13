@@ -29,16 +29,18 @@ func RegisterAudio() *Type {
 				mime,
 				fileName)
 		},
-		Extensions: []string{
-			`.mp3`,
-			`.ogg`,
-			`.oga`,
-			`.wav`,
+		Extensions: map[string]string{
+			`.mp3`: `audio/mpeg`,
+			`.ogg`: `audio/ogg`,
+			`.oga`: `audio/ogg`,
 		},
 		MimeTypes: []string{
+			`application/ogg`,
+			`audio/mp3`,
 			`audio/mpeg`,
+			`audio/mpeg3`,
 			`audio/ogg`,
-			`audio/wav`,
+			`audio/x-mpeg-3`,
 		},
 		Validate: func(filePath string) bool {
 			return true

@@ -272,10 +272,8 @@ func splitPath(path string, Regexes *Regexes) (*Path, error) {
 func tryExtensions(p *Path, formats *types.Types) (string, error) {
 	var fileName string
 
-	for _, format := range formats.Extensions {
-		for _, extension := range format.Extensions {
-			fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
-		}
+	for extension := range formats.Extensions {
+		fileName = fmt.Sprintf("%s%.3d%s", p.base, p.number, extension)
 
 		exists, err := fileExists(fileName)
 		if err != nil {

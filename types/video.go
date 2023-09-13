@@ -31,11 +31,11 @@ func RegisterVideos() *Type {
 				mime,
 				fileName)
 		},
-		Extensions: []string{
-			`.mp4`,
-			`.ogm`,
-			`.ogv`,
-			`.webm`,
+		Extensions: map[string]string{
+			`.mp4`:  `video/mp4`,
+			`.ogm`:  `video/ogg`,
+			`.ogv`:  `video/ogg`,
+			`.webm`: `video/webm`,
 		},
 		MimeTypes: []string{
 			`video/mp4`,

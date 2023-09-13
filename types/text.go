@@ -36,15 +36,15 @@ func RegisterText() *Type {
 				queryParams,
 				body)
 		},
-		Extensions: []string{
-			`.css`,
-			`.csv`,
-			`.html`,
-			`.js`,
-			`.json`,
-			`.md`,
-			`.txt`,
-			`.xml`,
+		Extensions: map[string]string{
+			`.css`:  `text/css`,
+			`.csv`:  `text/csv`,
+			`.html`: `text/html`,
+			`.js`:   `text/javascript`,
+			`.json`: `application/json`,
+			`.md`:   `text/markdown`,
+			`.txt`:  `text/plain`,
+			`.xml`:  `application/xml`,
 		},
 		MimeTypes: []string{
 			`application/json`,

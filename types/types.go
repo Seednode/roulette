@@ -15,21 +15,21 @@ type Type struct {
 	Css        func() string
 	Title      func(queryParams, fileUri, filePath, fileName, mime string) string
 	Body       func(queryParams, fileUri, filePath, fileName, mime string) string
-	Extensions []string
+	Extensions map[string]string
 	MimeTypes  []string
 	Validate   func(filePath string) bool
 }
 
 type Types struct {
-	Extensions map[string]*Type
+	Extensions map[string]string
 	MimeTypes  map[string]*Type
 }
 
 func (s *Types) Add(t *Type) {
-	for _, v := range t.Extensions {
-		_, exists := s.Extensions[v]
+	for k, v := range t.Extensions {
+		_, exists := s.Extensions[k]
 		if !exists {
-			s.Extensions[v] = t
+			s.Extensions[k] = v
 		}
 	}
 
@@ -63,9 +63,13 @@ func FileType(path string, registeredFormats *Types) (bool, *Type, string, error
 	}
 
 	// if mime type detection fails, use the file extension
-	fileType, exists = registeredFormats.Extensions[filepath.Ext(path)]
+	mimeType, exists = registeredFormats.Extensions[filepath.Ext(path)]
 	if exists {
-		return fileType.Validate(path), fileType, mimeType, nil
+		fileType, exists := registeredFormats.MimeTypes[mimeType]
+
+		if exists {
+			return fileType.Validate(path), fileType, mimeType, nil
+		}
 	}
 
 	return false, nil, "", nil
