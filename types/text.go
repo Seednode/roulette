@@ -19,7 +19,8 @@ func RegisterText() *Type {
 
 			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
 			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;overflow:hidden;}`)
-			css.WriteString(`textarea{border:none;caret-color:transparent;outline:none;margin:0 .5rem 0 .5rem;height:100%;width:99%;overflow:auto;}`)
+			css.WriteString(`textarea{border:none;caret-color:transparent;outline:none;margin:.5rem;`)
+			css.WriteString(`height:99%;width:99%;white-space:pre;overflow:auto;}`)
 
 			return css.String()
 		},
