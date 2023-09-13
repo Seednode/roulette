@@ -271,3 +271,22 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 		}
 	}
 }
+
+func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) {
+	if Cache {
+		mux.GET("/html/", serveIndexHtml(args, cache, false))
+		if PageLength != 0 {
+			mux.GET("/html/:page", serveIndexHtml(args, cache, true))
+		}
+
+		mux.GET("/json", serveIndexJson(args, cache))
+		if PageLength != 0 {
+			mux.GET("/json/:page", serveIndexJson(args, cache))
+		}
+	}
+
+	mux.GET("/available_extensions", serveAvailableExtensions())
+	mux.GET("/enabled_extensions", serveEnabledExtensions(formats))
+	mux.GET("/available_mime_types", serveAvailableMimeTypes())
+	mux.GET("/enabled_mime_types", serveEnabledMimeTypes(formats))
+}

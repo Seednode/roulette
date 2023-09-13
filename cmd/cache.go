@@ -137,3 +137,20 @@ func serveCacheClear(args []string, cache *fileCache, formats *types.Types) http
 		w.Write([]byte("Ok"))
 	}
 }
+
+func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) {
+	skipIndex := false
+
+	if CacheFile != "" {
+		err := cache.Import(CacheFile)
+		if err == nil {
+			skipIndex = true
+		}
+	}
+
+	if !skipIndex {
+		cache.generate(args, formats)
+	}
+
+	mux.GET("/clear_cache", serveCacheClear(args, cache, formats))
+}

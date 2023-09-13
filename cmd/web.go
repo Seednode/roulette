@@ -12,17 +12,13 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
-
-	"net/http/pprof"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/yosssi/gohtml"
@@ -42,7 +38,7 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func serveStaticFile(paths []string, stats *ServeStats, cache *fileCache) httprouter.Handle {
+func serveStaticFile(paths []string, stats *serveStats, cache *fileCache) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		path := strings.TrimPrefix(r.URL.Path, sourcePrefix)
 
@@ -314,8 +310,6 @@ func ServePage(args []string) error {
 		return errors.New("invalid bind address provided")
 	}
 
-	mux := httprouter.New()
-
 	formats := &types.Types{
 		Extensions: make(map[string]string),
 		MimeTypes:  make(map[string]types.Type),
@@ -352,10 +346,6 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
-	if Russian {
-		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
-	}
-
 	cache := &fileCache{
 		mutex: sync.RWMutex{},
 		list:  []string{},
@@ -366,6 +356,8 @@ func ServePage(args []string) error {
 		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
 
+	mux := httprouter.New()
+
 	srv := &http.Server{
 		Addr:         net.JoinHostPort(Bind, strconv.Itoa(int(Port))),
 		Handler:      mux,
@@ -374,7 +366,7 @@ func ServePage(args []string) error {
 		WriteTimeout: 5 * time.Minute,
 	}
 
-	stats := &ServeStats{
+	stats := &serveStats{
 		mutex: sync.RWMutex{},
 		list:  []string{},
 		count: make(map[string]uint32),
@@ -397,69 +389,23 @@ func ServePage(args []string) error {
 	mux.GET("/version", serveVersion())
 
 	if Cache {
-		skipIndex := false
-
-		if CacheFile != "" {
-			err := cache.Import(CacheFile)
-			if err == nil {
-				skipIndex = true
-			}
-		}
-
-		if !skipIndex {
-			cache.generate(args, formats)
-		}
-
-		mux.GET("/clear_cache", serveCacheClear(args, cache, formats))
+		registerCacheHandlers(mux, args, cache, formats)
 	}
 
 	if Info {
-		if Cache {
-			mux.GET("/html/", serveIndexHtml(args, cache, false))
-			if PageLength != 0 {
-				mux.GET("/html/:page", serveIndexHtml(args, cache, true))
-			}
-
-			mux.GET("/json", serveIndexJson(args, cache))
-			if PageLength != 0 {
-				mux.GET("/json/:page", serveIndexJson(args, cache))
-			}
-		}
-
-		mux.GET("/available_extensions", serveAvailableExtensions())
-		mux.GET("/enabled_extensions", serveEnabledExtensions(formats))
-		mux.GET("/available_mime_types", serveAvailableMimeTypes())
-		mux.GET("/enabled_mime_types", serveEnabledMimeTypes(formats))
+		registerInfoHandlers(mux, args, cache, formats)
 	}
 
 	if Profile {
-		mux.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
-		mux.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
-		mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
-		mux.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
-		mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
+		registerProfileHandlers(mux)
+	}
+
+	if Russian {
+		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
 	if Statistics {
-		if StatisticsFile != "" {
-			stats.Import(StatisticsFile)
-
-			gracefulShutdown := make(chan os.Signal, 1)
-			signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
-
-			go func() {
-				<-gracefulShutdown
-
-				stats.Export(StatisticsFile)
-
-				os.Exit(0)
-			}()
-		}
-
-		mux.GET("/stats", serveStats(args, stats))
-		if PageLength != 0 {
-			mux.GET("/stats/:page", serveStats(args, stats))
-		}
+		registerStatsHandlers(mux, args, stats)
 	}
 
 	err = srv.ListenAndServe()

@@ -10,17 +10,19 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 )
 
-type ServeStats struct {
+type serveStats struct {
 	mutex sync.RWMutex
 	list  []string
 	count map[string]uint32
@@ -28,85 +30,90 @@ type ServeStats struct {
 	times map[string][]string
 }
 
-type exportedServeStats struct {
+type publicServeStats struct {
 	List  []string
 	Count map[string]uint32
 	Size  map[string]string
 	Times map[string][]string
 }
 
-func (s *ServeStats) incrementCounter(file string, timestamp time.Time, filesize string) {
-	s.mutex.Lock()
-
-	s.count[file]++
-
-	s.times[file] = append(s.times[file], timestamp.Format(logDate))
-
-	_, exists := s.size[file]
-	if !exists {
-		s.size[file] = filesize
-	}
-
-	if !contains(s.list, file) {
-		s.list = append(s.list, file)
-	}
-
-	s.mutex.Unlock()
+type timesServed struct {
+	File   string
+	Served uint32
+	Size   string
+	Times  []string
 }
 
-func (s *ServeStats) toExported() *exportedServeStats {
-	stats := &exportedServeStats{
-		List:  make([]string, len(s.list)),
-		Count: make(map[string]uint32),
-		Size:  make(map[string]string),
-		Times: make(map[string][]string),
+func (stats *serveStats) incrementCounter(file string, timestamp time.Time, filesize string) {
+	stats.mutex.Lock()
+
+	stats.count[file]++
+
+	stats.times[file] = append(stats.times[file], timestamp.Format(logDate))
+
+	_, exists := stats.size[file]
+	if !exists {
+		stats.size[file] = filesize
 	}
 
-	s.mutex.RLock()
+	if !contains(stats.list, file) {
+		stats.list = append(stats.list, file)
+	}
 
-	copy(stats.List, s.list)
+	stats.mutex.Unlock()
+}
 
-	for k, v := range s.count {
+func (stats *serveStats) Import(source *publicServeStats) {
+	stats.mutex.Lock()
+
+	copy(stats.list, source.List)
+
+	for k, v := range source.Count {
+		stats.count[k] = v
+	}
+
+	for k, v := range source.Size {
+		stats.size[k] = v
+	}
+
+	for k, v := range source.Times {
+		stats.times[k] = v
+	}
+
+	stats.mutex.Unlock()
+}
+
+func (source *serveStats) Export() *publicServeStats {
+	stats := &publicServeStats{
+		List:  make([]string, len(source.list)),
+		Count: make(map[string]uint32, len(source.count)),
+		Size:  make(map[string]string, len(source.size)),
+		Times: make(map[string][]string, len(source.times)),
+	}
+
+	source.mutex.RLock()
+
+	copy(stats.List, source.list)
+
+	for k, v := range source.count {
 		stats.Count[k] = v
 	}
 
-	for k, v := range s.size {
+	for k, v := range source.size {
 		stats.Size[k] = v
 	}
 
-	for k, v := range s.times {
+	for k, v := range source.times {
 		stats.Times[k] = v
 	}
 
-	s.mutex.RUnlock()
+	source.mutex.RUnlock()
 
 	return stats
 }
 
-func (s *ServeStats) toImported(stats *exportedServeStats) {
-	s.mutex.Lock()
-
-	s.list = make([]string, len(stats.List))
-
-	copy(s.list, stats.List)
-
-	for k, v := range stats.Count {
-		s.count[k] = v
-	}
-
-	for k, v := range stats.Size {
-		s.size[k] = v
-	}
-
-	for k, v := range stats.Times {
-		s.times[k] = v
-	}
-
-	s.mutex.Unlock()
-}
-
-func (s *ServeStats) ListFiles(page int) ([]byte, error) {
-	stats := s.toExported()
+func (source *serveStats) listFiles(page int) ([]byte, error) {
+	stats := source.Export()
 
 	sort.SliceStable(stats.List, func(p, q int) bool {
 		return strings.ToLower(stats.List[p]) < strings.ToLower(stats.List[q])
@@ -116,7 +123,7 @@ func (s *ServeStats) ListFiles(page int) ([]byte, error) {
 
 	if page == -1 {
 		startIndex = 0
-		stopIndex = len(stats.List) - 1
+		stopIndex = len(stats.List)
 	} else {
 		startIndex = ((page - 1) * int(PageLength))
 		stopIndex = (startIndex + int(PageLength))
@@ -126,11 +133,11 @@ func (s *ServeStats) ListFiles(page int) ([]byte, error) {
 		return []byte("{}"), nil
 	}
 
-	if stopIndex > len(stats.List)-1 {
-		stopIndex = len(stats.List) - 1
+	if stopIndex > len(stats.List) {
+		stopIndex = len(stats.List)
 	}
 
-	a := make([]timesServed, stopIndex-startIndex)
+	a := make([]timesServed, (stopIndex - startIndex))
 
 	for k, v := range stats.List[startIndex:stopIndex] {
 		a[k] = timesServed{v, stats.Count[v], stats.Size[v], stats.Times[v]}
@@ -144,7 +151,7 @@ func (s *ServeStats) ListFiles(page int) ([]byte, error) {
 	return r, nil
 }
 
-func (s *ServeStats) Export(path string) error {
+func (stats *serveStats) ExportFile(path string) error {
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
@@ -159,9 +166,7 @@ func (s *ServeStats) Export(path string) error {
 
 	enc := gob.NewEncoder(z)
 
-	stats := s.toExported()
-
-	err = enc.Encode(&stats)
+	err = enc.Encode(stats.Export())
 	if err != nil {
 		return err
 	}
@@ -169,7 +174,7 @@ func (s *ServeStats) Export(path string) error {
 	return nil
 }
 
-func (s *ServeStats) Import(path string) error {
+func (stats *serveStats) ImportFile(path string) error {
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		return err
@@ -184,33 +189,25 @@ func (s *ServeStats) Import(path string) error {
 
 	dec := gob.NewDecoder(z)
 
-	stats := &exportedServeStats{
+	source := &publicServeStats{
 		List:  []string{},
 		Count: make(map[string]uint32),
 		Size:  make(map[string]string),
 		Times: make(map[string][]string),
 	}
 
-	err = dec.Decode(stats)
+	err = dec.Decode(source)
 	if err != nil {
 		return err
 	}
 
-	s.toImported(stats)
+	stats.Import(source)
 
 	return nil
 }
 
-type timesServed struct {
-	File   string
-	Served uint32
-	Size   string
-	Times  []string
-}
-
-func serveStats(args []string, stats *ServeStats) httprouter.Handle {
+func serveStatsPage(args []string, stats *serveStats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-
 		startTime := time.Now()
 
 		page, err := strconv.Atoi(p.ByName("page"))
@@ -218,7 +215,7 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 			page = -1
 		}
 
-		response, err := stats.ListFiles(page)
+		response, err := stats.listFiles(page)
 		if err != nil {
 			fmt.Println(err)
 
@@ -241,7 +238,29 @@ func serveStats(args []string, stats *ServeStats) httprouter.Handle {
 		}
 
 		if StatisticsFile != "" {
-			stats.Export(StatisticsFile)
+			stats.ExportFile(StatisticsFile)
+		}
+	}
+}
+
+func registerStatsHandlers(mux *httprouter.Router, args []string, stats *serveStats) {
+	if StatisticsFile != "" {
+		stats.ImportFile(StatisticsFile)
+
+		gracefulShutdown := make(chan os.Signal, 1)
+		signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
+
+		go func() {
+			<-gracefulShutdown
+
+			stats.ExportFile(StatisticsFile)
+
+			os.Exit(0)
+		}()
+
+		mux.GET("/stats", serveStatsPage(args, stats))
+		if PageLength != 0 {
+			mux.GET("/stats/:page", serveStatsPage(args, stats))
 		}
 	}
 }
