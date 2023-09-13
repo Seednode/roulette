@@ -313,27 +313,27 @@ func ServePage(args []string) error {
 
 	formats := &types.Types{
 		Extensions: make(map[string]string),
-		MimeTypes:  make(map[string]*types.Type),
+		MimeTypes:  make(map[string]types.Type),
 	}
 
 	if Audio || All {
-		formats.Add(types.RegisterAudio())
+		formats.Add(types.Audio{})
 	}
 
 	if Flash || All {
-		formats.Add(types.RegisterFlash())
+		formats.Add(types.Flash{})
 	}
 
 	if Images || All {
-		formats.Add(types.RegisterImages())
+		formats.Add(types.Images{})
 	}
 
 	if Text || All {
-		formats.Add(types.RegisterText())
+		formats.Add(types.Text{})
 	}
 
 	if Videos || All {
-		formats.Add(types.RegisterVideos())
+		formats.Add(types.Video{})
 	}
 
 	paths, err := normalizePaths(args, formats)

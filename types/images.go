@@ -23,71 +23,78 @@ type Dimensions struct {
 	Height int
 }
 
-func RegisterImages() *Type {
-	return &Type{
-		Css: func() string {
-			var css strings.Builder
+type Images struct{}
 
-			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
-			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
-			css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
-			css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
+func (t Images) Css() string {
+	var css strings.Builder
 
-			return css.String()
-		},
-		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
-			dimensions, err := ImageDimensions(filePath)
-			if err != nil {
-				fmt.Println(err)
-			}
+	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
+	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
+	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
 
-			return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
-				fileName,
-				dimensions.Width,
-				dimensions.Height)
-		},
-		Body: func(queryParams, fileUri, filePath, fileName, mime string) string {
-			dimensions, err := ImageDimensions(filePath)
-			if err != nil {
-				fmt.Println(err)
-			}
+	return css.String()
+}
 
-			return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
-				queryParams,
-				fileUri,
-				dimensions.Width,
-				dimensions.Height,
-				mime,
-				fileName)
-		},
-		Extensions: map[string]string{
-			`.apng`:  `image/apng`,
-			`.avif`:  `image/avif`,
-			`.bmp`:   `image/bmp`,
-			`.gif`:   `image/gif`,
-			`.jpg`:   `image/jpeg`,
-			`.jpeg`:  `image/jpeg`,
-			`.jfif`:  `image/jpeg`,
-			`.pjp`:   `image/jpeg`,
-			`.pjpeg`: `image/jpeg`,
-			`.png`:   `image/png`,
-			`.svg`:   `image/svg+xml`,
-			`.webp`:  `image/webp`,
-		},
-		MimeTypes: []string{
-			`image/apng`,
-			`image/avif`,
-			`image/bmp`,
-			`image/gif`,
-			`image/jpeg`,
-			`image/png`,
-			`image/svg+xml`,
-			`image/webp`,
-		},
-		Validate: func(filePath string) bool {
-			return true
-		},
+func (t Images) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+	dimensions, err := ImageDimensions(filePath)
+	if err != nil {
+		fmt.Println(err)
 	}
+
+	return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
+		fileName,
+		dimensions.Width,
+		dimensions.Height)
+}
+
+func (t Images) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+	dimensions, err := ImageDimensions(filePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+		queryParams,
+		fileUri,
+		dimensions.Width,
+		dimensions.Height,
+		mime,
+		fileName)
+}
+
+func (t Images) Extensions() map[string]string {
+	return map[string]string{
+		`.apng`:  `image/apng`,
+		`.avif`:  `image/avif`,
+		`.bmp`:   `image/bmp`,
+		`.gif`:   `image/gif`,
+		`.jpg`:   `image/jpeg`,
+		`.jpeg`:  `image/jpeg`,
+		`.jfif`:  `image/jpeg`,
+		`.pjp`:   `image/jpeg`,
+		`.pjpeg`: `image/jpeg`,
+		`.png`:   `image/png`,
+		`.svg`:   `image/svg+xml`,
+		`.webp`:  `image/webp`,
+	}
+}
+
+func (t Images) MimeTypes() []string {
+	return []string{
+		`image/apng`,
+		`image/avif`,
+		`image/bmp`,
+		`image/gif`,
+		`image/jpeg`,
+		`image/png`,
+		`image/svg+xml`,
+		`image/webp`,
+	}
+}
+
+func (t Images) Validate(filePath string) bool {
+	return true
 }
 
 func ImageDimensions(path string) (*Dimensions, error) {

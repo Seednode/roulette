@@ -9,35 +9,42 @@ import (
 	"strings"
 )
 
-func RegisterFlash() *Type {
-	return &Type{
-		Css: func() string {
-			var css strings.Builder
+type Flash struct{}
 
-			css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
-			css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+func (t Flash) Css() string {
+	var css strings.Builder
 
-			return css.String()
-		},
-		Title: func(queryParams, fileUri, filePath, fileName, mime string) string {
-			return fmt.Sprintf(`<title>%s</title>`, fileName)
-		},
-		Body: func(queryParams, fileUri, filePath, fileName, mime string) string {
-			var html strings.Builder
+	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
+	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
 
-			html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
-			html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '/%s';">Next</button>`, queryParams))
+	return css.String()
+}
 
-			return html.String()
-		},
-		Extensions: map[string]string{
-			`.swf`: `application/x-shockwave-flash`,
-		},
-		MimeTypes: []string{
-			`application/x-shockwave-flash`,
-		},
-		Validate: func(filePath string) bool {
-			return true
-		},
+func (t Flash) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+	return fmt.Sprintf(`<title>%s</title>`, fileName)
+}
+
+func (t Flash) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+	var html strings.Builder
+
+	html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
+	html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '/%s';">Next</button>`, queryParams))
+
+	return html.String()
+}
+
+func (t Flash) Extensions() map[string]string {
+	return map[string]string{
+		`.swf`: `application/x-shockwave-flash`,
 	}
+}
+
+func (t Flash) MimeTypes() []string {
+	return []string{
+		`application/x-shockwave-flash`,
+	}
+}
+
+func (t Flash) Validate(filePath string) bool {
+	return true
 }
