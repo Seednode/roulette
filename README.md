@@ -78,9 +78,13 @@ The cache can be regenerated at any time by accessing the `/clear_cache` endpoin
 
 If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
-If the `-i|--index` flag is passed, two additional endpoints—`/html` and `/json`—are registered.
+If the `-i|--index` flag is passed, four additional endpoints are registered.
 
-When accessed, these endpoints return the contents of the index, in HTML and JSON formats respectively. This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
+The first of these—`/html` and `/json`—return the contents of the index, in HTML and JSON formats respectively. 
+
+This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
+
+The other two endpoints—`/extensions` and `/mime_types`—return the registered file types.
 
 ## Statistics
 

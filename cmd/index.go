@@ -11,6 +11,7 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -308,6 +309,82 @@ func serveIndexJson(args []string, index *FileIndex) httprouter.Handle {
 
 		if Verbose {
 			fmt.Printf("%s | Served JSON index page (%s) to %s in %s\n",
+				startTime.Format(LogDate),
+				humanReadableSize(len(response)),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
+
+func serveExtensions(formats *types.Types) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "text/plain")
+
+		startTime := time.Now()
+
+		var output strings.Builder
+
+		extensions := make([]string, len(formats.Extensions))
+
+		i := 0
+
+		for k := range formats.Extensions {
+			extensions[i] = k
+			i++
+		}
+
+		slices.Sort(extensions)
+
+		for _, v := range extensions {
+			output.WriteString(v + "\n")
+		}
+
+		response := []byte(output.String())
+
+		w.Write(response)
+
+		if Verbose {
+			fmt.Printf("%s | Served registered extensions list (%s) to %s in %s\n",
+				startTime.Format(LogDate),
+				humanReadableSize(len(response)),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
+
+func serveMimeTypes(formats *types.Types) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Set("Content-Type", "text/plain")
+
+		startTime := time.Now()
+
+		var output strings.Builder
+
+		mimeTypes := make([]string, len(formats.MimeTypes))
+
+		i := 0
+
+		for k := range formats.MimeTypes {
+			mimeTypes[i] = k
+			i++
+		}
+
+		slices.Sort(mimeTypes)
+
+		for _, v := range mimeTypes {
+			output.WriteString(v + "\n")
+		}
+
+		response := []byte(output.String())
+
+		w.Write(response)
+
+		if Verbose {
+			fmt.Printf("%s | Served registered MIME types list (%s) to %s in %s\n",
 				startTime.Format(LogDate),
 				humanReadableSize(len(response)),
 				realIP(r),

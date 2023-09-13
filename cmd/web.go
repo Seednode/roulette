@@ -324,16 +324,18 @@ func ServePage(args []string) error {
 		formats.Add(types.Flash{})
 	}
 
-	if Images || All {
-		formats.Add(types.Images{})
-	}
-
 	if Text || All {
 		formats.Add(types.Text{})
 	}
 
 	if Videos || All {
 		formats.Add(types.Video{})
+	}
+
+	// enable image support if no other flags are passed, to retain backwards compatibility
+	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
+	if Images || All || len(formats.Extensions) == 0 {
+		formats.Add(types.Images{})
 	}
 
 	paths, err := normalizePaths(args, formats)
@@ -416,6 +418,10 @@ func ServePage(args []string) error {
 		if PageLength != 0 {
 			mux.GET("/json/:page", serveIndexJson(args, index))
 		}
+
+		mux.GET("/extensions", serveExtensions(formats))
+
+		mux.GET("/mime_types", serveMimeTypes(formats))
 	}
 
 	if Profile {

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.74.0"
+	ReleaseVersion string = "0.75.0"
 )
 
 var (
@@ -46,12 +46,6 @@ var (
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			// enable image support if no other flags are passed, to retain backwards compatibility
-			// to be replaced with MarkFlagsOneRequired on next spf13/cobra update
-			if !(All || Audio || Flash || Images || Text || Videos) {
-				Images = true
-			}
-
 			if Index {
 				cmd.MarkFlagRequired("cache")
 			}

@@ -44,6 +44,7 @@ func (t Text) Extensions() map[string]string {
 	return map[string]string{
 		`.css`:  `text/css`,
 		`.csv`:  `text/csv`,
+		`.htm`:  `text/html`,
 		`.html`: `text/html`,
 		`.js`:   `text/javascript`,
 		`.json`: `application/json`,
@@ -59,6 +60,7 @@ func (t Text) MimeTypes() []string {
 		`application/xml`,
 		`text/css`,
 		`text/csv`,
+		`text/html`,
 		`text/javascript`,
 		`text/plain`,
 		`text/plain; charset=utf-8`,
