@@ -8,8 +8,6 @@ A new file will be selected if you open `/` directly, or if you click on any dis
 
 Browser history is preserved, so you can always go back to any previously displayed media.
 
-Supported file types and extensions are listed in the corresponding source files in `formats/`.
-
 Feature requests, code criticism, bug reports, general chit-chat, and unrelated angst accepted at `roulette@seedno.de`.
 
 Static binary builds available [here](https://cdn.seedno.de/builds/roulette).
