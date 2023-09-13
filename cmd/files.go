@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"os/user"
 	"regexp"
 
 	"crypto/rand"
@@ -603,7 +604,18 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 }
 
 func normalizePath(path string) (string, error) {
-	path, err := filepath.EvalSymlinks(path)
+	usr, err := user.Current()
+	if err != nil {
+		return "", err
+	}
+
+	if path == "~" {
+		path = usr.HomeDir
+	} else if strings.HasPrefix(path, "~/") {
+		path = filepath.Join(usr.HomeDir, path[2:])
+	}
+
+	path, err = filepath.EvalSymlinks(path)
 	if err != nil {
 		return "", err
 	}

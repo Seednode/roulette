@@ -12,12 +12,14 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -405,6 +407,29 @@ func ServePage(args []string) error {
 	}
 
 	if Statistics {
+		if StatisticsFile != "" {
+			StatisticsFile, err = normalizePath(StatisticsFile)
+			if err != nil {
+				return err
+			}
+
+			err := stats.importFile(StatisticsFile)
+			if err != nil {
+				return err
+			}
+
+			gracefulShutdown := make(chan os.Signal, 1)
+			signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
+
+			go func() {
+				<-gracefulShutdown
+
+				stats.exportFile(StatisticsFile)
+
+				os.Exit(0)
+			}()
+		}
+
 		registerStatsHandlers(mux, args, stats)
 	}
 

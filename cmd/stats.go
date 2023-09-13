@@ -10,12 +10,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"os/signal"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -69,14 +67,18 @@ func (stats *serveStats) Import(source *publicServeStats) {
 	copy(stats.list, source.List)
 
 	for k, v := range source.Count {
+		fmt.Printf("Setting count[%s] to %d\n", k, v)
 		stats.count[k] = v
 	}
 
 	for k, v := range source.Size {
+		fmt.Printf("Setting size[%s] to %v\n", k, v)
+
 		stats.size[k] = v
 	}
 
 	for k, v := range source.Times {
+		fmt.Printf("Setting times[%s] to %v\n", k, v)
 		stats.times[k] = v
 	}
 
@@ -84,14 +86,14 @@ func (stats *serveStats) Import(source *publicServeStats) {
 }
 
 func (source *serveStats) Export() *publicServeStats {
+	source.mutex.RLock()
+
 	stats := &publicServeStats{
 		List:  make([]string, len(source.list)),
 		Count: make(map[string]uint32, len(source.count)),
 		Size:  make(map[string]string, len(source.size)),
 		Times: make(map[string][]string, len(source.times)),
 	}
-
-	source.mutex.RLock()
 
 	copy(stats.List, source.list)
 
@@ -110,6 +112,61 @@ func (source *serveStats) Export() *publicServeStats {
 	source.mutex.RUnlock()
 
 	return stats
+}
+
+func (stats *serveStats) exportFile(path string) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	z, err := zstd.NewWriter(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	enc := gob.NewEncoder(z)
+
+	err = enc.Encode(stats.Export())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (stats *serveStats) importFile(path string) error {
+	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	z, err := zstd.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer z.Close()
+
+	dec := gob.NewDecoder(z)
+
+	source := &publicServeStats{
+		List:  []string{},
+		Count: make(map[string]uint32),
+		Size:  make(map[string]string),
+		Times: make(map[string][]string),
+	}
+
+	err = dec.Decode(source)
+	if err != nil {
+		return err
+	}
+
+	stats.Import(source)
+
+	return nil
 }
 
 func (source *serveStats) listFiles(page int) ([]byte, error) {
@@ -151,61 +208,6 @@ func (source *serveStats) listFiles(page int) ([]byte, error) {
 	return r, nil
 }
 
-func (stats *serveStats) ExportFile(path string) error {
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	z, err := zstd.NewWriter(file)
-	if err != nil {
-		return err
-	}
-	defer z.Close()
-
-	enc := gob.NewEncoder(z)
-
-	err = enc.Encode(stats.Export())
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (stats *serveStats) ImportFile(path string) error {
-	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	z, err := zstd.NewReader(file)
-	if err != nil {
-		return err
-	}
-	defer z.Close()
-
-	dec := gob.NewDecoder(z)
-
-	source := &publicServeStats{
-		List:  []string{},
-		Count: make(map[string]uint32),
-		Size:  make(map[string]string),
-		Times: make(map[string][]string),
-	}
-
-	err = dec.Decode(source)
-	if err != nil {
-		return err
-	}
-
-	stats.Import(source)
-
-	return nil
-}
-
 func serveStatsPage(args []string, stats *serveStats) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
@@ -238,29 +240,14 @@ func serveStatsPage(args []string, stats *serveStats) httprouter.Handle {
 		}
 
 		if StatisticsFile != "" {
-			stats.ExportFile(StatisticsFile)
+			stats.exportFile(StatisticsFile)
 		}
 	}
 }
 
 func registerStatsHandlers(mux *httprouter.Router, args []string, stats *serveStats) {
-	if StatisticsFile != "" {
-		stats.ImportFile(StatisticsFile)
-
-		gracefulShutdown := make(chan os.Signal, 1)
-		signal.Notify(gracefulShutdown, syscall.SIGINT, syscall.SIGTERM)
-
-		go func() {
-			<-gracefulShutdown
-
-			stats.ExportFile(StatisticsFile)
-
-			os.Exit(0)
-		}()
-
-		mux.GET("/stats", serveStatsPage(args, stats))
-		if PageLength != 0 {
-			mux.GET("/stats/:page", serveStatsPage(args, stats))
-		}
+	mux.GET("/stats", serveStatsPage(args, stats))
+	if PageLength != 0 {
+		mux.GET("/stats/:page", serveStatsPage(args, stats))
 	}
 }
