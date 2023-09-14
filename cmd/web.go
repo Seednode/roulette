@@ -24,6 +24,7 @@ import (
 	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
 	"seedno.de/seednode/roulette/types/audio"
+	"seedno.de/seednode/roulette/types/code"
 	"seedno.de/seednode/roulette/types/flash"
 	"seedno.de/seednode/roulette/types/images"
 	"seedno.de/seednode/roulette/types/text"
@@ -228,20 +229,20 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 			return
 		}
 
-		registered, fileType, mimeType, err := formats.FileType(path)
-		if err != nil {
-			fmt.Println(err)
-
+		format := formats.FileType(path)
+		if format == nil {
 			serverError(w, r, nil)
 
 			return
 		}
 
-		if !registered {
+		if !format.Validate(path) {
 			notFound(w, r, path)
 
 			return
 		}
+
+		mimeType := format.MimeType(path)
 
 		fileUri := Prefix + generateFileUri(path)
 
@@ -256,15 +257,15 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(faviconHtml)
-		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, fileType.Css()))
-		htmlBody.WriteString((fileType.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
+		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.Css()))
+		htmlBody.WriteString((format.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '%s';}, %d);};</script>",
 				rootUrl,
 				refreshTimer))
 		}
-		htmlBody.WriteString((fileType.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
+		htmlBody.WriteString((format.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -328,12 +329,15 @@ func ServePage(args []string) error {
 	}
 
 	formats := &types.Types{
-		Extensions: make(map[string]string),
-		MimeTypes:  make(map[string]types.Type),
+		Extensions: make(map[string]types.Type),
 	}
 
 	if Audio || All {
 		formats.Add(audio.New())
+	}
+
+	if Code || All {
+		formats.Add(code.New())
 	}
 
 	if Flash || All {

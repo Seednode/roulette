@@ -112,6 +112,7 @@ Flags:
   -b, --bind string            address to bind to (default "0.0.0.0")
   -c, --cache                  generate directory cache at startup
       --cache-file string      path to optional persistent cache file
+      --code                   enable support for source code files
   -f, --filter                 enable filtering
       --flash                  enable support for shockwave flash files (via ruffle.rs)
       --handlers               display registered handlers (for debugging)

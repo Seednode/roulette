@@ -42,15 +42,15 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeTypes() []string {
-	return []string{
-		`application/ogg`,
-		`audio/mp3`,
-		`audio/mpeg`,
-		`audio/mpeg3`,
-		`audio/ogg`,
-		`audio/x-mpeg-3`,
+func (t Format) MimeType(extension string) string {
+	extensions := t.Extensions()
+
+	value, exists := extensions[extension]
+	if exists {
+		return value
 	}
+
+	return ""
 }
 
 func (t Format) Validate(filePath string) bool {

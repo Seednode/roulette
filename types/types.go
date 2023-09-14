@@ -5,17 +5,13 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package types
 
 import (
-	"errors"
-	"net/http"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
 )
 
 var SupportedFormats = &Types{
-	Extensions: make(map[string]string),
-	MimeTypes:  make(map[string]Type),
+	Extensions: make(map[string]Type),
 }
 
 type Type interface {
@@ -23,63 +19,30 @@ type Type interface {
 	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string
 	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string
 	Extensions() map[string]string
-	MimeTypes() []string
+	MimeType(string) string
 	Validate(filePath string) bool
 }
 
 type Types struct {
-	Extensions map[string]string
-	MimeTypes  map[string]Type
+	Extensions map[string]Type
 }
 
 func (t *Types) Add(format Type) {
-	for k, v := range format.Extensions() {
+	for k := range format.Extensions() {
 		_, exists := t.Extensions[k]
 		if !exists {
-			t.Extensions[k] = v
-		}
-	}
-
-	for _, v := range format.MimeTypes() {
-		_, exists := t.Extensions[v]
-		if !exists {
-			t.MimeTypes[v] = format
+			t.Extensions[k] = format
 		}
 	}
 }
 
-func (t *Types) FileType(path string) (bool, Type, string, error) {
-	file, err := os.Open(path)
-	switch {
-	case errors.Is(err, os.ErrNotExist):
-		return false, nil, "", nil
-	case err != nil:
-		return false, nil, "", err
-	}
-	defer file.Close()
-
-	head := make([]byte, 512)
-	file.Read(head)
-
-	mimeType := http.DetectContentType(head)
-
-	// try identifying files by mime types first
-	fileType, exists := t.MimeTypes[mimeType]
+func (t *Types) FileType(path string) Type {
+	fileType, exists := t.Extensions[filepath.Ext(path)]
 	if exists {
-		return fileType.Validate(path), fileType, mimeType, nil
+		return fileType
 	}
 
-	// if mime type detection fails, use the file extension
-	mimeType, exists = t.Extensions[filepath.Ext(path)]
-	if exists {
-		fileType, exists := t.MimeTypes[mimeType]
-
-		if exists {
-			return fileType.Validate(path), fileType, mimeType, nil
-		}
-	}
-
-	return false, nil, "", nil
+	return nil
 }
 
 func (t *Types) Register(format Type) {
@@ -110,14 +73,16 @@ func (t *Types) GetExtensions() string {
 func (t *Types) GetMimeTypes() string {
 	var output strings.Builder
 
-	mimeTypes := make([]string, len(t.MimeTypes))
+	var mimeTypes []string
 
-	i := 0
-
-	for k := range t.MimeTypes {
-		mimeTypes[i] = k
-		i++
+	for _, j := range t.Extensions {
+		extensions := j.Extensions()
+		for _, v := range extensions {
+			mimeTypes = append(mimeTypes, v)
+		}
 	}
+
+	mimeTypes = removeDuplicateStr(mimeTypes)
 
 	slices.Sort(mimeTypes)
 
@@ -126,4 +91,16 @@ func (t *Types) GetMimeTypes() string {
 	}
 
 	return output.String()
+}
+
+func removeDuplicateStr(strSlice []string) []string {
+	allKeys := make(map[string]bool)
+	list := []string{}
+	for _, item := range strSlice {
+		if _, value := allKeys[item]; !value {
+			allKeys[item] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }

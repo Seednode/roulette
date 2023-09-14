@@ -101,12 +101,12 @@ func preparePath(path string) string {
 
 func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types, shouldCache bool) error {
 	if shouldCache {
-		registered, _, _, err := formats.FileType(path)
-		if err != nil {
-			return err
+		format := formats.FileType(path)
+		if format == nil {
+			return nil
 		}
 
-		if !registered {
+		if !format.Validate(path) {
 			return nil
 		}
 	}
@@ -327,13 +327,14 @@ func pathHasSupportedFiles(path string, formats *types.Types) (bool, error) {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
-			registered, _, _, err := formats.FileType(p)
-			if err != nil {
-				return err
+			format := formats.FileType(p)
+			if format == nil {
+				return nil
 			}
 
-			if registered {
+			if format.Validate(p) {
 				hasRegisteredFiles <- true
+
 				return filepath.SkipAll
 			}
 		}
@@ -553,12 +554,12 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 		path := fileList[val]
 
 		if !fromCache {
-			registered, _, _, err := formats.FileType(path)
-			if err != nil {
-				return "", err
+			format := formats.FileType(path)
+			if format == nil {
+				return "", nil
 			}
 
-			if registered {
+			if format.Validate(path) {
 				return path, nil
 			}
 

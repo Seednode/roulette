@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.83.0"
+	ReleaseVersion string = "0.84.0"
 )
 
 var (
@@ -20,6 +20,7 @@ var (
 	Bind             string
 	Cache            bool
 	CacheFile        string
+	Code             bool
 	Filtering        bool
 	Flash            bool
 	Handlers         bool
@@ -68,6 +69,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
+	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")

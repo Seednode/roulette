@@ -41,10 +41,15 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeTypes() []string {
-	return []string{
-		`application/x-shockwave-flash`,
+func (t Format) MimeType(extension string) string {
+	extensions := t.Extensions()
+
+	value, exists := extensions[extension]
+	if exists {
+		return value
 	}
+
+	return ""
 }
 
 func (t Format) Validate(filePath string) bool {

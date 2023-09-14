@@ -59,18 +59,15 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeTypes() []string {
-	return []string{
-		`application/json`,
-		`application/toml`,
-		`application/xml`,
-		`application/yaml`,
-		`text/css`,
-		`text/csv`,
-		`text/javascript`,
-		`text/plain`,
-		`text/plain; charset=utf-8`,
+func (t Format) MimeType(extension string) string {
+	extensions := t.Extensions()
+
+	value, exists := extensions[extension]
+	if exists {
+		return value
 	}
+
+	return ""
 }
 
 func (t Format) Validate(filePath string) bool {

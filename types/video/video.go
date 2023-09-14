@@ -6,6 +6,7 @@ package video
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"seedno.de/seednode/roulette/types"
@@ -45,12 +46,17 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeTypes() []string {
-	return []string{
-		`video/mp4`,
-		`video/ogg`,
-		`video/webm`,
+func (t Format) MimeType(path string) string {
+	extensions := t.Extensions()
+
+	extension := filepath.Ext(path)
+
+	value, exists := extensions[extension]
+	if exists {
+		return value
 	}
+
+	return ""
 }
 
 func (t Format) Validate(filePath string) bool {

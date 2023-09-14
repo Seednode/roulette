@@ -81,21 +81,19 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeTypes() []string {
-	return []string{
-		`image/apng`,
-		`image/avif`,
-		`image/bmp`,
-		`image/gif`,
-		`image/jpeg`,
-		`image/png`,
-		`image/svg+xml`,
-		`image/webp`,
-	}
-}
-
 func (t Format) Validate(filePath string) bool {
 	return true
+}
+
+func (t Format) MimeType(extension string) string {
+	extensions := t.Extensions()
+
+	value, exists := extensions[extension]
+	if exists {
+		return value
+	}
+
+	return ""
 }
 
 func ImageDimensions(path string) (*dimensions, error) {
