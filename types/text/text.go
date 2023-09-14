@@ -46,23 +46,27 @@ func (t Format) Extensions() map[string]string {
 	return map[string]string{
 		`.css`:  `text/css`,
 		`.csv`:  `text/csv`,
-		`.htm`:  `text/html`,
-		`.html`: `text/html`,
 		`.js`:   `text/javascript`,
 		`.json`: `application/json`,
 		`.md`:   `text/markdown`,
+		`.ps1`:  `text/plain`,
+		`.sh`:   `application./x-sh`,
+		`.toml`: `application/toml`,
 		`.txt`:  `text/plain`,
 		`.xml`:  `application/xml`,
+		`.yml`:  `application/yaml`,
+		`.yaml`: `application/yaml`,
 	}
 }
 
 func (t Format) MimeTypes() []string {
 	return []string{
 		`application/json`,
+		`application/toml`,
 		`application/xml`,
+		`application/yaml`,
 		`text/css`,
 		`text/csv`,
-		`text/html`,
 		`text/javascript`,
 		`text/plain`,
 		`text/plain; charset=utf-8`,
