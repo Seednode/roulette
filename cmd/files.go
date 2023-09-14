@@ -527,11 +527,12 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 	fileList, fromCache := fileList(args, filters, sort, cache, formats)
 
 	fileCount := len(fileList)
+
 	if fileCount < 1 {
 		return "", ErrNoMediaFound
 	}
 
-	r, err := rand.Int(rand.Reader, big.NewInt(int64(fileCount-2)))
+	r, err := rand.Int(rand.Reader, big.NewInt(int64(fileCount)))
 	if err != nil {
 		return "", err
 	}
@@ -542,9 +543,10 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 	}
 
 	for i := 0; i < fileCount; i++ {
-		if val >= fileCount {
+		switch {
+		case val >= fileCount:
 			val = 0
-		} else {
+		case val < fileCount-1:
 			val++
 		}
 
