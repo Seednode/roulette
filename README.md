@@ -58,7 +58,7 @@ The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `
 
 ## Refresh
 
-If a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
+If the `--refresh-interval` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
 
 This can be used to generate a sort of slideshow of files.
 
@@ -107,31 +107,31 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
-  -a, --all                       enable all supported file types
-      --audio                     enable support for audio files
-  -b, --bind string               address to bind to (default "0.0.0.0")
-  -c, --cache                     generate directory cache at startup
-      --cache-file string         path to optional persistent cache file
-  -f, --filter                    enable filtering
-      --flash                     enable support for shockwave flash files (via ruffle.rs)
-      --handlers                  display registered handlers (for debugging)
-  -h, --help                      help for roulette
-      --images                    enable support for image files
-  -i, --info                      expose informational endpoints
-      --maximum-files uint32      skip directories with file counts above this value (default 4294967295)
-      --minimum-files uint32      skip directories with file counts below this value (default 1)
-      --page-length uint32        pagination length for statistics and debug pages
-  -p, --port uint16               port to listen on (default 8080)
-      --prefix string             path with which to prefix all listeners (for reverse proxying)
-      --profile                   register net/http/pprof handlers
-  -r, --recursive                 recurse into subdirectories
-      --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
-      --russian                   remove selected images after serving
-  -s, --sort                      enable sorting
-      --text                      enable support for text files
-  -v, --verbose                   log accessed files and other information to stdout
-  -V, --version                   display version and exit
-      --video                     enable support for video files
+  -a, --all                    enable all supported file types
+      --audio                  enable support for audio files
+  -b, --bind string            address to bind to (default "0.0.0.0")
+  -c, --cache                  generate directory cache at startup
+      --cache-file string      path to optional persistent cache file
+  -f, --filter                 enable filtering
+      --flash                  enable support for shockwave flash files (via ruffle.rs)
+      --handlers               display registered handlers (for debugging)
+  -h, --help                   help for roulette
+      --images                 enable support for image files
+  -i, --info                   expose informational endpoints
+      --maximum-files uint32   skip directories with file counts above this value (default 4294967295)
+      --minimum-files uint32   skip directories with file counts below this value (default 1)
+      --page-length uint32     pagination length for statistics and debug pages
+  -p, --port uint16            port to listen on (default 8080)
+      --prefix string          root path for http handlers (for reverse proxying) (default "/")
+      --profile                register net/http/pprof handlers
+  -r, --recursive              recurse into subdirectories
+      --refresh-interval       enable automatic page refresh via query parameter
+      --russian                remove selected images after serving
+  -s, --sort                   enable sorting
+      --text                   enable support for text files
+  -v, --verbose                log accessed files and other information to stdout
+  -V, --version                display version and exit
+      --video                  enable support for video files
 ```
 
 ## Building the Docker container
