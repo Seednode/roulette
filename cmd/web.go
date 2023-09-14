@@ -332,7 +332,7 @@ func ServePage(args []string) error {
 		formats.Add(images.New())
 	}
 
-	paths, err := normalizePaths(args, formats)
+	paths, err := validatePaths(args, formats)
 	if err != nil {
 		return err
 	}

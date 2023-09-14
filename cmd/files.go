@@ -171,8 +171,8 @@ func appendPaths(path string, files *files, filters *filters, stats *scanStats, 
 	return nil
 }
 
-func newFile(paths []string, filters *filters, sortOrder string, regexes *regexes, index *fileCache, formats *types.Types) (string, error) {
-	path, err := pickFile(paths, filters, sortOrder, index, formats)
+func newFile(paths []string, filters *filters, sortOrder string, regexes *regexes, cache *fileCache, formats *types.Types) (string, error) {
+	path, err := pickFile(paths, filters, sortOrder, cache, formats)
 	if err != nil {
 		return "", nil
 	}
@@ -505,24 +505,6 @@ func fileList(paths []string, filters *filters, sort string, cache *fileCache, f
 	return fileList, false
 }
 
-func cleanFilename(filename string) string {
-	return filename[:len(filename)-(len(filepath.Ext(filename))+3)]
-}
-
-func prepareDirectory(directory []string) []string {
-	_, first := filepath.Split(directory[0])
-	first = cleanFilename(first)
-
-	_, last := filepath.Split(directory[len(directory)-1])
-	last = cleanFilename(last)
-
-	if first == last {
-		return []string{directory[0]}
-	} else {
-		return directory
-	}
-}
-
 func prepareDirectories(files *files, sort string) []string {
 	directories := []string{}
 
@@ -534,14 +516,8 @@ func prepareDirectories(files *files, sort string) []string {
 		i++
 	}
 
-	if sort == "asc" || sort == "desc" {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, prepareDirectory(files.list[keys[i]])...)
-		}
-	} else {
-		for i := 0; i < len(keys); i++ {
-			directories = append(directories, files.list[keys[i]]...)
-		}
+	for i := 0; i < len(keys); i++ {
+		directories = append(directories, files.list[keys[i]]...)
 	}
 
 	return directories
@@ -618,7 +594,7 @@ func normalizePath(path string) (string, error) {
 	return absolutePath, nil
 }
 
-func normalizePaths(args []string, formats *types.Types) ([]string, error) {
+func validatePaths(args []string, formats *types.Types) ([]string, error) {
 	var paths []string
 
 	var pathList strings.Builder
