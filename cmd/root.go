@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.80.1"
+	ReleaseVersion string = "0.81.0"
 )
 
 var (
@@ -23,12 +23,14 @@ var (
 	CacheFile        string
 	Filtering        bool
 	Flash            bool
+	Handlers         bool
 	Images           bool
 	Info             bool
 	MaximumFileCount uint32
 	MinimumFileCount uint32
 	PageLength       uint32
 	Port             uint16
+	Prefix           string
 	Profile          bool
 	Recursive        bool
 	RefreshInterval  string
@@ -79,12 +81,14 @@ func init() {
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
+	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().Uint32Var(&MaximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts above this value")
 	rootCmd.Flags().Uint32Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
+	rootCmd.Flags().StringVar(&Prefix, "prefix", "", "path with which to prefix all listeners (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
 	rootCmd.Flags().StringVar(&RefreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")

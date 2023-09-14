@@ -40,7 +40,9 @@ const (
 
 func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		path := strings.TrimPrefix(r.URL.Path, sourcePrefix)
+		prefix := Prefix + sourcePrefix
+
+		path := strings.TrimPrefix(r.URL.Path, prefix)
 
 		prefixedFilePath, err := stripQueryParams(path)
 		if err != nil {
@@ -51,7 +53,7 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 			return
 		}
 
-		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, sourcePrefix))
+		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, prefix))
 		if err != nil {
 			fmt.Println(err)
 
@@ -134,7 +136,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 			return
 		}
 
-		strippedRefererUri := strings.TrimPrefix(refererUri, mediaPrefix)
+		strippedRefererUri := strings.TrimPrefix(refererUri, Prefix+mediaPrefix)
 
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
@@ -187,8 +189,9 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 
 		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
 
-		newUrl := fmt.Sprintf("http://%s%s%s",
+		newUrl := fmt.Sprintf("http://%s%s%s%s",
 			r.Host,
+			Prefix,
 			preparePath(filePath),
 			queryParams,
 		)
@@ -205,7 +208,7 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 
 		sortOrder := sortOrder(r)
 
-		path := strings.TrimPrefix(r.URL.Path, mediaPrefix)
+		path := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, Prefix), mediaPrefix)
 
 		if runtime.GOOS == "windows" {
 			path = strings.TrimPrefix(path, "/")
@@ -240,7 +243,7 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 			return
 		}
 
-		fileUri := generateFileUri(path)
+		fileUri := Prefix + "/" + generateFileUri(path)
 
 		fileName := filepath.Base(path)
 
@@ -248,20 +251,20 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 
 		refreshTimer, refreshInterval := refreshInterval(r)
 
-		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+		rootUrl := Prefix + "/" + generateQueryParams(filters, sortOrder, refreshInterval)
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, fileType.Css()))
-		htmlBody.WriteString((fileType.Title(queryParams, fileUri, path, fileName, mimeType)))
+		htmlBody.WriteString((fileType.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
-			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '/%s';}, %d);};</script>",
-				queryParams,
+			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '%s';}, %d);};</script>",
+				rootUrl,
 				refreshTimer))
 		}
-		htmlBody.WriteString((fileType.Body(queryParams, fileUri, path, fileName, mimeType)))
+		htmlBody.WriteString((fileType.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
@@ -282,6 +285,25 @@ func serveVersion() httprouter.Handle {
 		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
 
 		w.Write(data)
+	}
+}
+
+func register(mux *httprouter.Router, path string, handle httprouter.Handle) {
+	mux.GET(path, handle)
+
+	if Handlers {
+		fmt.Printf("Registered handler for path %s\n", path)
+	}
+}
+
+func redirectRoot() httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		newUrl := fmt.Sprintf("http://%s%s",
+			r.Host,
+			Prefix,
+		)
+
+		http.Redirect(w, r, newUrl, RedirectStatusCode)
 	}
 }
 
@@ -363,17 +385,23 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	mux.GET("/", serveRoot(paths, regexes, cache, formats))
+	Prefix = strings.TrimSuffix(Prefix, "/")
 
-	mux.GET("/favicons/*favicon", serveFavicons())
+	register(mux, Prefix+"/", serveRoot(paths, regexes, cache, formats))
 
-	mux.GET("/favicon.ico", serveFavicons())
+	if Prefix != "" {
+		register(mux, "/", redirectRoot())
+	}
 
-	mux.GET(mediaPrefix+"/*media", serveMedia(paths, regexes, formats))
+	register(mux, Prefix+"/favicons/*favicon", serveFavicons())
 
-	mux.GET(sourcePrefix+"/*static", serveStaticFile(paths, cache))
+	register(mux, Prefix+"/favicon.ico", serveFavicons())
 
-	mux.GET("/version", serveVersion())
+	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, formats))
+
+	register(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache))
+
+	register(mux, Prefix+"/version", serveVersion())
 
 	if Cache {
 		registerCacheHandlers(mux, args, cache, formats)

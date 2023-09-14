@@ -27,18 +27,18 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
 	return fmt.Sprintf(`<title>%s</title>`, fileName)
 }
 
-func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
 	body, err := os.ReadFile(filePath)
 	if err != nil {
 		body = []byte{}
 	}
 
-	return fmt.Sprintf(`<a href="/%s"><textarea autofocus readonly>%s</textarea></a>`,
-		queryParams,
+	return fmt.Sprintf(`<a href="%s"><textarea autofocus readonly>%s</textarea></a>`,
+		rootUrl,
 		body)
 }
 

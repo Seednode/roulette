@@ -37,7 +37,7 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		fmt.Println(err)
@@ -49,14 +49,14 @@ func (t Format) Title(queryParams, fileUri, filePath, fileName, mime string) str
 		dimensions.height)
 }
 
-func (t Format) Body(queryParams, fileUri, filePath, fileName, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		fmt.Println(err)
 	}
 
-	return fmt.Sprintf(`<a href="/%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
-		queryParams,
+	return fmt.Sprintf(`<a href="%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+		rootUrl,
 		fileUri,
 		dimensions.width,
 		dimensions.height,

@@ -65,7 +65,7 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 				if Sorting {
 					shouldSort = "?sort=asc"
 				}
-				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s\">%s</a></td></tr>\n", mediaPrefix, v, shouldSort, v))
+				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s%s\">%s</a></td></tr>\n", Prefix, mediaPrefix, v, shouldSort, v))
 			}
 		}
 		if PageLength != 0 {
@@ -274,19 +274,19 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 
 func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) {
 	if Cache {
-		mux.GET("/html/", serveIndexHtml(args, cache, false))
+		register(mux, Prefix+"/html/", serveIndexHtml(args, cache, false))
 		if PageLength != 0 {
-			mux.GET("/html/:page", serveIndexHtml(args, cache, true))
+			register(mux, Prefix+"/html/:page", serveIndexHtml(args, cache, true))
 		}
 
-		mux.GET("/json", serveIndexJson(args, cache))
+		register(mux, Prefix+"/json", serveIndexJson(args, cache))
 		if PageLength != 0 {
-			mux.GET("/json/:page", serveIndexJson(args, cache))
+			register(mux, Prefix+"/json/:page", serveIndexJson(args, cache))
 		}
 	}
 
-	mux.GET("/available_extensions", serveAvailableExtensions())
-	mux.GET("/enabled_extensions", serveEnabledExtensions(formats))
-	mux.GET("/available_mime_types", serveAvailableMimeTypes())
-	mux.GET("/enabled_mime_types", serveEnabledMimeTypes(formats))
+	register(mux, Prefix+"/available_extensions", serveAvailableExtensions())
+	register(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats))
+	register(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes())
+	register(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats))
 }

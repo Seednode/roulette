@@ -152,5 +152,5 @@ func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCac
 		cache.generate(args, formats)
 	}
 
-	mux.GET("/clear_cache", serveCacheClear(args, cache, formats))
+	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats))
 }

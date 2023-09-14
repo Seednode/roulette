@@ -11,9 +11,9 @@ import (
 )
 
 func registerProfileHandlers(mux *httprouter.Router) {
-	mux.HandlerFunc("GET", "/debug/pprof/", pprof.Index)
-	mux.HandlerFunc("GET", "/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandlerFunc("GET", "/debug/pprof/profile", pprof.Profile)
-	mux.HandlerFunc("GET", "/debug/pprof/symbol", pprof.Symbol)
-	mux.HandlerFunc("GET", "/debug/pprof/trace", pprof.Trace)
+	mux.HandlerFunc("GET", Prefix+"/debug/pprof/", pprof.Index)
+	mux.HandlerFunc("GET", Prefix+"/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandlerFunc("GET", Prefix+"/debug/pprof/profile", pprof.Profile)
+	mux.HandlerFunc("GET", Prefix+"/debug/pprof/symbol", pprof.Symbol)
+	mux.HandlerFunc("GET", Prefix+"/debug/pprof/trace", pprof.Trace)
 }

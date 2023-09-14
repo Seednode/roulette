@@ -114,6 +114,7 @@ Flags:
       --cache-file string         path to optional persistent cache file
   -f, --filter                    enable filtering
       --flash                     enable support for shockwave flash files (via ruffle.rs)
+      --handlers                  display registered handlers (for debugging)
   -h, --help                      help for roulette
       --images                    enable support for image files
   -i, --info                      expose informational endpoints
@@ -121,6 +122,7 @@ Flags:
       --minimum-files uint32      skip directories with file counts below this value (default 1)
       --page-length uint32        pagination length for statistics and debug pages
   -p, --port uint16               port to listen on (default 8080)
+      --prefix string             path with which to prefix all listeners (for reverse proxying)
       --profile                   register net/http/pprof handlers
   -r, --recursive                 recurse into subdirectories
       --refresh-interval string   force refresh interval equal to this duration (minimum 500ms)
