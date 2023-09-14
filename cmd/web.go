@@ -243,7 +243,7 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 			return
 		}
 
-		fileUri := Prefix + "/" + generateFileUri(path)
+		fileUri := Prefix + generateFileUri(path)
 
 		fileName := filepath.Base(path)
 
@@ -385,9 +385,13 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	Prefix = strings.TrimSuffix(Prefix, "/")
+	if !strings.HasSuffix(Prefix, "/") {
+		Prefix = Prefix + "/"
+	}
 
-	register(mux, Prefix+"/", serveRoot(paths, regexes, cache, formats))
+	register(mux, Prefix, serveRoot(paths, regexes, cache, formats))
+
+	Prefix = strings.TrimSuffix(Prefix, "/")
 
 	if Prefix != "" {
 		register(mux, "/", redirectRoot())

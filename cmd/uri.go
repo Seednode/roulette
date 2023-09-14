@@ -14,18 +14,12 @@ import (
 )
 
 func refreshInterval(r *http.Request) (int64, string) {
-	var interval string
-
-	if RefreshInterval == "" {
-		interval = r.URL.Query().Get("refresh")
-	} else {
-		interval = RefreshInterval
-	}
+	interval := r.URL.Query().Get("refresh")
 
 	duration, err := time.ParseDuration(interval)
 
 	switch {
-	case err != nil || duration == 0:
+	case err != nil || duration == 0 || !RefreshInterval:
 		return 0, "0ms"
 	case duration < 500*time.Millisecond:
 		return 500, "500ms"
@@ -92,12 +86,20 @@ func generateQueryParams(filters *filters, sortOrder, refreshInterval string) st
 		hasParams = true
 	}
 
-	if hasParams {
-		queryParams.WriteString("&")
-	}
-	queryParams.WriteString(fmt.Sprintf("refresh=%s", refreshInterval))
+	if RefreshInterval {
+		if hasParams {
+			queryParams.WriteString("&")
+		}
+		queryParams.WriteString(fmt.Sprintf("refresh=%s", refreshInterval))
 
-	return queryParams.String()
+		hasParams = true
+	}
+
+	if hasParams {
+		return queryParams.String()
+	}
+
+	return ""
 }
 
 func stripQueryParams(request string) (string, error) {

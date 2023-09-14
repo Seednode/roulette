@@ -6,13 +6,12 @@ package cmd
 
 import (
 	"log"
-	"time"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "0.82.0"
+	ReleaseVersion string = "0.83.0"
 )
 
 var (
@@ -33,7 +32,7 @@ var (
 	Prefix           string
 	Profile          bool
 	Recursive        bool
-	RefreshInterval  string
+	RefreshInterval  bool
 	Russian          bool
 	Sorting          bool
 	Text             bool
@@ -45,16 +44,6 @@ var (
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
-		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if RefreshInterval != "" {
-				interval, err := time.ParseDuration(RefreshInterval)
-				if err != nil || interval < 500*time.Millisecond {
-					return ErrIncorrectRefreshInterval
-				}
-			}
-
-			return nil
-		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServePage(args)
 			if err != nil {
@@ -88,10 +77,10 @@ func init() {
 	rootCmd.Flags().Uint32Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
-	rootCmd.Flags().StringVar(&Prefix, "prefix", "", "path with which to prefix all listeners (for reverse proxying)")
+	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
-	rootCmd.Flags().StringVar(&RefreshInterval, "refresh-interval", "", "force refresh interval equal to this duration (minimum 500ms)")
+	rootCmd.Flags().BoolVar(&RefreshInterval, "refresh-interval", false, "enable automatic page refresh via query parameter")
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
