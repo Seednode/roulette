@@ -19,7 +19,7 @@ func refreshInterval(r *http.Request) (int64, string) {
 	duration, err := time.ParseDuration(interval)
 
 	switch {
-	case err != nil || duration == 0 || !RefreshInterval:
+	case err != nil || duration == 0 || !Refresh:
 		return 0, "0ms"
 	case duration < 500*time.Millisecond:
 		return 500, "500ms"
@@ -86,7 +86,7 @@ func generateQueryParams(filters *filters, sortOrder, refreshInterval string) st
 		hasParams = true
 	}
 
-	if RefreshInterval {
+	if Refresh {
 		if hasParams {
 			queryParams.WriteString("&")
 		}

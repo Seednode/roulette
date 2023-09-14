@@ -58,7 +58,7 @@ The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `
 
 ## Refresh
 
-If the `--refresh-interval` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
+If the `--refresh` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
 
 This can be used to generate a sort of slideshow of files.
 
@@ -125,7 +125,7 @@ Flags:
       --prefix string          root path for http handlers (for reverse proxying) (default "/")
       --profile                register net/http/pprof handlers
   -r, --recursive              recurse into subdirectories
-      --refresh-interval       enable automatic page refresh via query parameter
+      --refresh                enable automatic page refresh via query parameter
       --russian                remove selected images after serving
   -s, --sort                   enable sorting
       --text                   enable support for text files
