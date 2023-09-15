@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.84.3"
+	ReleaseVersion string = "0.84.4"
 )
 
 var (
@@ -21,7 +21,6 @@ var (
 	Cache            bool
 	CacheFile        string
 	Code             bool
-	Debug            bool
 	Filtering        bool
 	Flash            bool
 	Handlers         bool
@@ -71,7 +70,6 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
-	rootCmd.Flags().BoolVar(&Debug, "debug", false, "display debug information")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
@@ -79,7 +77,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().Uint32Var(&MaximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts above this value")
 	rootCmd.Flags().Uint32Var(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
-	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for statistics and debug pages")
+	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")

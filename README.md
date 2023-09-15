@@ -121,7 +121,7 @@ Flags:
   -i, --info                   expose informational endpoints
       --maximum-files uint32   skip directories with file counts above this value (default 4294967295)
       --minimum-files uint32   skip directories with file counts below this value (default 1)
-      --page-length uint32     pagination length for statistics and debug pages
+      --page-length uint32     pagination length for info pages
   -p, --port uint16            port to listen on (default 8080)
       --prefix string          root path for http handlers (for reverse proxying) (default "/")
       --profile                register net/http/pprof handlers
