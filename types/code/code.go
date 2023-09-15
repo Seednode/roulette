@@ -222,7 +222,7 @@ func (t Format) Validate(filePath string) bool {
 }
 
 func (t Format) Type() string {
-	return "html"
+	return "inline"
 }
 
 func New(theme string) Format {

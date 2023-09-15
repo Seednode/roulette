@@ -96,9 +96,7 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 			return
 		}
 
-		w.Write(buf)
-
-		fileSize := humanReadableSize(len(buf))
+		written, _ := w.Write(buf)
 
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -124,7 +122,7 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 			fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				filePath,
-				fileSize,
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -296,7 +294,7 @@ func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *typ
 
 		formattedPage := gohtml.Format(htmlBody.String())
 
-		_, err = io.WriteString(w, formattedPage)
+		written, err := io.WriteString(w, formattedPage)
 		if err != nil {
 			errorChannel <- err
 
@@ -310,7 +308,7 @@ func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *typ
 				fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
 					startTime.Format(logDate),
 					path,
-					humanReadableSize(len(formattedPage)),
+					humanReadableSize(written),
 					realIP(r),
 					time.Since(startTime).Round(time.Microsecond),
 				)
