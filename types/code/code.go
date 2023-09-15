@@ -25,11 +25,8 @@ func (t Format) Css() string {
 	var css strings.Builder
 
 	formatter := html.New(
-		html.LineNumbersInTable(true),
 		html.TabWidth(4),
 		html.WithClasses(true),
-		html.WithLineNumbers(true),
-		html.WithLinkableLineNumbers(true, ""),
 		html.WrapLongLines(true))
 
 	style := styles.Get("solarized-dark256")
@@ -92,11 +89,8 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 	}
 
 	formatter := html.New(
-		html.LineNumbersInTable(true),
 		html.TabWidth(4),
 		html.WithClasses(true),
-		html.WithLineNumbers(true),
-		html.WithLinkableLineNumbers(true, ""),
 		html.WrapLongLines(true))
 
 	iterator, err := lexer.Tokenise(nil, contentString)

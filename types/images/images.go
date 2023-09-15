@@ -76,7 +76,6 @@ func (t Format) Extensions() map[string]string {
 		`.pjp`:   `image/jpeg`,
 		`.pjpeg`: `image/jpeg`,
 		`.png`:   `image/png`,
-		`.svg`:   `image/svg+xml`,
 		`.webp`:  `image/webp`,
 	}
 }
