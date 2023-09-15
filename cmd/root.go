@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.86.0"
+	ReleaseVersion string = "0.87.0"
 )
 
 var (
@@ -21,6 +21,7 @@ var (
 	Cache            bool
 	CacheFile        string
 	Code             bool
+	CodeTheme        string
 	Filtering        bool
 	Flash            bool
 	Handlers         bool
@@ -37,7 +38,6 @@ var (
 	Russian          bool
 	Sorting          bool
 	Text             bool
-	Theme            string
 	Verbose          bool
 	Version          bool
 	Videos           bool
@@ -71,6 +71,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
+	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
@@ -87,7 +88,6 @@ func init() {
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
-	rootCmd.Flags().StringVar(&Theme, "theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files and other information to stdout")
 	rootCmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().BoolVar(&Videos, "video", false, "enable support for video files")

@@ -118,6 +118,7 @@ Flags:
   -c, --cache                  generate directory cache at startup
       --cache-file string      path to optional persistent cache file
       --code                   enable support for source code files
+      --code-theme string      theme for source code syntax highlighting (default "solarized-dark256")
   -f, --filter                 enable filtering
       --flash                  enable support for shockwave flash files (via ruffle.rs)
       --handlers               display registered handlers (for debugging)
@@ -135,7 +136,6 @@ Flags:
       --russian                remove selected images after serving
   -s, --sort                   enable sorting
       --text                   enable support for text files
-      --theme string           theme for source code syntax highlighting (default "solarized-dark256")
   -v, --verbose                log accessed files and other information to stdout
   -V, --version                display version and exit
       --video                  enable support for video files

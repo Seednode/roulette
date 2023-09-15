@@ -331,7 +331,7 @@ func ServePage(args []string) error {
 	}
 
 	if Code || All {
-		formats.Add(code.New(Theme))
+		formats.Add(code.New(CodeTheme))
 	}
 
 	if Flash || All {
