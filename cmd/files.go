@@ -99,23 +99,14 @@ func preparePath(path string) string {
 	return mediaPrefix + path
 }
 
-func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types, shouldCache bool) error {
-	if shouldCache {
-		format := formats.FileType(path)
-		if format == nil {
-			return nil
-		}
-
-		if !format.Validate(path) {
-			return nil
-		}
+func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types, shouldCache bool) {
+	if shouldCache && !formats.Validate(path) {
+		return
 	}
 
 	files.append(directory, path)
 
 	stats.filesMatched.Add(1)
-
-	return nil
 }
 
 func appendPaths(path string, files *files, filters *filters, stats *scanStats, formats *types.Types) error {
@@ -149,10 +140,7 @@ func appendPaths(path string, files *files, filters *filters, stats *scanStats, 
 				filename,
 				filters.included[i],
 			) {
-				err := appendPath(directory, path, files, stats, formats, shouldCache)
-				if err != nil {
-					return err
-				}
+				appendPath(directory, path, files, stats, formats, shouldCache)
 
 				return nil
 			}
@@ -163,10 +151,7 @@ func appendPaths(path string, files *files, filters *filters, stats *scanStats, 
 		return nil
 	}
 
-	err = appendPath(directory, path, files, stats, formats, shouldCache)
-	if err != nil {
-		return err
-	}
+	appendPath(directory, path, files, stats, formats, shouldCache)
 
 	return nil
 }
@@ -326,17 +311,10 @@ func pathHasSupportedFiles(path string, formats *types.Types) (bool, error) {
 		switch {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
-		case !info.IsDir():
-			format := formats.FileType(p)
-			if format == nil {
-				return nil
-			}
+		case !info.IsDir() && formats.Validate(p):
+			hasRegisteredFiles <- true
 
-			if format.Validate(p) {
-				hasRegisteredFiles <- true
-
-				return filepath.SkipAll
-			}
+			return filepath.SkipAll
 		}
 
 		return err
@@ -553,20 +531,14 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 
 		path := fileList[val]
 
-		if !fromCache {
-			format := formats.FileType(path)
-			if format == nil {
-				return "", nil
-			}
-
-			if format.Validate(path) {
-				return path, nil
-			}
-
+		switch {
+		case !fromCache && formats.Validate(path):
+			return path, nil
+		case !fromCache:
 			continue
+		default:
+			return path, nil
 		}
-
-		return path, nil
 	}
 
 	return "", ErrNoMediaFound

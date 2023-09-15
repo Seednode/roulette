@@ -49,6 +49,15 @@ func (t *Types) Register(format Type) {
 	t.Add(format)
 }
 
+func (t *Types) Validate(path string) bool {
+	format, exists := t.Extensions[filepath.Ext(path)]
+	if !exists {
+		return false
+	}
+
+	return format.Validate(path)
+}
+
 func (t *Types) GetExtensions() string {
 	var output strings.Builder
 
