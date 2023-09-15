@@ -49,6 +49,9 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
+			if Debug {
+				fmt.Printf("Call to stripQueryParams(%v) failed inside serveStaticFile()\n", path)
+			}
 			serverError(w, r, nil)
 
 			return
@@ -58,6 +61,9 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 		if err != nil {
 			fmt.Println(err)
 
+			if Debug {
+				fmt.Printf("Call to filepath.EvalSymlinks(%v) failed inside serveStaticFile()\n", strings.TrimPrefix(prefixedFilePath, prefix))
+			}
 			serverError(w, r, nil)
 
 			return
@@ -71,8 +77,9 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		exists, err := fileExists(filePath)
 		if err != nil {
-			fmt.Println(err)
-
+			if Debug {
+				fmt.Printf("Call to fileExists(%v) failed inside serveStaticFile()\n", filePath)
+			}
 			serverError(w, r, nil)
 
 			return
@@ -88,8 +95,9 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		buf, err := os.ReadFile(filePath)
 		if err != nil {
-			fmt.Println(err)
-
+			if Debug {
+				fmt.Printf("Call to os.ReadFile(%v) failed inside serveStaticFile()\n", filePath)
+			}
 			serverError(w, r, nil)
 
 			return
@@ -102,7 +110,9 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 		if Russian {
 			err = os.Remove(filePath)
 			if err != nil {
-				fmt.Println(err)
+				if Debug {
+					fmt.Printf("Call to os.Remove(%v) failed inside serveStaticFile()\n", filePath)
+				}
 
 				serverError(w, r, nil)
 

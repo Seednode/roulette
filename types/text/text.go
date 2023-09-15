@@ -44,18 +44,8 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 
 func (t Format) Extensions() map[string]string {
 	return map[string]string{
-		`.css`:  `text/css`,
-		`.csv`:  `text/csv`,
-		`.js`:   `text/javascript`,
-		`.json`: `application/json`,
-		`.md`:   `text/markdown`,
-		`.ps1`:  `text/plain`,
-		`.sh`:   `application./x-sh`,
-		`.toml`: `application/toml`,
-		`.txt`:  `text/plain`,
-		`.xml`:  `application/xml`,
-		`.yml`:  `application/yaml`,
-		`.yaml`: `application/yaml`,
+		`.csv`: `text/csv`,
+		`.txt`: `text/plain`,
 	}
 }
 
