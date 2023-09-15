@@ -332,7 +332,7 @@ func scanPath(path string, fileChannel chan<- string, statChannel chan<- *scanSt
 				errorChannel <- err
 			}
 
-			if files > 0 && (files < MinimumFileCount) || (files > MaximumFileCount) {
+			if files > 0 && (files < int(MinimumFileCount)) || (files > int(MaximumFileCount)) {
 				// This count will not otherwise include the parent directory itself, so increment by one
 				stats.directoriesSkipped = stats.directoriesSkipped + directories + 1
 				stats.filesSkipped = stats.filesSkipped + files
