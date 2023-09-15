@@ -249,7 +249,7 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 		rootUrl := Prefix + "/" + generateQueryParams(filters, sortOrder, refreshInterval)
 
 		var htmlBody strings.Builder
-		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
 		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.Css()))
 		htmlBody.WriteString((format.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
@@ -331,7 +331,7 @@ func ServePage(args []string) error {
 	}
 
 	if Code || All {
-		formats.Add(code.New())
+		formats.Add(code.New(Theme))
 	}
 
 	if Flash || All {

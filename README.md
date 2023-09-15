@@ -99,6 +99,13 @@ If any other (or no) value is provided, the selected file will be random.
 
 Note: These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
 
+## Themes
+The `--code` handler provides syntax highlighting via [alecthomas/chroma](https://github.com/alecthomas/chroma).
+
+Any [supported theme](https://pkg.go.dev/github.com/alecthomas/chroma/v2@v2.9.1/styles#pkg-variables) can be passed via the `--theme` flag.
+
+By default, [`solarized-dark256`](https://xyproto.github.io/splash/docs/solarized-dark256.html) is used.
+
 ## Usage output
 ```
 Serves random media from the specified directories.
@@ -130,6 +137,7 @@ Flags:
       --russian                remove selected images after serving
   -s, --sort                   enable sorting
       --text                   enable support for text files
+      --theme string           theme for source code syntax highlighting (default "solarized-dark256")
   -v, --verbose                log accessed files and other information to stdout
   -V, --version                display version and exit
       --video                  enable support for video files

@@ -19,7 +19,9 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type Format struct{}
+type Format struct {
+	Theme string
+}
 
 func (t Format) Css() string {
 	var css strings.Builder
@@ -29,7 +31,7 @@ func (t Format) Css() string {
 		html.WithClasses(true),
 		html.WrapLongLines(true))
 
-	style := styles.Get("solarized-dark256")
+	style := styles.Get(t.Theme)
 	if style == nil {
 		style = styles.Fallback
 	}
@@ -52,8 +54,8 @@ func (t Format) Css() string {
 
 	css.Write(b)
 
-	css.WriteString("a{margin:0;padding:0;height:100%;width:100%;color:inherit;text-decoration:none;}\n")
-	css.WriteString("html{background-color:#1c1c1c;}\n")
+	css.WriteString("html{height:100%;width:100%;}\n")
+	css.WriteString("a{bottom:0;left:0;position:absolute;right:0;top:0;margin:1rem;padding:0;height:99%;width:99%;color:inherit;text-decoration:none;}\n")
 
 	return css.String()
 }
@@ -83,7 +85,7 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 	w := bufio.NewWriter(&response)
 	r := bufio.NewReader(&response)
 
-	style := styles.Get("solarized-dark256")
+	style := styles.Get(t.Theme)
 	if style == nil {
 		style = styles.Fallback
 	}
@@ -219,10 +221,12 @@ func (t Format) Validate(filePath string) bool {
 	return true
 }
 
-func New() Format {
-	return Format{}
+func New(theme string) Format {
+	return Format{
+		Theme: theme,
+	}
 }
 
 func init() {
-	types.SupportedFormats.Register(New())
+	types.SupportedFormats.Register(New(""))
 }

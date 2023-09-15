@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.84.4"
+	ReleaseVersion string = "0.85.0"
 )
 
 var (
@@ -37,6 +37,7 @@ var (
 	Russian          bool
 	Sorting          bool
 	Text             bool
+	Theme            string
 	Verbose          bool
 	Version          bool
 	Videos           bool
@@ -86,6 +87,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
 	rootCmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
+	rootCmd.Flags().StringVar(&Theme, "theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files and other information to stdout")
 	rootCmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().BoolVar(&Videos, "video", false, "enable support for video files")
