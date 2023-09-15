@@ -22,17 +22,17 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
-	return fmt.Sprintf(`<title>%s</title>`, fileName)
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	var html strings.Builder
 
 	html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
 	html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '%s';">Next</button>`, rootUrl))
 
-	return html.String()
+	return html.String(), nil
 }
 
 func (t Format) Extensions() map[string]string {

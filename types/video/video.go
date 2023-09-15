@@ -25,16 +25,16 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
-	return fmt.Sprintf(`<title>%s</title>`, fileName)
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	return fmt.Sprintf(`<a href="%s"><video controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
 		rootUrl,
 		fileUri,
 		mime,
-		fileName)
+		fileName), nil
 }
 
 func (t Format) Extensions() map[string]string {

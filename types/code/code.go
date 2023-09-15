@@ -60,14 +60,14 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
-	return fmt.Sprintf(`<title>%s</title>`, fileName)
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	contentString := string(contents)
@@ -97,24 +97,24 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 
 	iterator, err := lexer.Tokenise(nil, contentString)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	err = formatter.Format(w, style, iterator)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	w.Flush()
 
 	b, err := io.ReadAll(r)
 	if err != nil {
-		return ""
+		return "", err
 	}
 
 	return fmt.Sprintf(`<a href="%s">%s</a>`,
 		rootUrl,
-		string(b))
+		string(b)), nil
 }
 
 func (t Format) Extensions() map[string]string {

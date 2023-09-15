@@ -37,22 +37,22 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	return fmt.Sprintf(`<title>%s (%dx%d)</title>`,
 		fileName,
 		dimensions.width,
-		dimensions.height)
+		dimensions.height), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
-		fmt.Println(err)
+		return "", err
 	}
 
 	return fmt.Sprintf(`<a href="%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
@@ -61,7 +61,7 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 		dimensions.width,
 		dimensions.height,
 		mime,
-		fileName)
+		fileName), nil
 }
 
 func (t Format) Extensions() map[string]string {

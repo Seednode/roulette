@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -39,7 +40,7 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
+func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		prefix := Prefix + sourcePrefix
 
@@ -47,7 +48,7 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		prefixedFilePath, err := stripQueryParams(path)
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -56,7 +57,7 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		filePath, err := filepath.EvalSymlinks(strings.TrimPrefix(prefixedFilePath, prefix))
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -71,6 +72,8 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		exists, err := fileExists(filePath)
 		if err != nil {
+			errorChannel <- err
+
 			serverError(w, r, nil)
 
 			return
@@ -86,6 +89,8 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 
 		buf, err := os.ReadFile(filePath)
 		if err != nil {
+			errorChannel <- err
+
 			serverError(w, r, nil)
 
 			return
@@ -98,6 +103,8 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 		if Russian {
 			err = os.Remove(filePath)
 			if err != nil {
+				errorChannel <- err
+
 				serverError(w, r, nil)
 
 				return
@@ -120,11 +127,11 @@ func serveStaticFile(paths []string, cache *fileCache) httprouter.Handle {
 	}
 }
 
-func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *types.Types) httprouter.Handle {
+func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -147,7 +154,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 		if refererUri != "" {
 			filePath, err = nextFile(strippedRefererUri, sortOrder, regexes, formats)
 			if err != nil {
-				fmt.Println(err)
+				errorChannel <- err
 
 				serverError(w, r, nil)
 
@@ -174,7 +181,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 
 				return
 			case err != nil:
-				fmt.Println(err)
+				errorChannel <- err
 
 				serverError(w, r, nil)
 
@@ -194,7 +201,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 	}
 }
 
-func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprouter.Handle {
+func serveMedia(paths []string, regexes *regexes, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
@@ -211,7 +218,7 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 
 		exists, err := fileExists(path)
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -252,19 +259,37 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types) httprout
 		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
 		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.Css()))
-		htmlBody.WriteString((format.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
+
+		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)
+		if err != nil {
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
+		}
+		htmlBody.WriteString(title)
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){setInterval(function(){window.location.href = '%s';}, %d);};</script>",
 				rootUrl,
 				refreshTimer))
 		}
-		htmlBody.WriteString((format.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)))
+
+		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)
+		if err != nil {
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
+		}
+		htmlBody.WriteString(body)
 		htmlBody.WriteString(`</body></html>`)
 
 		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -387,7 +412,9 @@ func ServePage(args []string) error {
 		Prefix = Prefix + "/"
 	}
 
-	register(mux, Prefix, serveRoot(paths, regexes, cache, formats))
+	errorChannel := make(chan error)
+
+	register(mux, Prefix, serveRoot(paths, regexes, cache, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -395,22 +422,25 @@ func ServePage(args []string) error {
 		register(mux, "/", redirectRoot())
 	}
 
-	register(mux, Prefix+"/favicons/*favicon", serveFavicons())
+	register(mux, Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
 
-	register(mux, Prefix+"/favicon.ico", serveFavicons())
+	register(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, formats))
+	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, formats, errorChannel))
 
-	register(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache))
+	register(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache, errorChannel))
 
 	register(mux, Prefix+"/version", serveVersion())
 
 	if Cache {
-		registerCacheHandlers(mux, args, cache, formats)
+		err = registerCacheHandlers(mux, args, cache, formats, errorChannel)
+		if err != nil {
+			return err
+		}
 	}
 
 	if Info {
-		registerInfoHandlers(mux, args, cache, formats)
+		registerInfoHandlers(mux, args, cache, formats, errorChannel)
 	}
 
 	if Profile {
@@ -420,6 +450,18 @@ func ServePage(args []string) error {
 	if Russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
+
+	go func() {
+		for err := range errorChannel {
+			fmt.Printf("%s | Error: %v\n", time.Now().Format(logDate), err)
+
+			if ExitOnError {
+				fmt.Printf("%s | Shutting down...\n", time.Now().Format(logDate))
+
+				srv.Shutdown(context.Background())
+			}
+		}
+	}()
 
 	err = srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {

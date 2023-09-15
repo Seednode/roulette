@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.88.1"
+	ReleaseVersion string = "0.89.0"
 )
 
 var (
@@ -22,6 +22,7 @@ var (
 	CacheFile        string
 	Code             bool
 	CodeTheme        string
+	ExitOnError      bool
 	Filtering        bool
 	Flash            bool
 	Handlers         bool
@@ -72,6 +73,7 @@ func init() {
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
+	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")

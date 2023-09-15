@@ -16,8 +16,8 @@ var SupportedFormats = &Types{
 
 type Type interface {
 	Css() string
-	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string
-	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string
+	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
+	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
 	Extensions() map[string]string
 	MimeType(string) string
 	Validate(filePath string) bool

@@ -133,7 +133,7 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 	}
 }
 
-func serveIndexJson(args []string, index *fileCache) httprouter.Handle {
+func serveIndexJson(args []string, index *fileCache, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -168,7 +168,7 @@ func serveIndexJson(args []string, index *fileCache) httprouter.Handle {
 
 		response, err := json.MarshalIndent(cachedFiles[startIndex:stopIndex], "", "    ")
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			serverError(w, r, nil)
 
@@ -272,16 +272,16 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 	}
 }
 
-func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) {
+func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) {
 	if Cache {
 		register(mux, Prefix+"/html/", serveIndexHtml(args, cache, false))
 		if PageLength != 0 {
 			register(mux, Prefix+"/html/:page", serveIndexHtml(args, cache, true))
 		}
 
-		register(mux, Prefix+"/json", serveIndexJson(args, cache))
+		register(mux, Prefix+"/json", serveIndexJson(args, cache, errorChannel))
 		if PageLength != 0 {
-			register(mux, Prefix+"/json/:page", serveIndexJson(args, cache))
+			register(mux, Prefix+"/json/:page", serveIndexJson(args, cache, errorChannel))
 		}
 	}
 

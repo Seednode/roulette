@@ -27,11 +27,11 @@ func (t Format) Css() string {
 	return css.String()
 }
 
-func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
-	return fmt.Sprintf(`<title>%s</title>`, fileName)
+func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) string {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	body, err := os.ReadFile(filePath)
 	if err != nil {
 		body = []byte{}
@@ -39,7 +39,7 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 
 	return fmt.Sprintf(`<a href="%s"><textarea autofocus readonly>%s</textarea></a>`,
 		rootUrl,
-		body)
+		body), nil
 }
 
 func (t Format) Extensions() map[string]string {

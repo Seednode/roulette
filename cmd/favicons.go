@@ -7,6 +7,7 @@ package cmd
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,12 +28,16 @@ const (
 	<meta name="theme-color" content="#ffffff">`
 )
 
-func serveFavicons() httprouter.Handle {
+func serveFavicons(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		errorChannel <- errors.New("test")
+
 		fname := strings.TrimPrefix(r.URL.Path, "/")
 
 		data, err := favicons.ReadFile(fname)
 		if err != nil {
+			errorChannel <- err
+
 			return
 		}
 

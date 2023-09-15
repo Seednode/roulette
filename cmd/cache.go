@@ -6,7 +6,6 @@ package cmd
 
 import (
 	"encoding/gob"
-	"fmt"
 	"net/http"
 	"os"
 	"sync"
@@ -129,11 +128,11 @@ func (cache *fileCache) Import(path string) error {
 	return nil
 }
 
-func serveCacheClear(args []string, cache *fileCache, formats *types.Types) httprouter.Handle {
+func serveCacheClear(args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		list, err := fileList(args, &filters{}, "", &fileCache{}, formats)
 		if err != nil {
-			fmt.Println(err)
+			errorChannel <- err
 
 			return
 		}
@@ -146,7 +145,7 @@ func serveCacheClear(args []string, cache *fileCache, formats *types.Types) http
 	}
 }
 
-func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) error {
+func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) error {
 	skipIndex := false
 
 	if CacheFile != "" {
@@ -165,7 +164,7 @@ func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCac
 		cache.set(list)
 	}
 
-	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats))
+	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats, errorChannel))
 
 	return nil
 }
