@@ -15,6 +15,7 @@ var SupportedFormats = &Types{
 }
 
 type Type interface {
+	Type() string
 	Css() string
 	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
 	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)

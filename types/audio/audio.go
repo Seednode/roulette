@@ -57,6 +57,10 @@ func (t Format) Validate(filePath string) bool {
 	return true
 }
 
+func (t Format) Type() string {
+	return "embed"
+}
+
 func New() Format {
 	return Format{}
 }

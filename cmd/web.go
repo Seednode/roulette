@@ -100,8 +100,17 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 
 		fileSize := humanReadableSize(len(buf))
 
-		if Russian {
-			err = os.Remove(filePath)
+		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
+		if err != nil {
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
+		}
+
+		if Russian && refererUri != "" {
+			err = kill(filePath, cache)
 			if err != nil {
 				errorChannel <- err
 
@@ -109,14 +118,10 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 
 				return
 			}
-
-			if Cache {
-				cache.remove(filePath)
-			}
 		}
 
 		if Verbose {
-			fmt.Printf("%s | Served %s (%s) to %s in %s\n",
+			fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				filePath,
 				fileSize,
@@ -201,7 +206,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 	}
 }
 
-func serveMedia(paths []string, regexes *regexes, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
@@ -287,13 +292,33 @@ func serveMedia(paths []string, regexes *regexes, formats *types.Types, errorCha
 		htmlBody.WriteString(body)
 		htmlBody.WriteString(`</body></html>`)
 
-		_, err = io.WriteString(w, gohtml.Format(htmlBody.String()))
+		startTime := time.Now()
+
+		formattedPage := gohtml.Format(htmlBody.String())
+
+		_, err = io.WriteString(w, formattedPage)
 		if err != nil {
 			errorChannel <- err
 
 			serverError(w, r, nil)
 
 			return
+		}
+
+		if format.Type() != "embed" {
+			if Verbose {
+				fmt.Printf("%s | Serve: %s (%d) to %s in %s\n",
+					startTime.Format(logDate),
+					path,
+					len(formattedPage),
+					realIP(r),
+					time.Since(startTime).Round(time.Microsecond),
+				)
+			}
+
+			if Russian {
+				kill(path, cache)
+			}
 		}
 	}
 }
@@ -426,7 +451,7 @@ func ServePage(args []string) error {
 
 	register(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, formats, errorChannel))
+	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, cache, formats, errorChannel))
 
 	register(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache, errorChannel))
 
@@ -456,7 +481,7 @@ func ServePage(args []string) error {
 			fmt.Printf("%s | Error: %v\n", time.Now().Format(logDate), err)
 
 			if ExitOnError {
-				fmt.Printf("%s | Shutting down...\n", time.Now().Format(logDate))
+				fmt.Printf("%s | Error: Shutting down...\n", time.Now().Format(logDate))
 
 				srv.Shutdown(context.Background())
 			}

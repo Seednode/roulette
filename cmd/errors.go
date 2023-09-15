@@ -36,7 +36,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	startTime := time.Now()
 
 	if Verbose {
-		fmt.Printf("%s | Unavailable file %s requested by %s\n",
+		fmt.Printf("%s | Error: Unavailable file %s requested by %s\n",
 			startTime.Format(logDate),
 			path,
 			r.RemoteAddr,
@@ -58,7 +58,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
 	if Verbose {
-		fmt.Printf("%s | Invalid request for %s from %s\n",
+		fmt.Printf("%s | Error: Invalid request for %s from %s\n",
 			startTime.Format(logDate),
 			r.URL.Path,
 			r.RemoteAddr,

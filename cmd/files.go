@@ -79,6 +79,19 @@ func humanReadableSize(bytes int) string {
 		float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
+func kill(path string, cache *fileCache) error {
+	err := os.Remove(path)
+	if err != nil {
+		return err
+	}
+
+	if Cache {
+		cache.remove(path)
+	}
+
+	return nil
+}
+
 func preparePath(path string) string {
 	if runtime.GOOS == "windows" {
 		return fmt.Sprintf("%s/%s", mediaPrefix, filepath.ToSlash(path))
@@ -218,7 +231,7 @@ func pathIsValid(path string, paths []string) bool {
 
 	switch {
 	case Verbose && !matchesPrefix:
-		fmt.Printf("%s | Error: Failed to serve file outside specified path(s): %s\n",
+		fmt.Printf("%s | Error: File outside specified path(s): %s\n",
 			time.Now().Format(logDate),
 			path,
 		)
@@ -422,7 +435,7 @@ Poll:
 	}
 
 	if Verbose {
-		fmt.Printf("%s | Indexed %d/%d files across %d/%d directories in %s\n",
+		fmt.Printf("%s | Index: %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(logDate),
 			stats.filesMatched,
 			stats.filesMatched+stats.filesSkipped,

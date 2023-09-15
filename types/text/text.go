@@ -76,6 +76,10 @@ func (t Format) Validate(filePath string) bool {
 	return utf8.Valid(head)
 }
 
+func (t Format) Type() string {
+	return "html"
+}
+
 func New() Format {
 	return Format{}
 }

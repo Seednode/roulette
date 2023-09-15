@@ -120,6 +120,10 @@ func ImageDimensions(path string) (*dimensions, error) {
 	return &dimensions{width: decodedConfig.Width, height: decodedConfig.Height}, nil
 }
 
+func (t Format) Type() string {
+	return "embed"
+}
+
 func New() Format {
 	return Format{}
 }

@@ -221,6 +221,10 @@ func (t Format) Validate(filePath string) bool {
 	return true
 }
 
+func (t Format) Type() string {
+	return "html"
+}
+
 func New(theme string) Format {
 	return Format{
 		Theme: theme,
