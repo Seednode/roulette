@@ -99,8 +99,10 @@ func preparePath(path string) string {
 	return mediaPrefix + path
 }
 
-func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types, shouldCache bool) {
-	if shouldCache && !formats.Validate(path) {
+func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types) {
+	if !formats.Validate(path) {
+		stats.filesSkipped.Add(1)
+
 		return
 	}
 
@@ -110,8 +112,6 @@ func appendPath(directory, path string, files *files, stats *scanStats, formats 
 }
 
 func appendPaths(path string, files *files, filters *filters, stats *scanStats, formats *types.Types) error {
-	shouldCache := Cache && filters.isEmpty()
-
 	absolutePath, err := filepath.Abs(path)
 	if err != nil {
 		return err
@@ -140,7 +140,7 @@ func appendPaths(path string, files *files, filters *filters, stats *scanStats, 
 				filename,
 				filters.included[i],
 			) {
-				appendPath(directory, path, files, stats, formats, shouldCache)
+				appendPath(directory, path, files, stats, formats)
 
 				return nil
 			}
@@ -151,7 +151,7 @@ func appendPaths(path string, files *files, filters *filters, stats *scanStats, 
 		return nil
 	}
 
-	appendPath(directory, path, files, stats, formats, shouldCache)
+	appendPath(directory, path, files, stats, formats)
 
 	return nil
 }
