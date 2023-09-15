@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"encoding/gob"
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
@@ -64,14 +65,6 @@ func (cache *fileCache) set(val []string) {
 	cache.list = make([]string, length)
 	copy(cache.list, val)
 	cache.mutex.Unlock()
-}
-
-func (cache *fileCache) generate(args []string, formats *types.Types) {
-	cache.mutex.Lock()
-	cache.list = []string{}
-	cache.mutex.Unlock()
-
-	fileList(args, &filters{}, "", cache, formats)
 
 	if Cache && CacheFile != "" {
 		cache.Export(CacheFile)
@@ -138,7 +131,14 @@ func (cache *fileCache) Import(path string) error {
 
 func serveCacheClear(args []string, cache *fileCache, formats *types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		cache.generate(args, formats)
+		list, err := fileList(args, &filters{}, "", &fileCache{}, formats)
+		if err != nil {
+			fmt.Println(err)
+
+			return
+		}
+
+		cache.set(list)
 
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -146,7 +146,7 @@ func serveCacheClear(args []string, cache *fileCache, formats *types.Types) http
 	}
 }
 
-func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) {
+func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types) error {
 	skipIndex := false
 
 	if CacheFile != "" {
@@ -157,8 +157,15 @@ func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCac
 	}
 
 	if !skipIndex {
-		cache.generate(args, formats)
+		list, err := fileList(args, &filters{}, "", &fileCache{}, formats)
+		if err != nil {
+			return err
+		}
+
+		cache.set(list)
 	}
 
 	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats))
+
+	return nil
 }
