@@ -307,10 +307,10 @@ func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *typ
 
 		if format.Type() != "embed" {
 			if Verbose {
-				fmt.Printf("%s | Serve: %s (%d) to %s in %s\n",
+				fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
 					startTime.Format(logDate),
 					path,
-					len(formattedPage),
+					humanReadableSize(len(formattedPage)),
 					realIP(r),
 					time.Since(startTime).Round(time.Microsecond),
 				)
