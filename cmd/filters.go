@@ -4,7 +4,10 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 
 package cmd
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 type filters struct {
 	included []string
@@ -29,4 +32,28 @@ func (filters *filters) hasExcludes() bool {
 
 func (filters *filters) excludes() string {
 	return strings.Join(filters.excluded, ",")
+}
+
+func (filters *filters) apply(fileList []string) []string {
+	result := make([]string, len(fileList))
+
+	copy(result, fileList)
+
+	if filters.hasExcludes() {
+		for _, exclude := range filters.excluded {
+			result = slices.DeleteFunc(fileList, func(s string) bool {
+				return strings.Contains(strings.ToLower(s), strings.ToLower(exclude))
+			})
+		}
+	}
+
+	if filters.hasIncludes() {
+		for _, include := range filters.included {
+			result = slices.DeleteFunc(fileList, func(s string) bool {
+				return !strings.Contains(strings.ToLower(s), strings.ToLower(include))
+			})
+		}
+	}
+
+	return result
 }

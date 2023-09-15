@@ -43,12 +43,12 @@ type concurrency struct {
 
 type files struct {
 	mutex sync.RWMutex
-	list  map[string][]string
+	list  []string
 }
 
-func (f *files) append(directory, path string) {
+func (f *files) append(path string) {
 	f.mutex.Lock()
-	f.list[directory] = append(f.list[directory], path)
+	f.list = append(f.list, path)
 	f.mutex.Unlock()
 }
 
@@ -97,63 +97,6 @@ func preparePath(path string) string {
 	}
 
 	return mediaPrefix + path
-}
-
-func appendPath(directory, path string, files *files, stats *scanStats, formats *types.Types) {
-	if !formats.Validate(path) {
-		stats.filesSkipped.Add(1)
-
-		return
-	}
-
-	files.append(directory, path)
-
-	stats.filesMatched.Add(1)
-}
-
-func appendPaths(path string, files *files, filters *filters, stats *scanStats, formats *types.Types) error {
-	absolutePath, err := filepath.Abs(path)
-	if err != nil {
-		return err
-	}
-
-	directory, filename := filepath.Split(absolutePath)
-
-	filename = strings.ToLower(filename)
-
-	if filters.hasExcludes() {
-		for i := 0; i < len(filters.excluded); i++ {
-			if strings.Contains(
-				filename,
-				filters.excluded[i],
-			) {
-				stats.filesSkipped.Add(1)
-
-				return nil
-			}
-		}
-	}
-
-	if filters.hasIncludes() {
-		for i := 0; i < len(filters.included); i++ {
-			if strings.Contains(
-				filename,
-				filters.included[i],
-			) {
-				appendPath(directory, path, files, stats, formats)
-
-				return nil
-			}
-		}
-
-		stats.filesSkipped.Add(1)
-
-		return nil
-	}
-
-	appendPath(directory, path, files, stats, formats)
-
-	return nil
 }
 
 func newFile(paths []string, filters *filters, sortOrder string, regexes *regexes, cache *fileCache, formats *types.Types) (string, error) {
@@ -351,7 +294,7 @@ func pathCount(path string) (uint32, uint32, error) {
 	return files, directories, nil
 }
 
-func scanPath(path string, files *files, filters *filters, stats *scanStats, concurrency *concurrency, formats *types.Types) error {
+func scanPath(path string, files *files, stats *scanStats, concurrency *concurrency, formats *types.Types) error {
 	var wg sync.WaitGroup
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -378,10 +321,15 @@ func scanPath(path string, files *files, filters *filters, stats *scanStats, con
 					fmt.Println(err)
 				}
 
-				err = appendPaths(path, files, filters, stats, formats)
-				if err != nil {
-					fmt.Println(err)
+				if !formats.Validate(path) {
+					stats.filesSkipped.Add(1)
+
+					return
 				}
+
+				files.append(path)
+
+				stats.filesMatched.Add(1)
 			}()
 		case info.IsDir():
 			files, directories, err := pathCount(p)
@@ -412,16 +360,10 @@ func scanPath(path string, files *files, filters *filters, stats *scanStats, con
 	return nil
 }
 
-func fileList(paths []string, filters *filters, sort string, cache *fileCache, formats *types.Types) ([]string, bool) {
-	if Cache && filters.isEmpty() && !cache.isEmpty() {
-		return cache.List(), true
-	}
-
-	var fileList []string
-
+func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Types) []string {
 	files := &files{
 		mutex: sync.RWMutex{},
-		list:  make(map[string][]string),
+		list:  []string{},
 	}
 
 	stats := &scanStats{
@@ -451,7 +393,7 @@ func fileList(paths []string, filters *filters, sort string, cache *fileCache, f
 				wg.Done()
 			}()
 
-			err := scanPath(paths[i], files, filters, stats, concurrency, formats)
+			err := scanPath(paths[i], files, stats, concurrency, formats)
 			if err != nil {
 				fmt.Println(err)
 			}
@@ -460,10 +402,9 @@ func fileList(paths []string, filters *filters, sort string, cache *fileCache, f
 
 	wg.Wait()
 
-	fileList = prepareDirectories(files, sort)
-
 	if stats.filesMatched.Load() < 1 {
-		return []string{}, false
+		fmt.Println("No files matched")
+		return []string{}
 	}
 
 	if Verbose {
@@ -477,35 +418,32 @@ func fileList(paths []string, filters *filters, sort string, cache *fileCache, f
 		)
 	}
 
-	if Cache && filters.isEmpty() {
-		cache.set(fileList)
-	}
-
-	return fileList, false
+	return files.list
 }
 
-func prepareDirectories(files *files, sort string) []string {
-	directories := []string{}
-
-	keys := make([]string, len(files.list))
-
-	i := 0
-	for k := range files.list {
-		keys[i] = k
-		i++
+func fileList(paths []string, filters *filters, sort string, cache *fileCache, formats *types.Types) []string {
+	switch {
+	case Cache && !cache.isEmpty() && filters.isEmpty():
+		return cache.List()
+	case Cache && !cache.isEmpty() && !filters.isEmpty():
+		return filters.apply(cache.List())
+	case Cache && cache.isEmpty() && !filters.isEmpty():
+		cache.set(scanPaths(paths, sort, cache, formats))
+		return filters.apply(cache.List())
+	case Cache && cache.isEmpty() && filters.isEmpty():
+		cache.set(scanPaths(paths, sort, cache, formats))
+		return cache.List()
+	case !Cache && !filters.isEmpty():
+		return filters.apply(scanPaths(paths, sort, cache, formats))
+	default:
+		return scanPaths(paths, sort, cache, formats)
 	}
-
-	for i := 0; i < len(keys); i++ {
-		directories = append(directories, files.list[keys[i]]...)
-	}
-
-	return directories
 }
 
 func pickFile(args []string, filters *filters, sort string, cache *fileCache, formats *types.Types) (string, error) {
-	fileList, fromCache := fileList(args, filters, sort, cache, formats)
+	list := fileList(args, filters, sort, cache, formats)
 
-	fileCount := len(fileList)
+	fileCount := len(list)
 
 	if fileCount < 1 {
 		return "", ErrNoMediaFound
@@ -521,27 +459,7 @@ func pickFile(args []string, filters *filters, sort string, cache *fileCache, fo
 		return "", err
 	}
 
-	for i := 0; i < fileCount; i++ {
-		switch {
-		case val >= fileCount:
-			val = 0
-		case val < fileCount-1:
-			val++
-		}
-
-		path := fileList[val]
-
-		switch {
-		case !fromCache && formats.Validate(path):
-			return path, nil
-		case !fromCache:
-			continue
-		default:
-			return path, nil
-		}
-	}
-
-	return "", ErrNoMediaFound
+	return list[val], nil
 }
 
 func normalizePath(path string) (string, error) {

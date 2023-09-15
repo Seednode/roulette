@@ -24,8 +24,6 @@ If the `-c|--cache` flag is passed, the indices of all specified paths will be c
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
-If any `include=`/`exclude=` filters are specified in a given request, the cache will be bypassed for that specific request.
-
 The cache can be regenerated at any time by accessing the `/clear_cache` endpoint.
 
 If `--cache-file` is set, the cache will be loaded from the specified file on start, and written to the file whenever it is re-generated.

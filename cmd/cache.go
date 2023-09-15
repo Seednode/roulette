@@ -22,7 +22,8 @@ type fileCache struct {
 
 func (cache *fileCache) List() []string {
 	cache.mutex.RLock()
-	val := cache.list
+	val := make([]string, len(cache.list))
+	copy(val, cache.list)
 	cache.mutex.RUnlock()
 
 	return val
@@ -53,8 +54,15 @@ func (cache *fileCache) remove(path string) {
 }
 
 func (cache *fileCache) set(val []string) {
+	length := len(val)
+
+	if length < 1 {
+		return
+	}
+
 	cache.mutex.Lock()
-	cache.list = val
+	cache.list = make([]string, length)
+	copy(cache.list, val)
 	cache.mutex.Unlock()
 }
 
