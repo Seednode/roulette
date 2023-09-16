@@ -35,16 +35,18 @@ type regexes struct {
 	filename     *regexp.Regexp
 }
 
-type concurrency struct {
-	directoryScans chan int
-	fileScans      chan int
-}
-
 type scanStats struct {
 	filesMatched       int
 	filesSkipped       int
 	directoriesMatched int
 	directoriesSkipped int
+}
+
+type scanStatsChannels struct {
+	filesMatched       chan int
+	filesSkipped       chan int
+	directoriesMatched chan int
+	directoriesSkipped chan int
 }
 
 type splitPath struct {
@@ -295,49 +297,42 @@ func pathCount(path string) (int, int, error) {
 	return files, directories, nil
 }
 
-func scanPath(path string, fileChannel chan<- string, statChannel chan<- *scanStats, errorChannel chan<- error, concurrency *concurrency, formats *types.Types) {
+func scanPath(path string, fileChannel chan<- string, fileScans chan int, stats *scanStatsChannels, formats *types.Types) error {
 	var wg sync.WaitGroup
 
-	stats := &scanStats{
-		filesMatched:       0,
-		filesSkipped:       0,
-		directoriesMatched: 0,
-		directoriesSkipped: 0,
-	}
+	errorChannel := make(chan error)
+	done := make(chan bool, 1)
 
-	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-
+	filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
 		switch {
 		case !Recursive && info.IsDir() && p != path:
 			return filepath.SkipDir
 		case !info.IsDir():
 			wg.Add(1)
-			concurrency.fileScans <- 1
+			fileScans <- 1
 
 			go func() {
 				defer func() {
-					<-concurrency.fileScans
-
 					wg.Done()
+					<-fileScans
 				}()
 
 				path, err := normalizePath(p)
 				if err != nil {
 					errorChannel <- err
+
+					return
 				}
 
 				if !formats.Validate(path) {
-					stats.filesSkipped = stats.filesSkipped + 1
+					stats.filesSkipped <- 1
 
 					return
 				}
 
 				fileChannel <- path
 
-				stats.filesMatched = stats.filesMatched + 1
+				stats.filesMatched <- 1
 			}()
 		case info.IsDir():
 			files, directories, err := pathCount(p)
@@ -347,33 +342,43 @@ func scanPath(path string, fileChannel chan<- string, statChannel chan<- *scanSt
 
 			if files > 0 && (files < int(MinimumFileCount)) || (files > int(MaximumFileCount)) {
 				// This count will not otherwise include the parent directory itself, so increment by one
-				stats.directoriesSkipped = stats.directoriesSkipped + directories + 1
-				stats.filesSkipped = stats.filesSkipped + files
+				stats.directoriesSkipped <- directories + 1
+				stats.filesSkipped <- files
 
 				return filepath.SkipDir
 			}
 
-			stats.directoriesMatched = stats.directoriesMatched + 1
+			stats.directoriesMatched <- 1
 		}
 
-		return err
+		return nil
 	})
 
-	wg.Wait()
+	go func() {
+		wg.Wait()
+		done <- true
+	}()
 
-	statChannel <- stats
-
-	if err != nil {
-		errorChannel <- err
+Poll:
+	for {
+		select {
+		case e := <-errorChannel:
+			return e
+		case <-done:
+			break Poll
+		}
 	}
+
+	return nil
 }
 
 func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Types) ([]string, error) {
 	var list []string
 
 	fileChannel := make(chan string)
-	statChannel := make(chan *scanStats)
 	errorChannel := make(chan error)
+	directoryScans := make(chan int, maxDirectoryScans)
+	fileScans := make(chan int, maxFileScans)
 	done := make(chan bool, 1)
 
 	stats := &scanStats{
@@ -383,9 +388,11 @@ func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Typ
 		directoriesSkipped: 0,
 	}
 
-	concurrency := &concurrency{
-		directoryScans: make(chan int, maxDirectoryScans),
-		fileScans:      make(chan int, maxFileScans),
+	statsChannels := &scanStatsChannels{
+		filesMatched:       make(chan int),
+		filesSkipped:       make(chan int),
+		directoriesMatched: make(chan int),
+		directoriesSkipped: make(chan int),
 	}
 
 	var wg sync.WaitGroup
@@ -394,16 +401,20 @@ func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Typ
 
 	for i := 0; i < len(paths); i++ {
 		wg.Add(1)
-		concurrency.directoryScans <- 1
+		directoryScans <- 1
 
 		go func(i int) {
 			defer func() {
-				<-concurrency.directoryScans
-
 				wg.Done()
+				<-directoryScans
 			}()
 
-			scanPath(paths[i], fileChannel, statChannel, errorChannel, concurrency, formats)
+			err := scanPath(paths[i], fileChannel, fileScans, statsChannels, formats)
+			if err != nil {
+				errorChannel <- err
+
+				return
+			}
 		}(i)
 	}
 
@@ -417,11 +428,14 @@ Poll:
 		select {
 		case p := <-fileChannel:
 			list = append(list, p)
-		case s := <-statChannel:
-			stats.filesMatched = stats.filesMatched + s.filesMatched
-			stats.filesSkipped = stats.filesSkipped + s.filesSkipped
-			stats.directoriesMatched = stats.directoriesMatched + s.directoriesMatched
-			stats.directoriesSkipped = stats.directoriesSkipped + s.directoriesSkipped
+		case s := <-statsChannels.filesMatched:
+			stats.filesMatched = stats.filesMatched + s
+		case s := <-statsChannels.filesSkipped:
+			stats.filesSkipped = stats.filesSkipped + s
+		case s := <-statsChannels.directoriesMatched:
+			stats.directoriesMatched = stats.directoriesMatched + s
+		case s := <-statsChannels.directoriesSkipped:
+			stats.directoriesSkipped = stats.directoriesSkipped + s
 		case e := <-errorChannel:
 			return []string{}, e
 		case <-done:
