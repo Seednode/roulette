@@ -19,6 +19,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -39,6 +40,14 @@ const (
 	RedirectStatusCode int           = http.StatusSeeOther
 	timeout            time.Duration = 10 * time.Second
 )
+
+func preparePath(path string) string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("%s/%s", mediaPrefix, filepath.ToSlash(path))
+	}
+
+	return mediaPrefix + path
+}
 
 func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -96,7 +105,19 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 			return
 		}
 
-		written, _ := w.Write(buf)
+		var status string
+
+		written, err := w.Write(buf)
+		switch {
+		case errors.Is(err, syscall.EPIPE):
+			status = " (incomplete)"
+		case err != nil:
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
+		}
 
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -119,12 +140,13 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 		}
 
 		if Verbose {
-			fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
+			fmt.Printf("%s | Serve: %s (%s) to %s in %s%s\n",
 				startTime.Format(logDate),
 				filePath,
 				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
+				status,
 			)
 		}
 	}
@@ -152,10 +174,10 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 
 		_, refreshInterval := refreshInterval(r)
 
-		var filePath string
+		var path string
 
 		if refererUri != "" {
-			filePath, err = nextFile(strippedRefererUri, sortOrder, regexes, formats)
+			path, err = nextFile(strippedRefererUri, sortOrder, regexes, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -163,6 +185,15 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 
 				return
 			}
+		}
+
+		list, err := fileList(paths, filters, sortOrder, cache, formats)
+		if err != nil {
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
 		}
 
 	loop:
@@ -173,14 +204,14 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 			default:
 			}
 
-			if filePath != "" {
+			if path != "" {
 				break loop
 			}
 
-			filePath, err = newFile(paths, filters, sortOrder, regexes, cache, formats)
+			path, err = newFile(list, sortOrder, regexes, formats)
 			switch {
 			case err != nil && err == ErrNoMediaFound:
-				notFound(w, r, filePath)
+				notFound(w, r, path)
 
 				return
 			case err != nil:
@@ -197,7 +228,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 		newUrl := fmt.Sprintf("http://%s%s%s%s",
 			r.Host,
 			Prefix,
-			preparePath(filePath),
+			preparePath(path),
 			queryParams,
 		)
 		http.Redirect(w, r, newUrl, RedirectStatusCode)

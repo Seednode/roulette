@@ -13,7 +13,6 @@ import (
 	"crypto/rand"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -94,16 +93,30 @@ func kill(path string, cache *fileCache) error {
 	return nil
 }
 
-func preparePath(path string) string {
-	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s/%s", mediaPrefix, filepath.ToSlash(path))
+func split(path string, regexes *regexes) (*splitPath, error) {
+	p := splitPath{}
+	var err error
+
+	split := regexes.filename.FindAllStringSubmatch(path, -1)
+
+	if len(split) < 1 || len(split[0]) < 3 {
+		return &splitPath{}, nil
 	}
 
-	return mediaPrefix + path
+	p.base = split[0][1]
+
+	p.number, err = strconv.Atoi(split[0][2])
+	if err != nil {
+		return &splitPath{}, err
+	}
+
+	p.extension = split[0][3]
+
+	return &p, nil
 }
 
-func newFile(paths []string, filters *filters, sortOrder string, regexes *regexes, cache *fileCache, formats *types.Types) (string, error) {
-	path, err := pickFile(paths, filters, sortOrder, cache, formats)
+func newFile(list []string, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
+	path, err := pickFile(list)
 	if err != nil {
 		return "", err
 	}
@@ -167,28 +180,6 @@ func nextFile(path, sortOrder string, regexes *regexes, formats *types.Types) (s
 	}
 
 	return fileName, err
-}
-
-func split(path string, regexes *regexes) (*splitPath, error) {
-	p := splitPath{}
-	var err error
-
-	split := regexes.filename.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return &splitPath{}, nil
-	}
-
-	p.base = split[0][1]
-
-	p.number, err = strconv.Atoi(split[0][2])
-	if err != nil {
-		return &splitPath{}, err
-	}
-
-	p.extension = split[0][3]
-
-	return &p, nil
 }
 
 func tryExtensions(splitPath *splitPath, formats *types.Types) (string, error) {
@@ -297,7 +288,7 @@ func pathCount(path string) (int, int, error) {
 	return files, directories, nil
 }
 
-func scanPath(path string, fileChannel chan<- string, fileScans chan int, stats *scanStatsChannels, formats *types.Types) error {
+func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats *scanStatsChannels, formats *types.Types) error {
 	var wg sync.WaitGroup
 
 	errorChannel := make(chan error)
@@ -409,7 +400,7 @@ func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Typ
 				<-directoryScans
 			}()
 
-			err := scanPath(paths[i], fileChannel, fileScans, statsChannels, formats)
+			err := walkPath(paths[i], fileChannel, fileScans, statsChannels, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -501,12 +492,7 @@ func fileList(paths []string, filters *filters, sort string, cache *fileCache, f
 	}
 }
 
-func pickFile(args []string, filters *filters, sort string, cache *fileCache, formats *types.Types) (string, error) {
-	list, err := fileList(args, filters, sort, cache, formats)
-	if err != nil {
-		return "", err
-	}
-
+func pickFile(list []string) (string, error) {
 	fileCount := len(list)
 
 	if fileCount < 1 {
