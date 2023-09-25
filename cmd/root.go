@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.91.0"
+	ReleaseVersion string = "0.92.0"
 )
 
 var (
@@ -20,6 +20,7 @@ var (
 	Bind             string
 	Cache            bool
 	CacheFile        string
+	CaseSensitive    bool
 	Code             bool
 	CodeTheme        string
 	ExitOnError      bool
@@ -71,6 +72,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
 	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
+	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
