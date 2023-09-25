@@ -117,6 +117,7 @@ Flags:
   -b, --bind string          address to bind to (default "0.0.0.0")
   -c, --cache                generate directory cache at startup
       --cache-file string    path to optional persistent cache file
+      --case-sensitive       use case-sensitive matching for filters
       --code                 enable support for source code files
       --code-theme string    theme for source code syntax highlighting (default "solarized-dark256")
       --exit-on-error        shut down webserver on error, instead of just printing the error
