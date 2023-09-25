@@ -49,9 +49,9 @@ func splitQueryParams(query string, regexes *regexes) []string {
 	for i := 0; i < len(params); i++ {
 		switch {
 		case regexes.alphanumeric.MatchString(params[i]) && CaseSensitive:
-			results = append(results, strings.ToLower(params[i]))
-		case regexes.alphanumeric.MatchString(params[i]):
 			results = append(results, params[i])
+		case regexes.alphanumeric.MatchString(params[i]):
+			results = append(results, strings.ToLower(params[i]))
 		}
 	}
 
