@@ -42,7 +42,11 @@ func (filters *filters) apply(fileList []string) []string {
 	if filters.hasExcludes() {
 		for _, exclude := range filters.excluded {
 			result = slices.DeleteFunc(fileList, func(s string) bool {
-				return strings.Contains(strings.ToLower(s), strings.ToLower(exclude))
+				if CaseSensitive {
+					return strings.Contains(s, exclude)
+				} else {
+					return strings.Contains(strings.ToLower(s), strings.ToLower(exclude))
+				}
 			})
 		}
 	}
@@ -50,7 +54,11 @@ func (filters *filters) apply(fileList []string) []string {
 	if filters.hasIncludes() {
 		for _, include := range filters.included {
 			result = slices.DeleteFunc(fileList, func(s string) bool {
-				return !strings.Contains(strings.ToLower(s), strings.ToLower(include))
+				if CaseSensitive {
+					return !strings.Contains(s, include)
+				} else {
+					return !strings.Contains(strings.ToLower(s), strings.ToLower(include))
+				}
 			})
 		}
 	}
