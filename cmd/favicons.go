@@ -27,14 +27,12 @@ const (
 	<meta name="theme-color" content="#ffffff">`
 )
 
-func serveFavicons(errorChannel chan<- error) httprouter.Handle {
+func serveFavicons() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		fname := strings.TrimPrefix(r.URL.Path, "/")
 
 		data, err := favicons.ReadFile(fname)
 		if err != nil {
-			errorChannel <- err
-
 			return
 		}
 

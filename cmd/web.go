@@ -445,6 +445,11 @@ func ServePage(args []string) error {
 		list:  []string{},
 	}
 
+	err = importCache(paths, cache, formats)
+	if err != nil {
+		return err
+	}
+
 	regexes := &regexes{
 		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
@@ -485,9 +490,9 @@ func ServePage(args []string) error {
 		register(mux, "/", redirectRoot())
 	}
 
-	register(mux, Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
+	register(mux, Prefix+"/favicons/*favicon", serveFavicons())
 
-	register(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
+	register(mux, Prefix+"/favicon.ico", serveFavicons())
 
 	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, cache, formats, errorChannel))
 

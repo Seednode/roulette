@@ -6,9 +6,11 @@ package cmd
 
 import (
 	"encoding/gob"
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
@@ -79,6 +81,8 @@ func (cache *fileCache) isEmpty() bool {
 }
 
 func (cache *fileCache) Export(path string) error {
+	startTime := time.Now()
+
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		return err
@@ -95,12 +99,23 @@ func (cache *fileCache) Export(path string) error {
 
 	cache.mutex.RLock()
 	enc.Encode(&cache.list)
+	length := len(cache.list)
 	cache.mutex.RUnlock()
+
+	if Verbose {
+		fmt.Printf("%s | CACHE: Exported %d entries in %s\n",
+			time.Now().Format(logDate),
+			length,
+			time.Since(startTime),
+		)
+	}
 
 	return nil
 }
 
 func (cache *fileCache) Import(path string) error {
+	startTime := time.Now()
+
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
 		return err
@@ -116,13 +131,20 @@ func (cache *fileCache) Import(path string) error {
 	dec := gob.NewDecoder(z)
 
 	cache.mutex.Lock()
-
 	err = dec.Decode(&cache.list)
-
+	length := len(cache.list)
 	cache.mutex.Unlock()
 
 	if err != nil {
 		return err
+	}
+
+	if Verbose {
+		fmt.Printf("%s | CACHE: Imported %d entries in %s\n",
+			time.Now().Format(logDate),
+			length,
+			time.Since(startTime),
+		)
 	}
 
 	return nil
@@ -146,6 +168,12 @@ func serveCacheClear(args []string, cache *fileCache, formats *types.Types, erro
 }
 
 func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) error {
+	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats, errorChannel))
+
+	return nil
+}
+
+func importCache(args []string, cache *fileCache, formats *types.Types) error {
 	skipIndex := false
 
 	if CacheFile != "" {
@@ -156,15 +184,11 @@ func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCac
 	}
 
 	if !skipIndex {
-		list, err := fileList(args, &filters{}, "", &fileCache{}, formats)
+		_, err := fileList(args, &filters{}, "", cache, formats)
 		if err != nil {
 			return err
 		}
-
-		cache.set(list)
 	}
-
-	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats, errorChannel))
 
 	return nil
 }
