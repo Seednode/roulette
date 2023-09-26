@@ -36,8 +36,8 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 			startIndex = 0
 			stopIndex = fileCount
 		} else {
-			startIndex = ((page - 1) * int(PageLength))
-			stopIndex = (startIndex + int(PageLength))
+			startIndex = ((page - 1) * PageLength)
+			stopIndex = (startIndex + PageLength)
 		}
 
 		if startIndex > (fileCount - 1) {
@@ -72,10 +72,10 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 			var firstPage int = 1
 			var lastPage int
 
-			if fileCount%int(PageLength) == 0 {
-				lastPage = fileCount / int(PageLength)
+			if fileCount%PageLength == 0 {
+				lastPage = fileCount / PageLength
 			} else {
-				lastPage = (fileCount / int(PageLength)) + 1
+				lastPage = (fileCount / PageLength) + 1
 			}
 
 			if paginate {
@@ -96,7 +96,7 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 
 				nextPage := page + 1
 				if nextPage > lastPage {
-					nextPage = fileCount / int(PageLength)
+					nextPage = fileCount / PageLength
 				}
 
 				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">First</button>",
@@ -154,8 +154,8 @@ func serveIndexJson(args []string, index *fileCache, errorChannel chan<- error) 
 			startIndex = 0
 			stopIndex = fileCount
 		} else {
-			startIndex = ((page - 1) * int(PageLength))
-			stopIndex = (startIndex + int(PageLength))
+			startIndex = ((page - 1) * PageLength)
+			stopIndex = (startIndex + PageLength)
 		}
 
 		if startIndex > (fileCount - 1) {

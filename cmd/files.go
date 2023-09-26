@@ -323,7 +323,7 @@ func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats 
 				errorChannel <- err
 			}
 
-			if files > 0 && (files < int(MinFileCount)) || (files > int(MaxFileCount)) {
+			if files > 0 && (files < MinFileCount) || (files > MaxFileCount) {
 				// This count will not otherwise include the parent directory itself, so increment by one
 				stats.directoriesSkipped <- directories + 1
 				stats.filesSkipped <- files

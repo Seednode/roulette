@@ -453,7 +453,7 @@ func ServePage(args []string) error {
 	mux := httprouter.New()
 
 	srv := &http.Server{
-		Addr:         net.JoinHostPort(Bind, strconv.Itoa(int(Port))),
+		Addr:         net.JoinHostPort(Bind, strconv.Itoa(Port)),
 		Handler:      mux,
 		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  5 * time.Second,

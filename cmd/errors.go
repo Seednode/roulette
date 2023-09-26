@@ -16,8 +16,9 @@ import (
 )
 
 var (
-	ErrIncorrectRefreshInterval = errors.New("refresh interval must be a duration string >= 500ms")
-	ErrNoMediaFound             = errors.New("no supported media formats found which match all criteria")
+	ErrInvalidPort      = errors.New("listen port must be an integer between 1 and 65535 inclusive")
+	ErrInvalidScanCount = errors.New("scan count must be a positive integer")
+	ErrNoMediaFound     = errors.New("no supported media formats found which match all criteria")
 )
 
 func newErrorPage(title, body string) string {

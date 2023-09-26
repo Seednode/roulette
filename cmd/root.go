@@ -5,14 +5,13 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"errors"
 	"log"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "0.93.0"
+	ReleaseVersion string = "0.93.1"
 )
 
 var (
@@ -30,12 +29,12 @@ var (
 	Handlers      bool
 	Images        bool
 	Info          bool
-	MaxDirScans   uint
-	MaxFileScans  uint
-	MaxFileCount  uint
-	MinFileCount  uint
-	PageLength    uint32
-	Port          uint16
+	MaxDirScans   int
+	MaxFileScans  int
+	MaxFileCount  int
+	MinFileCount  int
+	PageLength    int
+	Port          int
 	Prefix        string
 	Profile       bool
 	Recursive     bool
@@ -52,12 +51,12 @@ var (
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if MaxDirScans < 1 {
-				return errors.New("max directory scan count must be a positive integer")
+			if MaxDirScans < 1 || MaxFileScans < 1 {
+				return ErrInvalidScanCount
 			}
 
-			if MaxFileScans < 1 {
-				return errors.New("max file scan count must be a positive integer")
+			if Port < 1 || Port > 65535 {
+				return ErrInvalidPort
 			}
 
 			return nil
@@ -95,12 +94,12 @@ func init() {
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
-	rootCmd.Flags().UintVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
-	rootCmd.Flags().UintVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
-	rootCmd.Flags().UintVar(&MaxFileCount, "max-file-count", 1<<32-1, "skip directories with file counts above this value")
-	rootCmd.Flags().UintVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
-	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for info pages")
-	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
+	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
+	rootCmd.Flags().IntVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
+	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", 1<<32-1, "skip directories with file counts above this value")
+	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
+	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")
+	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
