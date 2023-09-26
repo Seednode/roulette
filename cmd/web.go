@@ -440,6 +440,15 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
+	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
+
+	if Verbose {
+		fmt.Printf("%s | SERVE: Listening on %s...\n",
+			time.Now().Format(logDate),
+			listenHost,
+		)
+	}
+
 	cache := &fileCache{
 		mutex: sync.RWMutex{},
 		list:  []string{},
@@ -456,15 +465,6 @@ func ServePage(args []string) error {
 	}
 
 	mux := httprouter.New()
-
-	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
-
-	if Verbose {
-		fmt.Printf("%s | SERVE: Listening on %s...\n",
-			time.Now().Format(logDate),
-			listenHost,
-		)
-	}
 
 	srv := &http.Server{
 		Addr:         listenHost,
