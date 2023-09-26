@@ -140,7 +140,7 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 		}
 
 		if Verbose {
-			fmt.Printf("%s | Serve: %s (%s) to %s in %s%s\n",
+			fmt.Printf("%s | SERVE: %s (%s) to %s in %s%s\n",
 				startTime.Format(logDate),
 				filePath,
 				humanReadableSize(written),
@@ -336,7 +336,7 @@ func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *typ
 
 		if format.Type() != "embed" {
 			if Verbose {
-				fmt.Printf("%s | Serve: %s (%s) to %s in %s\n",
+				fmt.Printf("%s | SERVE: %s (%s) to %s in %s\n",
 					startTime.Format(logDate),
 					path,
 					humanReadableSize(written),
@@ -452,8 +452,17 @@ func ServePage(args []string) error {
 
 	mux := httprouter.New()
 
+	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
+
+	if Verbose {
+		fmt.Printf("%s | SERVE: Listening on %s...\n",
+			time.Now().Format(logDate),
+			listenHost,
+		)
+	}
+
 	srv := &http.Server{
-		Addr:         net.JoinHostPort(Bind, strconv.Itoa(Port)),
+		Addr:         listenHost,
 		Handler:      mux,
 		IdleTimeout:  10 * time.Minute,
 		ReadTimeout:  5 * time.Second,
@@ -507,10 +516,10 @@ func ServePage(args []string) error {
 
 	go func() {
 		for err := range errorChannel {
-			fmt.Printf("%s | Error: %v\n", time.Now().Format(logDate), err)
+			fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
 
 			if ExitOnError {
-				fmt.Printf("%s | Error: Shutting down...\n", time.Now().Format(logDate))
+				fmt.Printf("%s | ERROR: Shutting down...\n", time.Now().Format(logDate))
 
 				srv.Shutdown(context.Background())
 			}

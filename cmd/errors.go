@@ -16,10 +16,10 @@ import (
 )
 
 var (
-	ErrInvalidFileCountRange = errors.New("maximum file count must be greater than or equal to minimum file count")
-	ErrInvalidFileCountValue = errors.New("file count value must be an integer between 1 and 2147483647 inclusive")
+	ErrInvalidFileCountRange = errors.New("maximum file count limit must be greater than or equal to minimum file count limit")
+	ErrInvalidFileCountValue = errors.New("file count limits must be positive integers no greater than 2147483647")
 	ErrInvalidPort           = errors.New("listen port must be an integer between 1 and 65535 inclusive")
-	ErrInvalidScanCount      = errors.New("scan count must be a positive integer")
+	ErrInvalidScanCount      = errors.New("maximum scan count must be a positive integer no greater than 2147483647")
 	ErrNoMediaFound          = errors.New("no supported media formats found which match all criteria")
 )
 
@@ -39,7 +39,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	startTime := time.Now()
 
 	if Verbose {
-		fmt.Printf("%s | Error: Unavailable file %s requested by %s\n",
+		fmt.Printf("%s | ERROR: Unavailable file %s requested by %s\n",
 			startTime.Format(logDate),
 			path,
 			r.RemoteAddr,
@@ -61,17 +61,16 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
 	if Verbose {
-		fmt.Printf("%s | Error: Invalid request for %s from %s\n",
+		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
 			startTime.Format(logDate),
 			r.URL.Path,
 			r.RemoteAddr,
 		)
 	}
 
-	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Add("Content-Type", "text/html")
 
-	io.WriteString(w, gohtml.Format(newErrorPage("Server Error", "500 Internal Server Error")))
+	io.WriteString(w, gohtml.Format(newErrorPage("Server Error", "An error has occurred. Please try again.")))
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {

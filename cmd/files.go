@@ -216,7 +216,7 @@ func pathIsValid(path string, paths []string) bool {
 
 	switch {
 	case Verbose && !matchesPrefix:
-		fmt.Printf("%s | Error: File outside specified path(s): %s\n",
+		fmt.Printf("%s | ERROR: File outside specified path(s): %s\n",
 			time.Now().Format(logDate),
 			path,
 		)
@@ -432,7 +432,7 @@ Poll:
 	}
 
 	if Verbose {
-		fmt.Printf("%s | Index: %d/%d files across %d/%d directories in %s\n",
+		fmt.Printf("%s | INDEX: %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(logDate),
 			stats.filesMatched,
 			stats.filesMatched+stats.filesSkipped,

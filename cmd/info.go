@@ -178,7 +178,7 @@ func serveIndexJson(args []string, index *fileCache, errorChannel chan<- error) 
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Serve: JSON index page (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: JSON index page (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -199,7 +199,7 @@ func serveAvailableExtensions() httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Serve: Available extension list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Available extension list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -220,7 +220,7 @@ func serveEnabledExtensions(formats *types.Types) httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Serve: Registered extension list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Registered extension list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -241,7 +241,7 @@ func serveAvailableMimeTypes() httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Serve: Available MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Available MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -262,7 +262,7 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Serve: Registered MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Registered MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),

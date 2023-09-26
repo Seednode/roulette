@@ -6,12 +6,13 @@ package cmd
 
 import (
 	"log"
+	"math"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "0.93.2"
+	ReleaseVersion string = "0.94.0"
 )
 
 var (
@@ -51,23 +52,14 @@ var (
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
-			if MaxDirScans < 1 || MaxFileScans < 1 {
+			switch {
+			case MaxDirScans < 1 || MaxFileScans < 1 || MaxDirScans > math.MaxInt32 || MaxFileScans > math.MaxInt32:
 				return ErrInvalidScanCount
-			}
-
-			if MaxFileCount > 1<<31-1 || MaxFileCount < 1 {
+			case MaxFileCount < 1 || MinFileCount < 1 || MaxFileCount > math.MaxInt32 || MinFileCount > math.MaxInt32:
 				return ErrInvalidFileCountValue
-			}
-
-			if MinFileCount > 1<<31-1 || MinFileCount < 1 {
-				return ErrInvalidFileCountValue
-			}
-
-			if MinFileCount > MaxFileCount {
+			case MinFileCount > MaxFileCount:
 				return ErrInvalidFileCountRange
-			}
-
-			if Port < 1 || Port > 65535 {
+			case Port < 1 || Port > 65535:
 				return ErrInvalidPort
 			}
 
@@ -108,7 +100,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
 	rootCmd.Flags().IntVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
-	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", 1<<31-1, "skip directories with file counts above this value")
+	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
