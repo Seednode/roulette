@@ -5,6 +5,7 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 )
@@ -41,26 +42,30 @@ func (filters *filters) apply(fileList []string) []string {
 
 	if filters.hasExcludes() {
 		for _, exclude := range filters.excluded {
-			result = slices.DeleteFunc(fileList, func(s string) bool {
+			result = slices.DeleteFunc(result, func(s string) bool {
 				if CaseSensitive {
-					return strings.Contains(s, exclude)
+					return strings.Contains(s, filepath.Base(exclude))
 				} else {
-					return strings.Contains(strings.ToLower(s), strings.ToLower(exclude))
+					return strings.Contains(strings.ToLower(s), strings.ToLower(filepath.Base(exclude)))
 				}
 			})
 		}
 	}
 
 	if filters.hasIncludes() {
-		for _, include := range filters.included {
-			result = slices.DeleteFunc(fileList, func(s string) bool {
-				if CaseSensitive {
-					return !strings.Contains(s, include)
-				} else {
-					return !strings.Contains(strings.ToLower(s), strings.ToLower(include))
+		result = slices.DeleteFunc(result, func(s string) bool {
+			var delete bool = true
+
+			p := filepath.Base(s)
+
+			for _, include := range filters.included {
+				if (CaseSensitive && strings.Contains(p, include)) || (!CaseSensitive && strings.Contains(strings.ToLower(p), strings.ToLower(include))) {
+					delete = false
 				}
-			})
-		}
+			}
+
+			return delete
+		})
 	}
 
 	return result
