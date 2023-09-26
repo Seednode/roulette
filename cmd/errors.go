@@ -16,9 +16,11 @@ import (
 )
 
 var (
-	ErrInvalidPort      = errors.New("listen port must be an integer between 1 and 65535 inclusive")
-	ErrInvalidScanCount = errors.New("scan count must be a positive integer")
-	ErrNoMediaFound     = errors.New("no supported media formats found which match all criteria")
+	ErrInvalidFileCountRange = errors.New("maximum file count must be greater than or equal to minimum file count")
+	ErrInvalidFileCountValue = errors.New("file count value must be an integer between 1 and 2147483647 inclusive")
+	ErrInvalidPort           = errors.New("listen port must be an integer between 1 and 65535 inclusive")
+	ErrInvalidScanCount      = errors.New("scan count must be a positive integer")
+	ErrNoMediaFound          = errors.New("no supported media formats found which match all criteria")
 )
 
 func newErrorPage(title, body string) string {

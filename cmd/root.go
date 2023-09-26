@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "0.93.1"
+	ReleaseVersion string = "0.93.2"
 )
 
 var (
@@ -55,6 +55,18 @@ var (
 				return ErrInvalidScanCount
 			}
 
+			if MaxFileCount > 1<<31-1 || MaxFileCount < 1 {
+				return ErrInvalidFileCountValue
+			}
+
+			if MinFileCount > 1<<31-1 || MinFileCount < 1 {
+				return ErrInvalidFileCountValue
+			}
+
+			if MinFileCount > MaxFileCount {
+				return ErrInvalidFileCountRange
+			}
+
 			if Port < 1 || Port > 65535 {
 				return ErrInvalidPort
 			}
@@ -96,7 +108,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
 	rootCmd.Flags().IntVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
-	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", 1<<32-1, "skip directories with file counts above this value")
+	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", 1<<31-1, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
