@@ -165,16 +165,10 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 
 		strippedRefererUri := strings.TrimPrefix(refererUri, Prefix+mediaPrefix)
 
-		fmt.Printf("Includes:\n%v\n", r.URL.Query().Get("include"))
-		fmt.Printf("Excludes:\n%v\n", r.URL.Query().Get("exclude"))
-
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
 			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
 		}
-
-		fmt.Printf("Includes:\n%v\n", filters.included)
-		fmt.Printf("Excludes:\n%v\n", filters.excluded)
 
 		sortOrder := sortOrder(r)
 
