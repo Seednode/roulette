@@ -241,7 +241,7 @@ func serveAvailableMimeTypes() httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Served available MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | Serve: Available MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),
@@ -262,7 +262,7 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 		w.Write(response)
 
 		if Verbose {
-			fmt.Printf("%s | Served registered MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | Serve: Registered MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(len(response)),
 				realIP(r),

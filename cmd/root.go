@@ -5,49 +5,63 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"errors"
 	"log"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "0.92.2"
+	ReleaseVersion string = "0.93.0"
 )
 
 var (
-	All              bool
-	Audio            bool
-	Bind             string
-	Cache            bool
-	CacheFile        string
-	CaseSensitive    bool
-	Code             bool
-	CodeTheme        string
-	ExitOnError      bool
-	Filtering        bool
-	Flash            bool
-	Handlers         bool
-	Images           bool
-	Info             bool
-	MaximumFileCount uint
-	MinimumFileCount uint
-	PageLength       uint32
-	Port             uint16
-	Prefix           string
-	Profile          bool
-	Recursive        bool
-	Refresh          bool
-	Russian          bool
-	Sorting          bool
-	Text             bool
-	Verbose          bool
-	Version          bool
-	Videos           bool
+	All           bool
+	Audio         bool
+	Bind          string
+	Cache         bool
+	CacheFile     string
+	CaseSensitive bool
+	Code          bool
+	CodeTheme     string
+	ExitOnError   bool
+	Filtering     bool
+	Flash         bool
+	Handlers      bool
+	Images        bool
+	Info          bool
+	MaxDirScans   uint
+	MaxFileScans  uint
+	MaxFileCount  uint
+	MinFileCount  uint
+	PageLength    uint32
+	Port          uint16
+	Prefix        string
+	Profile       bool
+	Recursive     bool
+	Refresh       bool
+	Russian       bool
+	Sorting       bool
+	Text          bool
+	Verbose       bool
+	Version       bool
+	Videos        bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
+		PreRunE: func(cmd *cobra.Command, args []string) error {
+			if MaxDirScans < 1 {
+				return errors.New("max directory scan count must be a positive integer")
+			}
+
+			if MaxFileScans < 1 {
+				return errors.New("max file scan count must be a positive integer")
+			}
+
+			return nil
+		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := ServePage(args)
 			if err != nil {
@@ -81,8 +95,10 @@ func init() {
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
-	rootCmd.Flags().UintVar(&MaximumFileCount, "maximum-files", 1<<32-1, "skip directories with file counts above this value")
-	rootCmd.Flags().UintVar(&MinimumFileCount, "minimum-files", 1, "skip directories with file counts below this value")
+	rootCmd.Flags().UintVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
+	rootCmd.Flags().UintVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
+	rootCmd.Flags().UintVar(&MaxFileCount, "max-file-count", 1<<32-1, "skip directories with file counts above this value")
+	rootCmd.Flags().UintVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().Uint32Var(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().Uint16VarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")

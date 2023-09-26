@@ -21,14 +21,6 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type maxConcurrency int
-
-const (
-	// avoid hitting default open file descriptor limits (1024)
-	maxDirectoryScans maxConcurrency = 32
-	maxFileScans      maxConcurrency = 256
-)
-
 type regexes struct {
 	alphanumeric *regexp.Regexp
 	filename     *regexp.Regexp
@@ -331,7 +323,7 @@ func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats 
 				errorChannel <- err
 			}
 
-			if files > 0 && (files < int(MinimumFileCount)) || (files > int(MaximumFileCount)) {
+			if files > 0 && (files < int(MinFileCount)) || (files > int(MaxFileCount)) {
 				// This count will not otherwise include the parent directory itself, so increment by one
 				stats.directoriesSkipped <- directories + 1
 				stats.filesSkipped <- files
@@ -368,8 +360,8 @@ func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Typ
 
 	fileChannel := make(chan string)
 	errorChannel := make(chan error)
-	directoryScans := make(chan int, maxDirectoryScans)
-	fileScans := make(chan int, maxFileScans)
+	directoryScans := make(chan int, MaxDirScans)
+	fileScans := make(chan int, MaxFileScans)
 	done := make(chan bool, 1)
 
 	stats := &scanStats{

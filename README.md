@@ -112,35 +112,37 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
-  -a, --all                  enable all supported file types
-      --audio                enable support for audio files
-  -b, --bind string          address to bind to (default "0.0.0.0")
-  -c, --cache                generate directory cache at startup
-      --cache-file string    path to optional persistent cache file
-      --case-sensitive       use case-sensitive matching for filters
-      --code                 enable support for source code files
-      --code-theme string    theme for source code syntax highlighting (default "solarized-dark256")
-      --exit-on-error        shut down webserver on error, instead of just printing the error
-  -f, --filter               enable filtering
-      --flash                enable support for shockwave flash files (via ruffle.rs)
-      --handlers             display registered handlers (for debugging)
-  -h, --help                 help for roulette
-      --images               enable support for image files
-  -i, --info                 expose informational endpoints
-      --maximum-files uint   skip directories with file counts above this value (default 4294967295)
-      --minimum-files uint   skip directories with file counts below this value (default 1)
-      --page-length uint32   pagination length for info pages
-  -p, --port uint16          port to listen on (default 8080)
-      --prefix string        root path for http handlers (for reverse proxying) (default "/")
-      --profile              register net/http/pprof handlers
-  -r, --recursive            recurse into subdirectories
-      --refresh              enable automatic page refresh via query parameter
-      --russian              remove selected images after serving
-  -s, --sort                 enable sorting
-      --text                 enable support for text files
-  -v, --verbose              log accessed files and other information to stdout
-  -V, --version              display version and exit
-      --video                enable support for video files
+  -a, --all                        enable all supported file types
+      --audio                      enable support for audio files
+  -b, --bind string                address to bind to (default "0.0.0.0")
+  -c, --cache                      generate directory cache at startup
+      --cache-file string          path to optional persistent cache file
+      --case-sensitive             use case-sensitive matching for filters
+      --code                       enable support for source code files
+      --code-theme string          theme for source code syntax highlighting (default "solarized-dark256")
+      --exit-on-error              shut down webserver on error, instead of just printing the error
+  -f, --filter                     enable filtering
+      --flash                      enable support for shockwave flash files (via ruffle.rs)
+      --handlers                   display registered handlers (for debugging)
+  -h, --help                       help for roulette
+      --images                     enable support for image files
+  -i, --info                       expose informational endpoints
+      --max-directory-scans uint   number of directories to scan at once (default 32)
+      --max-file-count uint        skip directories with file counts above this value (default 4294967295)
+      --max-file-scans uint        number of files to scan at once (default 256)
+      --min-file-count uint        skip directories with file counts below this value (default 1)
+      --page-length uint32         pagination length for info pages
+  -p, --port uint16                port to listen on (default 8080)
+      --prefix string              root path for http handlers (for reverse proxying) (default "/")
+      --profile                    register net/http/pprof handlers
+  -r, --recursive                  recurse into subdirectories
+      --refresh                    enable automatic page refresh via query parameter
+      --russian                    remove selected images after serving
+  -s, --sort                       enable sorting
+      --text                       enable support for text files
+  -v, --verbose                    log accessed files and other information to stdout
+  -V, --version                    display version and exit
+      --video                      enable support for video files
 ```
 
 ## Building the Docker container
