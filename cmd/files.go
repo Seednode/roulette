@@ -40,34 +40,6 @@ type scanStatsChannels struct {
 	directoriesSkipped chan int
 }
 
-type splitPath struct {
-	base      string
-	number    string
-	extension string
-}
-
-func (splitPath *splitPath) increment() {
-	length := len(splitPath.number)
-
-	asInt, err := strconv.Atoi(splitPath.number)
-	if err != nil {
-		return
-	}
-
-	splitPath.number = fmt.Sprintf("%0*d", length, asInt+1)
-}
-
-func (splitPath *splitPath) decrement() {
-	length := len(splitPath.number)
-
-	asInt, err := strconv.Atoi(splitPath.number)
-	if err != nil {
-		return
-	}
-
-	splitPath.number = fmt.Sprintf("%0*d", length, asInt-1)
-}
-
 func humanReadableSize(bytes int) string {
 	const unit = 1000
 
@@ -97,24 +69,6 @@ func kill(path string, cache *fileCache) error {
 	}
 
 	return nil
-}
-
-func split(path string, regexes *regexes) (*splitPath, int, error) {
-	p := splitPath{}
-
-	split := regexes.filename.FindAllStringSubmatch(path, -1)
-
-	if len(split) < 1 || len(split[0]) < 3 {
-		return &splitPath{}, 0, nil
-	}
-
-	p.base = split[0][1]
-
-	p.number = split[0][2]
-
-	p.extension = split[0][3]
-
-	return &p, len(p.number), nil
 }
 
 func newFile(list []string, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
