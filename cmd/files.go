@@ -151,8 +151,8 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats *types.T
 	return path, nil
 }
 
-func nextFile(path, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
-	splitPath, err := split(path, regexes)
+func nextFile(filePath, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
+	splitPath, err := split(filePath, regexes)
 	if err != nil {
 		return "", err
 	}
@@ -166,27 +166,27 @@ func nextFile(path, sortOrder string, regexes *regexes, formats *types.Types) (s
 		return "", nil
 	}
 
-	fileName, err := tryExtensions(splitPath, formats)
+	path, err := tryExtensions(splitPath, formats)
 	if err != nil {
 		return "", err
 	}
 
-	return fileName, err
+	return path, err
 }
 
 func tryExtensions(splitPath *splitPath, formats *types.Types) (string, error) {
-	var fileName string
+	var path string
 
 	for extension := range formats.Extensions {
-		fileName = fmt.Sprintf("%s%.3d%s", splitPath.base, splitPath.number, extension)
+		path = fmt.Sprintf("%s%.3d%s", splitPath.base, splitPath.number, extension)
 
-		exists, err := fileExists(fileName)
+		exists, err := fileExists(path)
 		if err != nil {
 			return "", err
 		}
 
 		if exists {
-			return fileName, nil
+			return path, nil
 		}
 	}
 
@@ -229,7 +229,7 @@ func pathIsValid(path string, paths []string) bool {
 	}
 }
 
-func pathHasSupportedFiles(path string, formats *types.Types) (bool, error) {
+func hasSupportedFiles(path string, formats *types.Types) (bool, error) {
 	hasRegisteredFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -409,18 +409,18 @@ func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Typ
 Poll:
 	for {
 		select {
-		case p := <-fileChannel:
-			list = append(list, p)
-		case s := <-statsChannels.filesMatched:
-			stats.filesMatched = stats.filesMatched + s
-		case s := <-statsChannels.filesSkipped:
-			stats.filesSkipped = stats.filesSkipped + s
-		case s := <-statsChannels.directoriesMatched:
-			stats.directoriesMatched = stats.directoriesMatched + s
-		case s := <-statsChannels.directoriesSkipped:
-			stats.directoriesSkipped = stats.directoriesSkipped + s
-		case e := <-errorChannel:
-			return []string{}, e
+		case path := <-fileChannel:
+			list = append(list, path)
+		case stat := <-statsChannels.filesMatched:
+			stats.filesMatched = stats.filesMatched + stat
+		case stat := <-statsChannels.filesSkipped:
+			stats.filesSkipped = stats.filesSkipped + stat
+		case stat := <-statsChannels.directoriesMatched:
+			stats.directoriesMatched = stats.directoriesMatched + stat
+		case stat := <-statsChannels.directoriesSkipped:
+			stats.directoriesSkipped = stats.directoriesSkipped + stat
+		case err := <-errorChannel:
+			return []string{}, err
 		case <-done:
 			break Poll
 		}
@@ -543,12 +543,12 @@ func validatePaths(args []string, formats *types.Types) ([]string, error) {
 
 		pathMatches := (args[i] == path)
 
-		hasSupportedFiles, err := pathHasSupportedFiles(path, formats)
+		hasSupportedFiles, err := hasSupportedFiles(path, formats)
 		if err != nil {
 			return nil, err
 		}
 
-		var addPath bool = false
+		var addPath = false
 
 		switch {
 		case pathMatches && hasSupportedFiles:
