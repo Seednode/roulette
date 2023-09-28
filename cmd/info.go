@@ -123,7 +123,7 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 		}
 
 		if Verbose {
-			fmt.Printf("%s | Serve: HTML index page (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: HTML index page (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(b),
 				realIP(r),

@@ -72,6 +72,12 @@ func (cache *fileCache) set(val []string) {
 	}
 }
 
+func (cache *fileCache) clear() {
+	cache.mutex.Lock()
+	cache.list = nil
+	cache.mutex.Unlock()
+}
+
 func (cache *fileCache) isEmpty() bool {
 	cache.mutex.RLock()
 	length := len(cache.list)
@@ -152,14 +158,14 @@ func (cache *fileCache) Import(path string) error {
 
 func serveCacheClear(args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		list, err := fileList(args, &filters{}, "", &fileCache{}, formats)
+		cache.clear()
+
+		_, err := fileList(args, &filters{}, "", cache, formats)
 		if err != nil {
 			errorChannel <- err
 
 			return
 		}
-
-		cache.set(list)
 
 		w.Header().Set("Content-Type", "text/plain")
 
