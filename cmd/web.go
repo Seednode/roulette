@@ -37,7 +37,7 @@ const (
 	logDate            string        = `2006-01-02T15:04:05.000-07:00`
 	sourcePrefix       string        = `/source`
 	mediaPrefix        string        = `/view`
-	RedirectStatusCode int           = http.StatusSeeOther
+	redirectStatusCode int           = http.StatusSeeOther
 	timeout            time.Duration = 10 * time.Second
 )
 
@@ -231,7 +231,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 			preparePath(path),
 			queryParams,
 		)
-		http.Redirect(w, r, newUrl, RedirectStatusCode)
+		http.Redirect(w, r, newUrl, redirectStatusCode)
 	}
 }
 
@@ -377,7 +377,7 @@ func redirectRoot() httprouter.Handle {
 			Prefix,
 		)
 
-		http.Redirect(w, r, newUrl, RedirectStatusCode)
+		http.Redirect(w, r, newUrl, redirectStatusCode)
 	}
 }
 
