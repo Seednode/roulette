@@ -274,19 +274,19 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 
 func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) {
 	if Cache {
-		register(mux, Prefix+"/html/", serveIndexHtml(args, cache, false))
+		registerHandler(mux, Prefix+"/html", serveIndexHtml(args, cache, false))
 		if PageLength != 0 {
-			register(mux, Prefix+"/html/:page", serveIndexHtml(args, cache, true))
+			registerHandler(mux, Prefix+"/html/:page", serveIndexHtml(args, cache, true))
 		}
 
-		register(mux, Prefix+"/json", serveIndexJson(args, cache, errorChannel))
+		registerHandler(mux, Prefix+"/json", serveIndexJson(args, cache, errorChannel))
 		if PageLength != 0 {
-			register(mux, Prefix+"/json/:page", serveIndexJson(args, cache, errorChannel))
+			registerHandler(mux, Prefix+"/json/:page", serveIndexJson(args, cache, errorChannel))
 		}
 	}
 
-	register(mux, Prefix+"/available_extensions", serveAvailableExtensions())
-	register(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats))
-	register(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes())
-	register(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats))
+	registerHandler(mux, Prefix+"/available_extensions", serveAvailableExtensions())
+	registerHandler(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats))
+	registerHandler(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes())
+	registerHandler(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats))
 }

@@ -362,11 +362,14 @@ func serveVersion() httprouter.Handle {
 	}
 }
 
-func register(mux *httprouter.Router, path string, handle httprouter.Handle) {
+func registerHandler(mux *httprouter.Router, path string, handle httprouter.Handle) {
 	mux.GET(path, handle)
 
 	if Handlers {
-		fmt.Printf("Registered handler for path %s\n", path)
+		fmt.Printf("%s | SERVE: Registered handler for %s\n",
+			time.Now().Format(logDate),
+			path,
+		)
 	}
 }
 
@@ -440,28 +443,20 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
-	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
-
-	if Verbose {
-		fmt.Printf("%s | SERVE: Listening on %s\n",
-			time.Now().Format(logDate),
-			listenHost,
-		)
+	regexes := &regexes{
+		filename:     regexp.MustCompile(`(.+?)([0-9]*)(\..+)`),
+		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
+
+	if !strings.HasSuffix(Prefix, "/") {
+		Prefix = Prefix + "/"
+	}
+
+	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
 
 	cache := &fileCache{
 		mutex: sync.RWMutex{},
 		list:  []string{},
-	}
-
-	err = importCache(paths, cache, formats)
-	if err != nil {
-		return err
-	}
-
-	regexes := &regexes{
-		filename:     regexp.MustCompile(`(.+?)([0-9]*)(\..+)`),
-		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
 
 	mux := httprouter.New()
@@ -476,29 +471,25 @@ func ServePage(args []string) error {
 
 	mux.PanicHandler = serverErrorHandler()
 
-	if !strings.HasSuffix(Prefix, "/") {
-		Prefix = Prefix + "/"
-	}
-
 	errorChannel := make(chan error)
 
-	register(mux, Prefix, serveRoot(paths, regexes, cache, formats, errorChannel))
+	registerHandler(mux, Prefix, serveRoot(paths, regexes, cache, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
 	if Prefix != "" {
-		register(mux, "/", redirectRoot())
+		registerHandler(mux, "/", redirectRoot())
 	}
 
-	register(mux, Prefix+"/favicons/*favicon", serveFavicons())
+	registerHandler(mux, Prefix+"/favicons/*favicon", serveFavicons())
 
-	register(mux, Prefix+"/favicon.ico", serveFavicons())
+	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons())
 
-	register(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, cache, formats, errorChannel))
+	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, cache, formats, errorChannel))
 
-	register(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache, errorChannel))
+	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache, errorChannel))
 
-	register(mux, Prefix+"/version", serveVersion())
+	registerHandler(mux, Prefix+"/version", serveVersion())
 
 	if Cache {
 		err = registerCacheHandlers(mux, args, cache, formats, errorChannel)
@@ -519,6 +510,11 @@ func ServePage(args []string) error {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
+	err = importCache(paths, cache, formats)
+	if err != nil {
+		return err
+	}
+
 	go func() {
 		for err := range errorChannel {
 			fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
@@ -530,6 +526,14 @@ func ServePage(args []string) error {
 			}
 		}
 	}()
+
+	if Verbose {
+		fmt.Printf("%s | SERVE: Listening on http://%s%s/\n",
+			time.Now().Format(logDate),
+			listenHost,
+			Prefix,
+		)
+	}
 
 	err = srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {

@@ -109,9 +109,10 @@ func (cache *fileCache) Export(path string) error {
 	cache.mutex.RUnlock()
 
 	if Verbose {
-		fmt.Printf("%s | CACHE: Exported %d entries in %s\n",
+		fmt.Printf("%s | CACHE: Exported %d entries to %s in %s\n",
 			time.Now().Format(logDate),
 			length,
+			path,
 			time.Since(startTime),
 		)
 	}
@@ -146,9 +147,10 @@ func (cache *fileCache) Import(path string) error {
 	}
 
 	if Verbose {
-		fmt.Printf("%s | CACHE: Imported %d entries in %s\n",
+		fmt.Printf("%s | CACHE: Imported %d entries from %s in %s\n",
 			time.Now().Format(logDate),
 			length,
+			path,
 			time.Since(startTime),
 		)
 	}
@@ -174,7 +176,7 @@ func serveCacheClear(args []string, cache *fileCache, formats *types.Types, erro
 }
 
 func registerCacheHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) error {
-	register(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats, errorChannel))
+	registerHandler(mux, Prefix+"/clear_cache", serveCacheClear(args, cache, formats, errorChannel))
 
 	return nil
 }
