@@ -42,16 +42,30 @@ type scanStatsChannels struct {
 
 type splitPath struct {
 	base      string
-	number    int
+	number    string
 	extension string
 }
 
 func (splitPath *splitPath) increment() {
-	splitPath.number = splitPath.number + 1
+	length := len(splitPath.number)
+
+	asInt, err := strconv.Atoi(splitPath.number)
+	if err != nil {
+		return
+	}
+
+	splitPath.number = fmt.Sprintf("%0*d", length, asInt+1)
 }
 
 func (splitPath *splitPath) decrement() {
-	splitPath.number = splitPath.number - 1
+	length := len(splitPath.number)
+
+	asInt, err := strconv.Atoi(splitPath.number)
+	if err != nil {
+		return
+	}
+
+	splitPath.number = fmt.Sprintf("%0*d", length, asInt-1)
 }
 
 func humanReadableSize(bytes int) string {
@@ -85,26 +99,22 @@ func kill(path string, cache *fileCache) error {
 	return nil
 }
 
-func split(path string, regexes *regexes) (*splitPath, error) {
+func split(path string, regexes *regexes) (*splitPath, int, error) {
 	p := splitPath{}
-	var err error
 
 	split := regexes.filename.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
-		return &splitPath{}, nil
+		return &splitPath{}, 0, nil
 	}
 
 	p.base = split[0][1]
 
-	p.number, err = strconv.Atoi(split[0][2])
-	if err != nil {
-		return &splitPath{}, err
-	}
+	p.number = split[0][2]
 
 	p.extension = split[0][3]
 
-	return &p, nil
+	return &p, len(p.number), nil
 }
 
 func newFile(list []string, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
@@ -113,37 +123,39 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats *types.T
 		return "", err
 	}
 
-	splitPath, err := split(path, regexes)
-	if err != nil {
-		return "", err
-	}
-
-	splitPath.number = 1
-
-	switch {
-	case sortOrder == "asc":
-		path, err = tryExtensions(splitPath, formats)
+	if sortOrder == "asc" || sortOrder == "desc" {
+		splitPath, length, err := split(path, regexes)
 		if err != nil {
 			return "", err
 		}
-	case sortOrder == "desc":
-		for {
-			splitPath.increment()
+
+		switch {
+		case sortOrder == "asc":
+			splitPath.number = fmt.Sprintf("%0*d", length, 1)
 
 			path, err = tryExtensions(splitPath, formats)
 			if err != nil {
 				return "", err
 			}
-
-			if path == "" {
-				splitPath.decrement()
+		case sortOrder == "desc":
+			for {
+				splitPath.increment()
 
 				path, err = tryExtensions(splitPath, formats)
 				if err != nil {
 					return "", err
 				}
 
-				break
+				if path == "" {
+					splitPath.decrement()
+
+					path, err = tryExtensions(splitPath, formats)
+					if err != nil {
+						return "", err
+					}
+
+					break
+				}
 			}
 		}
 	}
@@ -152,7 +164,7 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats *types.T
 }
 
 func nextFile(filePath, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
-	splitPath, err := split(filePath, regexes)
+	splitPath, _, err := split(filePath, regexes)
 	if err != nil {
 		return "", err
 	}
@@ -178,7 +190,7 @@ func tryExtensions(splitPath *splitPath, formats *types.Types) (string, error) {
 	var path string
 
 	for extension := range formats.Extensions {
-		path = fmt.Sprintf("%s%.3d%s", splitPath.base, splitPath.number, extension)
+		path = fmt.Sprintf("%s%s%s", splitPath.base, splitPath.number, extension)
 
 		exists, err := fileExists(path)
 		if err != nil {

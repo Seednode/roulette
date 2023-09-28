@@ -38,7 +38,7 @@ You can also provide a comma-delimited string of alphanumeric patterns to exclud
 
 Filenames matching any of these patterns will not be served.
 
-You can also combine these two parameters, with exclusions taking priority over inclusions.
+You can combine these two parameters, with exclusions taking priority over inclusions.
 
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
@@ -77,7 +77,7 @@ Enjoy!
 
 ## Sorting
 
-You can specify a sorting pattern via the `sort=` query parameter, assuming the `-s|--sort` flag is enabled.
+You can specify a sorting direction via the `sort=` query parameter, assuming the `-s|--sort` flag is enabled.
 
 A value of `sort=asc` means files will be served in ascending order (lowest-numbered to highest).
 
@@ -95,7 +95,7 @@ For `sort=desc`, the highest-numbered file will be served instead.
 
 If any other (or no) value is provided, the selected file will be random.
 
-Note: These patterns require sequentially-numbered files matching the following pattern: `filename###.extension`.
+Note: These options require sequentially-numbered files matching the following pattern: `filename[0-9]*.extension`.
 
 ## Themes
 The `--code` handler provides syntax highlighting via [alecthomas/chroma](https://github.com/alecthomas/chroma).

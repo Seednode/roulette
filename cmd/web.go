@@ -460,7 +460,7 @@ func ServePage(args []string) error {
 	}
 
 	regexes := &regexes{
-		filename:     regexp.MustCompile(`(.+)([0-9]{3})(\..+)`),
+		filename:     regexp.MustCompile(`(.+?)([0-9]*)(\..+)`),
 		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
 	}
 
