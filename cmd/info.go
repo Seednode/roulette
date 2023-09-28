@@ -19,13 +19,13 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.Handle {
+func serveIndexHtml(args []string, index *fileIndex, paginate bool) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/html")
 
 		startTime := time.Now()
 
-		indexDump := cache.List()
+		indexDump := index.List()
 
 		fileCount := len(indexDump)
 
@@ -133,18 +133,18 @@ func serveIndexHtml(args []string, cache *fileCache, paginate bool) httprouter.H
 	}
 }
 
-func serveIndexJson(args []string, index *fileCache, errorChannel chan<- error) httprouter.Handle {
+func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "application/json")
 
 		startTime := time.Now()
 
-		cachedFiles := index.List()
+		indexedFiles := index.List()
 
-		fileCount := len(cachedFiles)
+		fileCount := len(indexedFiles)
 
-		sort.SliceStable(cachedFiles, func(p, q int) bool {
-			return strings.ToLower(cachedFiles[p]) < strings.ToLower(cachedFiles[q])
+		sort.SliceStable(indexedFiles, func(p, q int) bool {
+			return strings.ToLower(indexedFiles[p]) < strings.ToLower(indexedFiles[q])
 		})
 
 		var startIndex, stopIndex int
@@ -159,14 +159,14 @@ func serveIndexJson(args []string, index *fileCache, errorChannel chan<- error) 
 		}
 
 		if startIndex > (fileCount - 1) {
-			cachedFiles = []string{}
+			indexedFiles = []string{}
 		}
 
 		if stopIndex > fileCount {
 			stopIndex = fileCount
 		}
 
-		response, err := json.MarshalIndent(cachedFiles[startIndex:stopIndex], "", "    ")
+		response, err := json.MarshalIndent(indexedFiles[startIndex:stopIndex], "", "    ")
 		if err != nil {
 			errorChannel <- err
 
@@ -272,16 +272,16 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 	}
 }
 
-func registerInfoHandlers(mux *httprouter.Router, args []string, cache *fileCache, formats *types.Types, errorChannel chan<- error) {
-	if Cache {
-		registerHandler(mux, Prefix+"/html", serveIndexHtml(args, cache, false))
+func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) {
+	if Index {
+		registerHandler(mux, Prefix+"/html", serveIndexHtml(args, index, false))
 		if PageLength != 0 {
-			registerHandler(mux, Prefix+"/html/:page", serveIndexHtml(args, cache, true))
+			registerHandler(mux, Prefix+"/html/:page", serveIndexHtml(args, index, true))
 		}
 
-		registerHandler(mux, Prefix+"/json", serveIndexJson(args, cache, errorChannel))
+		registerHandler(mux, Prefix+"/json", serveIndexJson(args, index, errorChannel))
 		if PageLength != 0 {
-			registerHandler(mux, Prefix+"/json/:page", serveIndexJson(args, cache, errorChannel))
+			registerHandler(mux, Prefix+"/json/:page", serveIndexJson(args, index, errorChannel))
 		}
 	}
 

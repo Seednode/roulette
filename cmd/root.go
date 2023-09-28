@@ -19,8 +19,6 @@ var (
 	All           bool
 	Audio         bool
 	Bind          string
-	Cache         bool
-	CacheFile     string
 	CaseSensitive bool
 	Code          bool
 	CodeTheme     string
@@ -29,6 +27,8 @@ var (
 	Flash         bool
 	Handlers      bool
 	Images        bool
+	Index         bool
+	IndexFile     string
 	Info          bool
 	MaxDirScans   int
 	MaxFileScans  int
@@ -87,8 +87,6 @@ func init() {
 	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
-	rootCmd.Flags().BoolVarP(&Cache, "cache", "c", false, "generate directory cache at startup")
-	rootCmd.Flags().StringVar(&CacheFile, "cache-file", "", "path to optional persistent cache file")
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
@@ -97,6 +95,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
+	rootCmd.Flags().BoolVarP(&Index, "index", "c", false, "generate index of supported file paths at startup")
+	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
 	rootCmd.Flags().IntVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")

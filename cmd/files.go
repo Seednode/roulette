@@ -58,14 +58,14 @@ func humanReadableSize(bytes int) string {
 		float64(bytes)/float64(div), "KMGTPE"[exp])
 }
 
-func kill(path string, cache *fileCache) error {
+func kill(path string, index *fileIndex) error {
 	err := os.Remove(path)
 	if err != nil {
 		return err
 	}
 
-	if Cache {
-		cache.remove(path)
+	if Index {
+		index.remove(path)
 	}
 
 	return nil
@@ -321,7 +321,7 @@ Poll:
 	return nil
 }
 
-func scanPaths(paths []string, sort string, cache *fileCache, formats *types.Types) ([]string, error) {
+func scanPaths(paths []string, sort string, index *fileIndex, formats *types.Types) ([]string, error) {
 	var list []string
 
 	fileChannel := make(chan string)
@@ -411,37 +411,37 @@ Poll:
 	return list, nil
 }
 
-func fileList(paths []string, filters *filters, sort string, cache *fileCache, formats *types.Types) ([]string, error) {
+func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats *types.Types) ([]string, error) {
 	switch {
-	case Cache && !cache.isEmpty() && filters.isEmpty():
-		return cache.List(), nil
-	case Cache && !cache.isEmpty() && !filters.isEmpty():
-		return filters.apply(cache.List()), nil
-	case Cache && cache.isEmpty() && !filters.isEmpty():
-		list, err := scanPaths(paths, sort, cache, formats)
+	case Index && !index.isEmpty() && filters.isEmpty():
+		return index.List(), nil
+	case Index && !index.isEmpty() && !filters.isEmpty():
+		return filters.apply(index.List()), nil
+	case Index && index.isEmpty() && !filters.isEmpty():
+		list, err := scanPaths(paths, sort, index, formats)
 		if err != nil {
 			return []string{}, err
 		}
-		cache.set(list)
+		index.set(list)
 
-		return filters.apply(cache.List()), nil
-	case Cache && cache.isEmpty() && filters.isEmpty():
-		list, err := scanPaths(paths, sort, cache, formats)
+		return filters.apply(index.List()), nil
+	case Index && index.isEmpty() && filters.isEmpty():
+		list, err := scanPaths(paths, sort, index, formats)
 		if err != nil {
 			return []string{}, err
 		}
-		cache.set(list)
+		index.set(list)
 
-		return cache.List(), nil
-	case !Cache && !filters.isEmpty():
-		list, err := scanPaths(paths, sort, cache, formats)
+		return index.List(), nil
+	case !Index && !filters.isEmpty():
+		list, err := scanPaths(paths, sort, index, formats)
 		if err != nil {
 			return []string{}, err
 		}
 
 		return filters.apply(list), nil
 	default:
-		list, err := scanPaths(paths, sort, cache, formats)
+		list, err := scanPaths(paths, sort, index, formats)
 		if err != nil {
 			return []string{}, err
 		}

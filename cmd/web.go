@@ -49,7 +49,7 @@ func preparePath(path string) string {
 	return mediaPrefix + path
 }
 
-func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error) httprouter.Handle {
+func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		prefix := Prefix + sourcePrefix
 
@@ -129,7 +129,7 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 		}
 
 		if Russian && refererUri != "" {
-			err = kill(filePath, cache)
+			err = kill(filePath, index)
 			if err != nil {
 				errorChannel <- err
 
@@ -152,7 +152,7 @@ func serveStaticFile(paths []string, cache *fileCache, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -187,7 +187,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 			}
 		}
 
-		list, err := fileList(paths, filters, sortOrder, cache, formats)
+		list, err := fileList(paths, filters, sortOrder, index, formats)
 		if err != nil {
 			errorChannel <- err
 
@@ -235,7 +235,7 @@ func serveRoot(paths []string, regexes *regexes, cache *fileCache, formats *type
 	}
 }
 
-func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
@@ -346,7 +346,7 @@ func serveMedia(paths []string, regexes *regexes, cache *fileCache, formats *typ
 			}
 
 			if Russian {
-				kill(path, cache)
+				kill(path, index)
 			}
 		}
 	}
@@ -461,8 +461,8 @@ func ServePage(args []string) error {
 
 	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
 
-	cache := &fileCache{
-		mutex: sync.RWMutex{},
+	index := &fileIndex{
+		mutex: &sync.RWMutex{},
 		list:  []string{},
 	}
 
@@ -480,7 +480,7 @@ func ServePage(args []string) error {
 
 	errorChannel := make(chan error)
 
-	registerHandler(mux, Prefix, serveRoot(paths, regexes, cache, formats, errorChannel))
+	registerHandler(mux, Prefix, serveRoot(paths, regexes, index, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -492,21 +492,21 @@ func ServePage(args []string) error {
 
 	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons())
 
-	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, cache, formats, errorChannel))
+	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, index, formats, errorChannel))
 
-	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, cache, errorChannel))
+	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 
 	registerHandler(mux, Prefix+"/version", serveVersion())
 
-	if Cache {
-		err = registerCacheHandlers(mux, args, cache, formats, errorChannel)
+	if Index {
+		err = registerIndexHandlers(mux, args, index, formats, errorChannel)
 		if err != nil {
 			return err
 		}
 	}
 
 	if Info {
-		registerInfoHandlers(mux, args, cache, formats, errorChannel)
+		registerInfoHandlers(mux, args, index, formats, errorChannel)
 	}
 
 	if Profile {
@@ -517,7 +517,7 @@ func ServePage(args []string) error {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
 
-	err = importCache(paths, cache, formats)
+	err = importIndex(paths, index, formats)
 	if err != nil {
 		return err
 	}
