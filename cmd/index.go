@@ -158,7 +158,7 @@ func (index *fileIndex) Import(path string) error {
 	return nil
 }
 
-func serveIndexClear(args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		index.clear()
 
@@ -176,7 +176,7 @@ func serveIndexClear(args []string, index *fileIndex, formats *types.Types, erro
 }
 
 func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) error {
-	registerHandler(mux, Prefix+"/clear_index", serveIndexClear(args, index, formats, errorChannel))
+	registerHandler(mux, Prefix+"/rebuild_index", serveIndexRebuild(args, index, formats, errorChannel))
 
 	return nil
 }
