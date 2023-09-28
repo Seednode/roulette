@@ -443,7 +443,7 @@ func ServePage(args []string) error {
 	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
 
 	if Verbose {
-		fmt.Printf("%s | SERVE: Listening on %s...\n",
+		fmt.Printf("%s | SERVE: Listening on %s\n",
 			time.Now().Format(logDate),
 			listenHost,
 		)
