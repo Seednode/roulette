@@ -498,9 +498,6 @@ func normalizePath(path string) (string, error) {
 func validatePaths(args []string, formats *types.Types) ([]string, error) {
 	var paths []string
 
-	var pathList strings.Builder
-	pathList.WriteString("Paths:\n")
-
 	for i := 0; i < len(args); i++ {
 		path, err := normalizePath(args[i])
 		if err != nil {
@@ -514,28 +511,34 @@ func validatePaths(args []string, formats *types.Types) ([]string, error) {
 			return nil, err
 		}
 
-		var addPath = false
-
 		switch {
 		case pathMatches && hasSupportedFiles:
-			pathList.WriteString(fmt.Sprintf("%s\n", args[i]))
-			addPath = true
-		case !pathMatches && hasSupportedFiles:
-			pathList.WriteString(fmt.Sprintf("%s (resolved to %s)\n", args[i], path))
-			addPath = true
-		case pathMatches && !hasSupportedFiles:
-			pathList.WriteString(fmt.Sprintf("%s [No supported files found]\n", args[i]))
-		case !pathMatches && !hasSupportedFiles:
-			pathList.WriteString(fmt.Sprintf("%s (resolved to %s) [No supported files found]\n", args[i], path))
-		}
+			fmt.Printf("%s | PATHS: Added %s\n",
+				time.Now().Format(logDate),
+				args[i],
+			)
 
-		if addPath {
 			paths = append(paths, path)
-		}
-	}
+		case !pathMatches && hasSupportedFiles:
+			fmt.Printf("%s | PATHS: Added %s [resolved to %s]\n",
+				time.Now().Format(logDate),
+				args[i],
+				path,
+			)
 
-	if len(paths) > 0 {
-		fmt.Println(pathList.String())
+			paths = append(paths, path)
+		case pathMatches && !hasSupportedFiles:
+			fmt.Printf("%s | PATHS: Skipped %s (No supported files found)\n",
+				time.Now().Format(logDate),
+				args[i],
+			)
+		case !pathMatches && !hasSupportedFiles:
+			fmt.Printf("%s | PATHS: Skipped %s [resolved to %s] (No supported files found)\n",
+				time.Now().Format(logDate),
+				args[i],
+				path,
+			)
+		}
 	}
 
 	return paths, nil
