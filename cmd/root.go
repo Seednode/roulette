@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "2.0.1"
+	ReleaseVersion string = "2.0.2"
 )
 
 var (
@@ -95,7 +95,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
-	rootCmd.Flags().BoolVarP(&Index, "index", "c", false, "generate index of supported file paths at startup")
+	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")

@@ -503,6 +503,11 @@ func ServePage(args []string) error {
 		if err != nil {
 			return err
 		}
+
+		err = importIndex(paths, index, formats)
+		if err != nil {
+			return err
+		}
 	}
 
 	if Info {
@@ -515,11 +520,6 @@ func ServePage(args []string) error {
 
 	if Russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
-	}
-
-	err = importIndex(paths, index, formats)
-	if err != nil {
-		return err
 	}
 
 	go func() {

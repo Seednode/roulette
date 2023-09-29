@@ -398,7 +398,7 @@ Poll:
 	}
 
 	if Verbose {
-		fmt.Printf("%s | INDEX: Selected %d/%d files across %d/%d directories in %s\n",
+		fmt.Printf("%s | INDEX: Selecting from %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(logDate),
 			stats.filesMatched,
 			stats.filesMatched+stats.filesSkipped,
