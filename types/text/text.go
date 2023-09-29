@@ -80,10 +80,6 @@ func (t Format) Type() string {
 	return "inline"
 }
 
-func New() Format {
-	return Format{}
-}
-
 func init() {
-	types.SupportedFormats.Register(New())
+	types.SupportedFormats.Register(Format{})
 }

@@ -416,29 +416,29 @@ func ServePage(args []string) error {
 	}
 
 	if Audio || All {
-		formats.Add(audio.New())
+		formats.Add(audio.Format{})
 	}
 
 	if Code || All {
-		formats.Add(code.New(CodeTheme))
+		formats.Add(code.Format{Theme: CodeTheme})
 	}
 
 	if Flash || All {
-		formats.Add(flash.New())
+		formats.Add(flash.Format{})
 	}
 
 	if Text || All {
-		formats.Add(text.New())
+		formats.Add(text.Format{})
 	}
 
 	if Videos || All {
-		formats.Add(video.New())
+		formats.Add(video.Format{})
 	}
 
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
 	if Images || All || len(formats.Extensions) == 0 {
-		formats.Add(images.New())
+		formats.Add(images.Format{})
 	}
 
 	paths, err := validatePaths(args, formats)

@@ -61,10 +61,6 @@ func (t Format) Type() string {
 	return "embed"
 }
 
-func New() Format {
-	return Format{}
-}
-
 func init() {
-	types.SupportedFormats.Register(New())
+	types.SupportedFormats.Register(Format{})
 }

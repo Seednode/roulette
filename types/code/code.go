@@ -225,12 +225,6 @@ func (t Format) Type() string {
 	return "inline"
 }
 
-func New(theme string) Format {
-	return Format{
-		Theme: theme,
-	}
-}
-
 func init() {
-	types.SupportedFormats.Register(New(""))
+	types.SupportedFormats.Register(Format{})
 }
