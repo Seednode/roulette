@@ -385,13 +385,6 @@ func redirectRoot() httprouter.Handle {
 }
 
 func ServePage(args []string) error {
-	if Verbose {
-		fmt.Printf("%s | START: roulette v%s\n",
-			time.Now().Format(logDate),
-			ReleaseVersion,
-		)
-	}
-
 	timeZone := os.Getenv("TZ")
 	if timeZone != "" {
 		var err error
@@ -399,6 +392,13 @@ func ServePage(args []string) error {
 		if err != nil {
 			return err
 		}
+	}
+
+	if Verbose {
+		fmt.Printf("%s | START: roulette v%s\n",
+			time.Now().Format(logDate),
+			ReleaseVersion,
+		)
 	}
 
 	bindHost, err := net.LookupHost(Bind)
