@@ -19,7 +19,64 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-func serveIndexHtml(args []string, index *fileIndex, paginate bool) httprouter.Handle {
+func paginate(page int, fileCount int, ending bool) string {
+	var html strings.Builder
+
+	var firstPage int = 1
+	var lastPage int
+
+	if fileCount%PageLength == 0 {
+		lastPage = fileCount / PageLength
+	} else {
+		lastPage = (fileCount / PageLength) + 1
+	}
+
+	var prevStatus, nextStatus string = "", ""
+
+	if page <= 1 {
+		prevStatus = " disabled"
+	}
+
+	if page >= lastPage {
+		nextStatus = " disabled"
+	}
+
+	prevPage := page - 1
+	if prevPage < 1 {
+		prevPage = 1
+	}
+
+	nextPage := page + 1
+	if nextPage > lastPage {
+		nextPage = fileCount / PageLength
+	}
+
+	if ending {
+		html.WriteString("<tr><td style=\"border-bottom:none;\">")
+	} else {
+		html.WriteString("<tr><td>")
+	}
+
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">First</button>",
+		firstPage))
+
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Prev</button>",
+		prevPage,
+		prevStatus))
+
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Next</button>",
+		nextPage,
+		nextStatus))
+
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Last</button>",
+		lastPage))
+
+	html.WriteString("</td></tr>\n")
+
+	return html.String()
+}
+
+func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/html")
 
@@ -56,8 +113,13 @@ func serveIndexHtml(args []string, index *fileIndex, paginate bool) httprouter.H
 		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
-		htmlBody.WriteString(`table,td,tr{border:1px solid black;border-collapse:collapse}td{white-space:nowrap;padding:.5em}</style>`)
+		htmlBody.WriteString(`table,td,tr{border:none;}td{border-bottom:1px solid black;}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %d files</title></head><body><table>", fileCount))
+
+		if shouldPaginate {
+			htmlBody.WriteString(paginate(page, fileCount, false))
+		}
+
 		if len(indexDump) > 0 {
 			for _, v := range indexDump[startIndex:stopIndex] {
 				var shouldSort = ""
@@ -68,51 +130,9 @@ func serveIndexHtml(args []string, index *fileIndex, paginate bool) httprouter.H
 				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s%s\">%s</a></td></tr>\n", Prefix, mediaPrefix, v, shouldSort, v))
 			}
 		}
-		if PageLength != 0 {
-			var firstPage int = 1
-			var lastPage int
 
-			if fileCount%PageLength == 0 {
-				lastPage = fileCount / PageLength
-			} else {
-				lastPage = (fileCount / PageLength) + 1
-			}
-
-			if paginate {
-				var prevStatus, nextStatus string = "", ""
-
-				if page <= 1 {
-					prevStatus = " disabled"
-				}
-
-				if page >= lastPage {
-					nextStatus = " disabled"
-				}
-
-				prevPage := page - 1
-				if prevPage < 1 {
-					prevPage = 1
-				}
-
-				nextPage := page + 1
-				if nextPage > lastPage {
-					nextPage = fileCount / PageLength
-				}
-
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">First</button>",
-					firstPage))
-
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Prev</button>",
-					prevPage,
-					prevStatus))
-
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Next</button>",
-					nextPage,
-					nextStatus))
-
-				htmlBody.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Last</button>",
-					lastPage))
-			}
+		if shouldPaginate {
+			htmlBody.WriteString(paginate(page, fileCount, true))
 		}
 
 		htmlBody.WriteString(`</table></body></html>`)
