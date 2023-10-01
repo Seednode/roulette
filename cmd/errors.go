@@ -28,7 +28,7 @@ func newErrorPage(title, body string) string {
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 	htmlBody.WriteString(faviconHtml)
-	htmlBody.WriteString(`<style>a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(`<style>html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
 	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
 
