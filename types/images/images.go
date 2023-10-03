@@ -55,7 +55,7 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) 
 		return "", err
 	}
 
-	return fmt.Sprintf(`<a href="%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+	return fmt.Sprintf(`<a href="%s"><img style="color: transparent;" onload="this.style.color='inherit'" onerror="this.style.color='inherit'" src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 		rootUrl,
 		fileUri,
 		dimensions.width,
