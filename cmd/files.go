@@ -177,6 +177,8 @@ func pathIsValid(path string, paths []string) bool {
 	for i := 0; i < len(paths); i++ {
 		if strings.HasPrefix(path, paths[i]) {
 			matchesPrefix = true
+
+			break
 		}
 	}
 
@@ -306,6 +308,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 
 	go func() {
 		wg.Wait()
+
 		done <- true
 	}()
 
@@ -366,6 +369,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats *types.Typ
 
 	go func() {
 		wg.Wait()
+
 		done <- true
 	}()
 
@@ -391,6 +395,7 @@ Poll:
 
 	if stats.filesMatched < 1 {
 		fmt.Println("No files matched")
+
 		return []string{}, nil
 	}
 
