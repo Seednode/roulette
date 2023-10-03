@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "2.1.1"
+	ReleaseVersion string = "2.2.0"
 )
 
 var (
@@ -30,8 +30,6 @@ var (
 	Index         bool
 	IndexFile     string
 	Info          bool
-	MaxDirScans   int
-	MaxFileScans  int
 	MaxFileCount  int
 	MinFileCount  int
 	PageLength    int
@@ -53,8 +51,6 @@ var (
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
-			case MaxDirScans < 1 || MaxFileScans < 1 || MaxDirScans > math.MaxInt32 || MaxFileScans > math.MaxInt32:
-				return ErrInvalidScanCount
 			case MaxFileCount < 1 || MinFileCount < 1 || MaxFileCount > math.MaxInt32 || MinFileCount > math.MaxInt32:
 				return ErrInvalidFileCountValue
 			case MinFileCount > MaxFileCount:
@@ -98,8 +94,6 @@ func init() {
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
-	rootCmd.Flags().IntVar(&MaxDirScans, "max-directory-scans", 32, "number of directories to scan at once")
-	rootCmd.Flags().IntVar(&MaxFileScans, "max-file-scans", 256, "number of files to scan at once")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
 	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")

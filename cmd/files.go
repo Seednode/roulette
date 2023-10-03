@@ -226,14 +226,19 @@ func hasSupportedFiles(path string, formats *types.Types) (bool, error) {
 	}
 }
 
-func pathCount(path string) (int, int, error) {
-	var directories = 0
-	var files = 0
+func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, formats *types.Types) error {
+	var wg sync.WaitGroup
+
+	errorChannel := make(chan error)
+	done := make(chan bool, 1)
 
 	nodes, err := os.ReadDir(path)
 	if err != nil {
-		return 0, 0, err
+		return err
 	}
+
+	var directories = 0
+	var files = 0
 
 	for _, node := range nodes {
 		if node.IsDir() {
@@ -243,30 +248,43 @@ func pathCount(path string) (int, int, error) {
 		}
 	}
 
-	return files, directories, nil
-}
+	var skipFiles = false
 
-func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats *scanStatsChannels, formats *types.Types) error {
-	var wg sync.WaitGroup
+	if files < MinFileCount || files > MaxFileCount {
+		stats.filesSkipped <- files
+		stats.directoriesSkipped <- 1
 
-	errorChannel := make(chan error)
-	done := make(chan bool, 1)
+		skipFiles = true
+	} else {
+		stats.directoriesMatched <- 1
+	}
 
-	filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
+	for _, node := range nodes {
+		fullPath := filepath.Join(path, node.Name())
+
 		switch {
-		case !Recursive && info.IsDir() && p != path:
-			return filepath.SkipDir
-		case !info.IsDir():
+		case node.IsDir() && Recursive:
 			wg.Add(1)
-			fileScans <- 1
 
 			go func() {
 				defer func() {
 					wg.Done()
-					<-fileScans
 				}()
+				err = walkPath(fullPath, fileChannel, stats, formats)
+				if err != nil {
+					errorChannel <- err
 
-				path, err := normalizePath(p)
+					return
+				}
+			}()
+		case !node.IsDir() && !skipFiles:
+			wg.Add(1)
+
+			go func() {
+				defer func() {
+					wg.Done()
+				}()
+				path, err := normalizePath(fullPath)
 				if err != nil {
 					errorChannel <- err
 
@@ -279,29 +297,12 @@ func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats 
 					return
 				}
 
-				fileChannel <- path
+				fileChannel <- fullPath
 
 				stats.filesMatched <- 1
 			}()
-		case info.IsDir():
-			files, directories, err := pathCount(p)
-			if err != nil {
-				errorChannel <- err
-			}
-
-			if files > 0 && (files < MinFileCount) || (files > MaxFileCount) {
-				// This count will not otherwise include the parent directory itself, so increment by one
-				stats.directoriesSkipped <- directories + 1
-				stats.filesSkipped <- files
-
-				return filepath.SkipDir
-			}
-
-			stats.directoriesMatched <- 1
 		}
-
-		return nil
-	})
+	}
 
 	go func() {
 		wg.Wait()
@@ -311,8 +312,8 @@ func walkPath(path string, fileChannel chan<- string, fileScans chan int, stats 
 Poll:
 	for {
 		select {
-		case e := <-errorChannel:
-			return e
+		case err := <-errorChannel:
+			return err
 		case <-done:
 			break Poll
 		}
@@ -326,8 +327,6 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats *types.Typ
 
 	fileChannel := make(chan string)
 	errorChannel := make(chan error)
-	directoryScans := make(chan int, MaxDirScans)
-	fileScans := make(chan int, MaxFileScans)
 	done := make(chan bool, 1)
 
 	stats := &scanStats{
@@ -350,15 +349,13 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats *types.Typ
 
 	for i := 0; i < len(paths); i++ {
 		wg.Add(1)
-		directoryScans <- 1
 
 		go func(i int) {
 			defer func() {
 				wg.Done()
-				<-directoryScans
 			}()
+			err := walkPath(paths[i], fileChannel, statsChannels, formats)
 
-			err := walkPath(paths[i], fileChannel, fileScans, statsChannels, formats)
 			if err != nil {
 				errorChannel <- err
 
