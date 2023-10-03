@@ -41,12 +41,12 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func preparePath(path string) string {
+func preparePath(prefix, path string) string {
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s/%s", mediaPrefix, filepath.ToSlash(path))
+		return fmt.Sprintf("%s/%s", prefix, filepath.ToSlash(path))
 	}
 
-	return mediaPrefix + path
+	return prefix + path
 }
 
 func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
@@ -228,7 +228,7 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats *type
 		newUrl := fmt.Sprintf("http://%s%s%s%s",
 			r.Host,
 			Prefix,
-			preparePath(path),
+			preparePath(mediaPrefix, path),
 			queryParams,
 		)
 		http.Redirect(w, r, newUrl, redirectStatusCode)
@@ -266,9 +266,28 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats *typ
 
 		format := formats.FileType(path)
 		if format == nil {
-			serverError(w, r, nil)
+			if Fallback {
+				w.Header().Add("Content-Type", "application/octet-stream")
 
-			return
+				_, refreshInterval := refreshInterval(r)
+
+				// redirect to static url for file
+				newUrl := fmt.Sprintf("http://%s%s%s%s",
+					r.Host,
+					Prefix,
+					preparePath(sourcePrefix, path),
+					generateQueryParams(filters, sortOrder, refreshInterval),
+				)
+
+				http.Redirect(w, r, newUrl, redirectStatusCode)
+
+				return
+			} else {
+				notFound(w, r, path)
+
+				return
+
+			}
 		}
 
 		if !format.Validate(path) {

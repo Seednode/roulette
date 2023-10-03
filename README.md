@@ -113,6 +113,7 @@ Flags:
       --code                 enable support for source code files
       --code-theme string    theme for source code syntax highlighting (default "solarized-dark256")
       --exit-on-error        shut down webserver on error, instead of just printing the error
+      --fallback             serve files as application/octet-stream if no matching format is registered
   -f, --filter               enable filtering
       --flash                enable support for shockwave flash files (via ruffle.rs)
       --handlers             display registered handlers (for debugging)

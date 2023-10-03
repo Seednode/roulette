@@ -291,15 +291,15 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 					return
 				}
 
-				if !formats.Validate(path) {
-					stats.filesSkipped <- 1
+				if formats.Validate(path) || Fallback {
+					fileChannel <- path
+
+					stats.filesMatched <- 1
 
 					return
 				}
 
-				fileChannel <- path
-
-				stats.filesMatched <- 1
+				stats.filesSkipped <- 1
 			}()
 		}
 	}
