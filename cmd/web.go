@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -404,6 +405,8 @@ func redirectRoot() httprouter.Handle {
 }
 
 func ServePage(args []string) error {
+	log.SetFlags(0)
+
 	timeZone := os.Getenv("TZ")
 	if timeZone != "" {
 		var err error

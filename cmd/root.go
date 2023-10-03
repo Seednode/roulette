@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "2.3.2"
+	ReleaseVersion string = "2.4.0"
 )
 
 var (
@@ -52,7 +52,7 @@ var (
 		Args:  cobra.MinimumNArgs(1),
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
-			case MaxFileCount < 1 || MinFileCount < 1 || MaxFileCount > math.MaxInt32 || MinFileCount > math.MaxInt32:
+			case MaxFileCount < 0 || MinFileCount < 0 || MaxFileCount > math.MaxInt32 || MinFileCount > math.MaxInt32:
 				return ErrInvalidFileCountValue
 			case MinFileCount > MaxFileCount:
 				return ErrInvalidFileCountRange
@@ -97,7 +97,7 @@ func init() {
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
-	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 1, "skip directories with file counts below this value")
+	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 0, "skip directories with file counts below this value")
 	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")

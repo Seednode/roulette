@@ -7,6 +7,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"math/big"
 	"regexp"
 
@@ -229,8 +230,6 @@ func hasSupportedFiles(path string, formats *types.Types) (bool, error) {
 }
 
 func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, formats *types.Types) error {
-	var wg sync.WaitGroup
-
 	errorChannel := make(chan error)
 	done := make(chan bool, 1)
 
@@ -239,8 +238,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 		return err
 	}
 
-	var directories = 0
-	var files = 0
+	var directories, files = 0, 0
 
 	for _, node := range nodes {
 		if node.IsDir() {
@@ -261,50 +259,48 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 		skipFiles = true
 	}
 
-	for _, node := range nodes {
-		fullPath := filepath.Join(path, node.Name())
+	var wg sync.WaitGroup
 
-		switch {
-		case node.IsDir() && Recursive:
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for _, node := range nodes {
 			wg.Add(1)
 
-			go func() {
-				defer func() {
-					wg.Done()
-				}()
-				err := walkPath(fullPath, fileChannel, stats, formats)
-				if err != nil {
-					errorChannel <- err
+			go func(node fs.DirEntry) {
+				defer wg.Done()
 
-					return
+				fullPath := filepath.Join(path, node.Name())
+
+				switch {
+				case node.IsDir() && Recursive:
+					err := walkPath(fullPath, fileChannel, stats, formats)
+					if err != nil {
+						errorChannel <- err
+
+						return
+					}
+				case !node.IsDir() && !skipFiles:
+					path, err := normalizePath(fullPath)
+					if err != nil {
+						errorChannel <- err
+
+						return
+					}
+
+					if formats.Validate(path) || Fallback {
+						fileChannel <- path
+
+						stats.filesMatched <- 1
+
+						return
+					}
+
+					stats.filesSkipped <- 1
 				}
-			}()
-		case !node.IsDir() && !skipFiles:
-			wg.Add(1)
-
-			go func() {
-				defer func() {
-					wg.Done()
-				}()
-				path, err := normalizePath(fullPath)
-				if err != nil {
-					errorChannel <- err
-
-					return
-				}
-
-				if formats.Validate(path) || Fallback {
-					fileChannel <- path
-
-					stats.filesMatched <- 1
-
-					return
-				}
-
-				stats.filesSkipped <- 1
-			}()
+			}(node)
 		}
-	}
+	}()
 
 	go func() {
 		wg.Wait()
