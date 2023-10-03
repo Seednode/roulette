@@ -250,13 +250,13 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 
 	var skipFiles = false
 
-	if files < MinFileCount || files > MaxFileCount {
+	if files <= MaxFileCount && files >= MinFileCount {
+		stats.directoriesMatched <- 1
+	} else {
 		stats.filesSkipped <- files
 		stats.directoriesSkipped <- 1
 
 		skipFiles = true
-	} else {
-		stats.directoriesMatched <- 1
 	}
 
 	for _, node := range nodes {
@@ -270,7 +270,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 				defer func() {
 					wg.Done()
 				}()
-				err = walkPath(fullPath, fileChannel, stats, formats)
+				err := walkPath(fullPath, fileChannel, stats, formats)
 				if err != nil {
 					errorChannel <- err
 
@@ -297,7 +297,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 					return
 				}
 
-				fileChannel <- fullPath
+				fileChannel <- path
 
 				stats.filesMatched <- 1
 			}()
