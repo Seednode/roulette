@@ -229,7 +229,7 @@ func serveAvailableExtensions() httprouter.Handle {
 	}
 }
 
-func serveEnabledExtensions(formats *types.Types) httprouter.Handle {
+func serveEnabledExtensions(formats types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -271,7 +271,7 @@ func serveAvailableMimeTypes() httprouter.Handle {
 	}
 }
 
-func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
+func serveEnabledMimeTypes(formats types.Types) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -292,7 +292,7 @@ func serveEnabledMimeTypes(formats *types.Types) httprouter.Handle {
 	}
 }
 
-func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) {
+func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
 		registerHandler(mux, Prefix+"/html", serveIndexHtml(args, index, false))
 		if PageLength != 0 {

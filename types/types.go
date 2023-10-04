@@ -10,9 +10,7 @@ import (
 	"strings"
 )
 
-var SupportedFormats = &Types{
-	Extensions: make(map[string]Type),
-}
+var SupportedFormats = make(Types)
 
 type Type interface {
 	Type() string
@@ -24,21 +22,19 @@ type Type interface {
 	Validate(filePath string) bool
 }
 
-type Types struct {
-	Extensions map[string]Type
-}
+type Types map[string]Type
 
-func (t *Types) Add(format Type) {
+func (t Types) Add(format Type) {
 	for k := range format.Extensions() {
-		_, exists := t.Extensions[k]
+		_, exists := t[k]
 		if !exists {
-			t.Extensions[k] = format
+			t[k] = format
 		}
 	}
 }
 
-func (t *Types) FileType(path string) Type {
-	fileType, exists := t.Extensions[filepath.Ext(path)]
+func (t Types) FileType(path string) Type {
+	fileType, exists := t[filepath.Ext(path)]
 	if exists {
 		return fileType
 	}
@@ -46,12 +42,12 @@ func (t *Types) FileType(path string) Type {
 	return nil
 }
 
-func (t *Types) Register(format Type) {
+func (t Types) Register(format Type) {
 	t.Add(format)
 }
 
-func (t *Types) Validate(path string) bool {
-	format, exists := t.Extensions[filepath.Ext(path)]
+func (t Types) Validate(path string) bool {
+	format, exists := t[filepath.Ext(path)]
 	if !exists {
 		return false
 	}
@@ -59,14 +55,14 @@ func (t *Types) Validate(path string) bool {
 	return format.Validate(path)
 }
 
-func (t *Types) GetExtensions() string {
+func (t Types) GetExtensions() string {
 	var output strings.Builder
 
-	extensions := make([]string, len(t.Extensions))
+	extensions := make([]string, len(t))
 
 	i := 0
 
-	for k := range t.Extensions {
+	for k := range t {
 		extensions[i] = k
 		i++
 	}
@@ -80,12 +76,12 @@ func (t *Types) GetExtensions() string {
 	return output.String()
 }
 
-func (t *Types) GetMimeTypes() string {
+func (t Types) GetMimeTypes() string {
 	var output strings.Builder
 
 	var mimeTypes []string
 
-	for _, j := range t.Extensions {
+	for _, j := range t {
 		extensions := j.Extensions()
 		for _, v := range extensions {
 			mimeTypes = append(mimeTypes, v)

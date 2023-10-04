@@ -153,7 +153,7 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -236,7 +236,7 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats *type
 	}
 }
 
-func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
@@ -433,9 +433,7 @@ func ServePage(args []string) error {
 		return errors.New("invalid bind address provided")
 	}
 
-	formats := &types.Types{
-		Extensions: make(map[string]types.Type),
-	}
+	formats := make(types.Types)
 
 	if Audio || All {
 		formats.Add(audio.Format{})
@@ -459,7 +457,7 @@ func ServePage(args []string) error {
 
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
-	if Images || All || len(formats.Extensions) == 0 {
+	if Images || All || len(formats) == 0 {
 		formats.Add(images.Format{})
 	}
 

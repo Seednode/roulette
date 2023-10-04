@@ -72,7 +72,7 @@ func kill(path string, index *fileIndex) error {
 	return nil
 }
 
-func newFile(list []string, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
+func newFile(list []string, sortOrder string, regexes *regexes, formats types.Types) (string, error) {
 	path, err := pickFile(list)
 	if err != nil {
 		return "", err
@@ -118,7 +118,7 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats *types.T
 	return path, nil
 }
 
-func nextFile(filePath, sortOrder string, regexes *regexes, formats *types.Types) (string, error) {
+func nextFile(filePath, sortOrder string, regexes *regexes, formats types.Types) (string, error) {
 	splitPath, _, err := split(filePath, regexes)
 	if err != nil {
 		return "", err
@@ -141,10 +141,10 @@ func nextFile(filePath, sortOrder string, regexes *regexes, formats *types.Types
 	return path, err
 }
 
-func tryExtensions(splitPath *splitPath, formats *types.Types) (string, error) {
+func tryExtensions(splitPath *splitPath, formats types.Types) (string, error) {
 	var path string
 
-	for extension := range formats.Extensions {
+	for extension := range formats {
 		path = fmt.Sprintf("%s%s%s", splitPath.base, splitPath.number, extension)
 
 		exists, err := fileExists(path)
@@ -198,7 +198,7 @@ func pathIsValid(path string, paths []string) bool {
 	}
 }
 
-func hasSupportedFiles(path string, formats *types.Types) (bool, error) {
+func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	hasRegisteredFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -229,7 +229,7 @@ func hasSupportedFiles(path string, formats *types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, formats *types.Types) error {
+func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, formats types.Types) error {
 	errorChannel := make(chan error)
 	done := make(chan bool, 1)
 
@@ -321,7 +321,7 @@ Poll:
 	return nil
 }
 
-func scanPaths(paths []string, sort string, index *fileIndex, formats *types.Types) ([]string, error) {
+func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types) ([]string, error) {
 	var list []string
 
 	fileChannel := make(chan string)
@@ -375,13 +375,13 @@ Poll:
 		case path := <-fileChannel:
 			list = append(list, path)
 		case stat := <-statsChannels.filesMatched:
-			stats.filesMatched = stats.filesMatched + stat
+			stats.filesMatched += stat
 		case stat := <-statsChannels.filesSkipped:
-			stats.filesSkipped = stats.filesSkipped + stat
+			stats.filesSkipped += stat
 		case stat := <-statsChannels.directoriesMatched:
-			stats.directoriesMatched = stats.directoriesMatched + stat
+			stats.directoriesMatched += stat
 		case stat := <-statsChannels.directoriesSkipped:
-			stats.directoriesSkipped = stats.directoriesSkipped + stat
+			stats.directoriesSkipped += stat
 		case err := <-errorChannel:
 			return []string{}, err
 		case <-done:
@@ -409,7 +409,7 @@ Poll:
 	return list, nil
 }
 
-func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats *types.Types) ([]string, error) {
+func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types) ([]string, error) {
 	switch {
 	case Index && !index.isEmpty() && filters.isEmpty():
 		return index.List(), nil
@@ -493,7 +493,7 @@ func normalizePath(path string) (string, error) {
 	return absolutePath, nil
 }
 
-func validatePaths(args []string, formats *types.Types) ([]string, error) {
+func validatePaths(args []string, formats types.Types) ([]string, error) {
 	var paths []string
 
 	for i := 0; i < len(args); i++ {

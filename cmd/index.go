@@ -158,7 +158,7 @@ func (index *fileIndex) Import(path string) error {
 	return nil
 }
 
-func serveIndexRebuild(args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		index.clear()
 
@@ -175,13 +175,13 @@ func serveIndexRebuild(args []string, index *fileIndex, formats *types.Types, er
 	}
 }
 
-func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats *types.Types, errorChannel chan<- error) error {
+func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) error {
 	registerHandler(mux, Prefix+"/rebuild_index", serveIndexRebuild(args, index, formats, errorChannel))
 
 	return nil
 }
 
-func importIndex(args []string, index *fileIndex, formats *types.Types) error {
+func importIndex(args []string, index *fileIndex, formats types.Types) error {
 	skipIndex := false
 
 	if IndexFile != "" {
