@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "2.5.1"
+	ReleaseVersion string = "2.6.0"
 )
 
 var (
@@ -26,6 +26,7 @@ var (
 	Fallback      bool
 	Filtering     bool
 	Flash         bool
+	Fun           bool
 	Handlers      bool
 	Images        bool
 	Index         bool
@@ -91,6 +92,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
+	rootCmd.Flags().BoolVar(&Fun, "fun", false, "adds a bit of excitement to your day")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")

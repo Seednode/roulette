@@ -116,6 +116,7 @@ Flags:
       --fallback             serve files as application/octet-stream if no matching format is registered
   -f, --filter               enable filtering
       --flash                enable support for shockwave flash files (via ruffle.rs)
+      --fun                  adds a bit of excitement to your day
       --handlers             display registered handlers (for debugging)
   -h, --help                 help for roulette
       --images               enable support for image files
@@ -123,7 +124,7 @@ Flags:
       --index-file string    path to optional persistent index file
   -i, --info                 expose informational endpoints
       --max-file-count int   skip directories with file counts above this value (default 2147483647)
-      --min-file-count int   skip directories with file counts below this value (default 1)
+      --min-file-count int   skip directories with file counts below this value
       --page-length int      pagination length for info pages
   -p, --port int             port to listen on (default 8080)
       --prefix string        root path for http handlers (for reverse proxying) (default "/")

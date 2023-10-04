@@ -436,29 +436,29 @@ func ServePage(args []string) error {
 	formats := make(types.Types)
 
 	if Audio || All {
-		formats.Add(audio.Format{})
+		formats.Add(audio.Format{Fun: Fun})
 	}
 
 	if Code || All {
-		formats.Add(code.Format{Theme: CodeTheme})
+		formats.Add(code.Format{Fun: Fun, Theme: CodeTheme})
 	}
 
 	if Flash || All {
-		formats.Add(flash.Format{})
+		formats.Add(flash.Format{Fun: Fun})
 	}
 
 	if Text || All {
-		formats.Add(text.Format{})
+		formats.Add(text.Format{Fun: Fun})
 	}
 
 	if Videos || All {
-		formats.Add(video.Format{})
+		formats.Add(video.Format{Fun: Fun})
 	}
 
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
 	if Images || All || len(formats) == 0 {
-		formats.Add(images.Format{})
+		formats.Add(images.Format{Fun: Fun})
 	}
 
 	paths, err := validatePaths(args, formats)

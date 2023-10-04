@@ -20,6 +20,7 @@ import (
 )
 
 type Format struct {
+	Fun   bool
 	Theme string
 }
 
@@ -56,6 +57,9 @@ func (t Format) Css() string {
 
 	css.WriteString("html{height:100%;width:100%;}\n")
 	css.WriteString("a{bottom:0;left:0;position:absolute;right:0;top:0;margin:1rem;padding:0;height:99%;width:99%;color:inherit;text-decoration:none;}\n")
+	if t.Fun {
+		css.WriteString("body{font-family: \"Comic Sans MS\", cursive, \"Brush Script MT\", sans-serif;}\n")
+	}
 
 	return css.String()
 }

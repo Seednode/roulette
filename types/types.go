@@ -13,12 +13,28 @@ import (
 var SupportedFormats = make(Types)
 
 type Type interface {
+	// Returns either "inline" or "embed", depending on whether the file
+	// should be displayed inline (e.g. code) or embedded (e.g. images)
 	Type() string
+
+	// Returns a CSS string used to format the corresponding page
 	Css() string
+
+	// Returns an HTML <title> element for the specified file
 	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
+
+	// Returns an HTML <body> element used to display the specified file
 	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
+
+	// Returns a map of file extensions to MIME type strings.
 	Extensions() map[string]string
-	MimeType(string) string
+
+	// Given a file extension, returns the corresponding MIME type,
+	// if one exists. Otherwise, returns an empty string.
+	MimeType(extension string) string
+
+	// Optional function used to validate whether a given file matches this format.
+	// If no validation checks are needed, this function should always return true.
 	Validate(filePath string) bool
 }
 

@@ -11,6 +11,7 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"math/rand"
 	"os"
 	"strings"
 
@@ -24,7 +25,9 @@ type dimensions struct {
 	height int
 }
 
-type Format struct{}
+type Format struct {
+	Fun bool
+}
 
 func (t Format) Css() string {
 	var css strings.Builder
@@ -32,7 +35,17 @@ func (t Format) Css() string {
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
 	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
 	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
-	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
+	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`)
+	if t.Fun {
+		rotate := rand.Intn(360)
+
+		css.WriteString(fmt.Sprintf(" rotate(%ddeg);", rotate))
+		css.WriteString(fmt.Sprintf("-ms-transform:rotate(%ddeg);", rotate))
+		css.WriteString(fmt.Sprintf("-webkit-transform:rotate(%ddeg);", rotate))
+		css.WriteString(fmt.Sprintf("-moz-transform:rotate(%ddeg);", rotate))
+		css.WriteString(fmt.Sprintf("-o-transform:rotate(%ddeg)", rotate))
+	}
+	css.WriteString(`;}`)
 
 	return css.String()
 }
