@@ -104,7 +104,10 @@ func (index *fileIndex) Export(path string) error {
 	enc := gob.NewEncoder(z)
 
 	index.mutex.RLock()
-	enc.Encode(&index.list)
+	err = enc.Encode(&index.list)
+	if err != nil {
+		return err
+	}
 	length := len(index.list)
 	index.mutex.RUnlock()
 
@@ -139,12 +142,11 @@ func (index *fileIndex) Import(path string) error {
 
 	index.mutex.Lock()
 	err = dec.Decode(&index.list)
-	length := len(index.list)
-	index.mutex.Unlock()
-
 	if err != nil {
 		return err
 	}
+	length := len(index.list)
+	index.mutex.Unlock()
 
 	if Verbose {
 		fmt.Printf("%s | INDEX: Imported %d entries from %s in %s\n",

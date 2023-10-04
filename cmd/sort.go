@@ -17,41 +17,35 @@ type splitPath struct {
 }
 
 func (splitPath *splitPath) increment() {
-	length := len(splitPath.number)
-
 	asInt, err := strconv.Atoi(splitPath.number)
 	if err != nil {
 		return
 	}
 
-	splitPath.number = fmt.Sprintf("%0*d", length, asInt+1)
+	splitPath.number = fmt.Sprintf("%0*d", len(splitPath.number), asInt+1)
 }
 
 func (splitPath *splitPath) decrement() {
-	length := len(splitPath.number)
-
 	asInt, err := strconv.Atoi(splitPath.number)
 	if err != nil {
 		return
 	}
 
-	splitPath.number = fmt.Sprintf("%0*d", length, asInt-1)
+	splitPath.number = fmt.Sprintf("%0*d", len(splitPath.number), asInt-1)
 }
 
-func split(path string, regexes *regexes) (*splitPath, int, error) {
-	p := splitPath{}
-
+func split(path string, regexes *regexes) (*splitPath, error) {
 	split := regexes.filename.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
-		return &splitPath{}, 0, nil
+		return &splitPath{}, nil
 	}
 
-	p.base = split[0][1]
+	p := &splitPath{
+		base:      split[0][1],
+		number:    split[0][2],
+		extension: split[0][3],
+	}
 
-	p.number = split[0][2]
-
-	p.extension = split[0][3]
-
-	return &p, len(p.number), nil
+	return p, nil
 }

@@ -79,14 +79,14 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats types.Ty
 	}
 
 	if sortOrder == "asc" || sortOrder == "desc" {
-		splitPath, length, err := split(path, regexes)
+		splitPath, err := split(path, regexes)
 		if err != nil {
 			return "", err
 		}
 
 		switch {
 		case sortOrder == "asc":
-			splitPath.number = fmt.Sprintf("%0*d", length, 1)
+			splitPath.number = fmt.Sprintf("%0*d", len(splitPath.number), 1)
 
 			path, err = tryExtensions(splitPath, formats)
 			if err != nil {
@@ -119,7 +119,7 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats types.Ty
 }
 
 func nextFile(filePath, sortOrder string, regexes *regexes, formats types.Types) (string, error) {
-	splitPath, _, err := split(filePath, regexes)
+	splitPath, err := split(filePath, regexes)
 	if err != nil {
 		return "", err
 	}

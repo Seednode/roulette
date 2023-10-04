@@ -137,7 +137,7 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 
 		htmlBody.WriteString(`</table></body></html>`)
 
-		b, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
+		length, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
 			return
 		}
@@ -145,7 +145,7 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 		if Verbose {
 			fmt.Printf("%s | SERVE: HTML index page (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(b),
+				humanReadableSize(length),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -195,12 +195,15 @@ func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) 
 			return
 		}
 
-		w.Write(response)
+		written, err := w.Write(response)
+		if err != nil {
+			errorChannel <- err
+		}
 
 		if Verbose {
 			fmt.Printf("%s | SERVE: JSON index page (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(len(response)),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -208,20 +211,21 @@ func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) 
 	}
 }
 
-func serveAvailableExtensions() httprouter.Handle {
+func serveAvailableExtensions(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		response := []byte(types.SupportedFormats.GetExtensions())
-
-		w.Write(response)
+		written, err := w.Write([]byte(types.SupportedFormats.GetExtensions()))
+		if err != nil {
+			errorChannel <- err
+		}
 
 		if Verbose {
 			fmt.Printf("%s | SERVE: Available extension list (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(len(response)),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -229,20 +233,21 @@ func serveAvailableExtensions() httprouter.Handle {
 	}
 }
 
-func serveEnabledExtensions(formats types.Types) httprouter.Handle {
+func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		response := []byte(formats.GetExtensions())
-
-		w.Write(response)
+		written, err := w.Write([]byte(formats.GetExtensions()))
+		if err != nil {
+			errorChannel <- err
+		}
 
 		if Verbose {
 			fmt.Printf("%s | SERVE: Registered extension list (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(len(response)),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -250,20 +255,21 @@ func serveEnabledExtensions(formats types.Types) httprouter.Handle {
 	}
 }
 
-func serveAvailableMimeTypes() httprouter.Handle {
+func serveAvailableMimeTypes(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		response := []byte(types.SupportedFormats.GetMimeTypes())
-
-		w.Write(response)
+		written, err := w.Write([]byte(types.SupportedFormats.GetMimeTypes()))
+		if err != nil {
+			errorChannel <- err
+		}
 
 		if Verbose {
 			fmt.Printf("%s | SERVE: Available MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(len(response)),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -271,20 +277,21 @@ func serveAvailableMimeTypes() httprouter.Handle {
 	}
 }
 
-func serveEnabledMimeTypes(formats types.Types) httprouter.Handle {
+func serveEnabledMimeTypes(formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		response := []byte(formats.GetMimeTypes())
-
-		w.Write(response)
+		written, err := w.Write([]byte(formats.GetMimeTypes()))
+		if err != nil {
+			errorChannel <- err
+		}
 
 		if Verbose {
 			fmt.Printf("%s | SERVE: Registered MIME type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(len(response)),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -305,8 +312,8 @@ func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileInde
 		}
 	}
 
-	registerHandler(mux, Prefix+"/available_extensions", serveAvailableExtensions())
-	registerHandler(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats))
-	registerHandler(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes())
-	registerHandler(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats))
+	registerHandler(mux, Prefix+"/available_extensions", serveAvailableExtensions(errorChannel))
+	registerHandler(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats, errorChannel))
+	registerHandler(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes(errorChannel))
+	registerHandler(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats, errorChannel))
 }
