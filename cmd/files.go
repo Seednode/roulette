@@ -27,12 +27,12 @@ type regexes struct {
 	filename     *regexp.Regexp
 }
 
-type scanStats struct {
-	filesMatched       int
-	filesSkipped       int
-	directoriesMatched int
-	directoriesSkipped int
-}
+// type scanStats struct {
+// 	filesMatched       int
+// 	filesSkipped       int
+// 	directoriesMatched int
+// 	directoriesSkipped int
+// }
 
 type scanStatsChannels struct {
 	filesMatched       chan int
@@ -322,18 +322,20 @@ Poll:
 }
 
 func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types) ([]string, error) {
+	startTime := time.Now()
+
 	var list []string
+
+	var filesMatched int = 0
+	var filesSkipped int = 0
+	var directoriesMatched int = 0
+	var directoriesSkipped int = 0
+
+	var wg sync.WaitGroup
 
 	fileChannel := make(chan string)
 	errorChannel := make(chan error)
 	done := make(chan bool, 1)
-
-	stats := &scanStats{
-		filesMatched:       0,
-		filesSkipped:       0,
-		directoriesMatched: 0,
-		directoriesSkipped: 0,
-	}
 
 	statsChannels := &scanStatsChannels{
 		filesMatched:       make(chan int),
@@ -342,9 +344,35 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		directoriesSkipped: make(chan int),
 	}
 
-	var wg sync.WaitGroup
+	go func() {
+		for path := range fileChannel {
+			list = append(list, path)
+		}
+	}()
 
-	startTime := time.Now()
+	go func() {
+		for stat := range statsChannels.filesMatched {
+			filesMatched += stat
+		}
+	}()
+
+	go func() {
+		for stat := range statsChannels.filesSkipped {
+			filesSkipped += stat
+		}
+	}()
+
+	go func() {
+		for stat := range statsChannels.directoriesMatched {
+			directoriesMatched += stat
+		}
+	}()
+
+	go func() {
+		for stat := range statsChannels.directoriesSkipped {
+			directoriesSkipped += stat
+		}
+	}()
 
 	for i := 0; i < len(paths); i++ {
 		wg.Add(1)
@@ -367,21 +395,16 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		wg.Wait()
 
 		done <- true
+
+		close(statsChannels.filesMatched)
+		close(statsChannels.filesSkipped)
+		close(statsChannels.directoriesMatched)
+		close(statsChannels.directoriesSkipped)
 	}()
 
 Poll:
 	for {
 		select {
-		case path := <-fileChannel:
-			list = append(list, path)
-		case stat := <-statsChannels.filesMatched:
-			stats.filesMatched += stat
-		case stat := <-statsChannels.filesSkipped:
-			stats.filesSkipped += stat
-		case stat := <-statsChannels.directoriesMatched:
-			stats.directoriesMatched += stat
-		case stat := <-statsChannels.directoriesSkipped:
-			stats.directoriesSkipped += stat
 		case err := <-errorChannel:
 			return []string{}, err
 		case <-done:
@@ -389,7 +412,7 @@ Poll:
 		}
 	}
 
-	if stats.filesMatched < 1 {
+	if filesMatched < 1 {
 		fmt.Println("No files matched")
 
 		return []string{}, nil
@@ -398,10 +421,10 @@ Poll:
 	if Verbose {
 		fmt.Printf("%s | INDEX: Selecting from %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(logDate),
-			stats.filesMatched,
-			stats.filesMatched+stats.filesSkipped,
-			stats.directoriesMatched,
-			stats.directoriesMatched+stats.directoriesSkipped,
+			filesMatched,
+			filesMatched+filesSkipped,
+			directoriesMatched,
+			directoriesMatched+directoriesSkipped,
 			time.Since(startTime),
 		)
 	}
