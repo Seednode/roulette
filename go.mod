@@ -8,7 +8,7 @@ require (
 	github.com/klauspost/compress v1.17.0
 	github.com/spf13/cobra v1.7.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
-	golang.org/x/image v0.12.0
+	golang.org/x/image v0.13.0
 )
 
 require (
