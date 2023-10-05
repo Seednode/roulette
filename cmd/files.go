@@ -326,16 +326,16 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 
 	var list []string
 
-	var filesMatched int = 0
-	var filesSkipped int = 0
-	var directoriesMatched int = 0
-	var directoriesSkipped int = 0
+	var filesMatched int
+	var filesSkipped int
+	var directoriesMatched int
+	var directoriesSkipped int
 
 	var wg sync.WaitGroup
 
 	fileChannel := make(chan string)
 	errorChannel := make(chan error)
-	done := make(chan bool, 1)
+	done := make(chan bool)
 
 	statsChannels := &scanStatsChannels{
 		filesMatched:       make(chan int),
@@ -345,32 +345,57 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	}
 
 	go func() {
-		for path := range fileChannel {
-			list = append(list, path)
+		for {
+			select {
+			case path := <-fileChannel:
+				list = append(list, path)
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	go func() {
-		for stat := range statsChannels.filesMatched {
-			filesMatched += stat
+		for {
+			select {
+			case stat := <-statsChannels.filesMatched:
+				filesMatched += stat
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	go func() {
-		for stat := range statsChannels.filesSkipped {
-			filesSkipped += stat
+		for {
+			select {
+			case stat := <-statsChannels.filesSkipped:
+				filesSkipped += stat
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	go func() {
-		for stat := range statsChannels.directoriesMatched {
-			directoriesMatched += stat
+		for {
+			select {
+			case stat := <-statsChannels.directoriesMatched:
+				directoriesMatched += stat
+			case <-done:
+				return
+			}
 		}
 	}()
 
 	go func() {
-		for stat := range statsChannels.directoriesSkipped {
-			directoriesSkipped += stat
+		for {
+			select {
+			case stat := <-statsChannels.directoriesSkipped:
+				directoriesSkipped += stat
+			case <-done:
+				return
+			}
 		}
 	}()
 
@@ -394,12 +419,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		wg.Wait()
 
-		done <- true
-
-		close(statsChannels.filesMatched)
-		close(statsChannels.filesSkipped)
-		close(statsChannels.directoriesMatched)
-		close(statsChannels.directoriesSkipped)
+		close(done)
 	}()
 
 Poll:
