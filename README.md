@@ -53,7 +53,7 @@ The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `
 ## Refresh
 If the `--refresh` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
 
-This can be used to generate a sort of slideshow of files.
+This can be used to generate a sort of slideshow of files. Pressing Space will pause automatic refreshing until the page is manually refreshed or a new page is loaded.
 
 Minimum accepted value is 500ms, as anything lower seems to cause inconsistent behavior. This might be changed in a future release.
 
