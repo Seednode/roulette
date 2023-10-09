@@ -10,23 +10,7 @@ import (
 	"net/url"
 	"runtime"
 	"strings"
-	"time"
 )
-
-func refreshInterval(r *http.Request) (int64, string) {
-	interval := r.URL.Query().Get("refresh")
-
-	duration, err := time.ParseDuration(interval)
-
-	switch {
-	case err != nil || duration == 0 || !Refresh:
-		return 0, "0ms"
-	case duration < 500*time.Millisecond:
-		return 500, "500ms"
-	default:
-		return duration.Milliseconds(), interval
-	}
-}
 
 func sortOrder(r *http.Request) string {
 	sortOrder := r.URL.Query().Get("sort")

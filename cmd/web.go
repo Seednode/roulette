@@ -325,9 +325,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 		htmlBody.WriteString(title)
 		htmlBody.WriteString(`</head><body>`)
 		if refreshInterval != "0ms" {
-			htmlBody.WriteString(fmt.Sprintf("<script>window.onload = function(){clear = setInterval(function(){window.location.href = '%s';}, %d); document.body.onkeyup = function(e) { if (e.key == \"\" || e.code == \"Space\" || e.keyCode == 32){clearInterval(clear)}}};</script>",
-				rootUrl,
-				refreshTimer))
+			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer))
 		}
 
 		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)
