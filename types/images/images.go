@@ -97,7 +97,7 @@ func (t Format) Validate(filePath string) bool {
 	return true
 }
 
-func (t Format) MimeType(extension string) string {
+func (t Format) MediaType(extension string) string {
 	extensions := t.Extensions()
 
 	value, exists := extensions[extension]

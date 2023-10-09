@@ -48,7 +48,7 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeType(path string) string {
+func (t Format) MediaType(path string) string {
 	extensions := t.Extensions()
 
 	extension := filepath.Ext(path)

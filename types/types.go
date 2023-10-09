@@ -31,7 +31,7 @@ type Type interface {
 
 	// Given a file extension, returns the corresponding MIME type,
 	// if one exists. Otherwise, returns an empty string.
-	MimeType(extension string) string
+	MediaType(extension string) string
 
 	// Optional function used to validate whether a given file matches this format.
 	// If no validation checks are needed, this function should always return true.
@@ -92,23 +92,23 @@ func (t Types) GetExtensions() string {
 	return output.String()
 }
 
-func (t Types) GetMimeTypes() string {
+func (t Types) GetMediaTypes() string {
 	var output strings.Builder
 
-	var mimeTypes []string
+	var mediaTypes []string
 
 	for _, j := range t {
 		extensions := j.Extensions()
 		for _, v := range extensions {
-			mimeTypes = append(mimeTypes, v)
+			mediaTypes = append(mediaTypes, v)
 		}
 	}
 
-	mimeTypes = removeDuplicateStr(mimeTypes)
+	mediaTypes = removeDuplicateStr(mediaTypes)
 
-	slices.Sort(mimeTypes)
+	slices.Sort(mediaTypes)
 
-	for _, v := range mimeTypes {
+	for _, v := range mediaTypes {
 		output.WriteString(v + "\n")
 	}
 

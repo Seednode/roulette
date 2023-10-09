@@ -297,7 +297,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 			return
 		}
 
-		mimeType := format.MimeType(path)
+		mediaType := format.MediaType(path)
 
 		fileUri := Prefix + generateFileUri(path)
 
@@ -314,7 +314,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 		htmlBody.WriteString(faviconHtml)
 		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.Css()))
 
-		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mimeType)
+		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mediaType)
 		if err != nil {
 			errorChannel <- err
 
@@ -328,7 +328,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer))
 		}
 
-		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mimeType)
+		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mediaType)
 		if err != nil {
 			errorChannel <- err
 

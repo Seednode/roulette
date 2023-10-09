@@ -255,19 +255,19 @@ func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) http
 	}
 }
 
-func serveAvailableMimeTypes(errorChannel chan<- error) httprouter.Handle {
+func serveAvailableMediaTypes(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		written, err := w.Write([]byte(types.SupportedFormats.GetMimeTypes()))
+		written, err := w.Write([]byte(types.SupportedFormats.GetMediaTypes()))
 		if err != nil {
 			errorChannel <- err
 		}
 
 		if Verbose {
-			fmt.Printf("%s | SERVE: Available MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Available media type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(written),
 				realIP(r),
@@ -277,19 +277,19 @@ func serveAvailableMimeTypes(errorChannel chan<- error) httprouter.Handle {
 	}
 }
 
-func serveEnabledMimeTypes(formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveEnabledMediaTypes(formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Set("Content-Type", "text/plain")
 
 		startTime := time.Now()
 
-		written, err := w.Write([]byte(formats.GetMimeTypes()))
+		written, err := w.Write([]byte(formats.GetMediaTypes()))
 		if err != nil {
 			errorChannel <- err
 		}
 
 		if Verbose {
-			fmt.Printf("%s | SERVE: Registered MIME type list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Registered media type list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(written),
 				realIP(r),
@@ -312,8 +312,8 @@ func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileInde
 		}
 	}
 
-	registerHandler(mux, Prefix+"/available_extensions", serveAvailableExtensions(errorChannel))
-	registerHandler(mux, Prefix+"/enabled_extensions", serveEnabledExtensions(formats, errorChannel))
-	registerHandler(mux, Prefix+"/available_mime_types", serveAvailableMimeTypes(errorChannel))
-	registerHandler(mux, Prefix+"/enabled_mime_types", serveEnabledMimeTypes(formats, errorChannel))
+	registerHandler(mux, Prefix+"/available/extensions", serveAvailableExtensions(errorChannel))
+	registerHandler(mux, Prefix+"/enabled/extensions", serveEnabledExtensions(formats, errorChannel))
+	registerHandler(mux, Prefix+"/available/types", serveAvailableMediaTypes(errorChannel))
+	registerHandler(mux, Prefix+"/enabled/types", serveEnabledMediaTypes(formats, errorChannel))
 }

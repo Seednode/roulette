@@ -43,7 +43,7 @@ func (t Format) Extensions() map[string]string {
 	}
 }
 
-func (t Format) MimeType(extension string) string {
+func (t Format) MediaType(extension string) string {
 	extensions := t.Extensions()
 
 	value, exists := extensions[extension]

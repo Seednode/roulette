@@ -48,7 +48,7 @@ If `--page-length` is also set, these can be viewed in paginated form by appendi
 
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
-The remaining four endpoints—`/available_extensions`, `/enabled_extensions`, `/available_mime_types` and `/enabled_mime_types`—return information about the registered file types.
+The remaining four endpoints—`/available/extensions`, `/enabled/extensions`, `/available/types` and `/enabled/types`—return information about the registered file types.
 
 ## Refresh
 If the `--refresh` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
