@@ -178,7 +178,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 }
 
 func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) error {
-	registerHandler(mux, Prefix+"/rebuild_index", serveIndexRebuild(args, index, formats, errorChannel))
+	registerHandler(mux, Prefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
 
 	return nil
 }

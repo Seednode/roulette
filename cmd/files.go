@@ -27,13 +27,6 @@ type regexes struct {
 	filename     *regexp.Regexp
 }
 
-// type scanStats struct {
-// 	filesMatched       int
-// 	filesSkipped       int
-// 	directoriesMatched int
-// 	directoriesSkipped int
-// }
-
 type scanStatsChannels struct {
 	filesMatched       chan int
 	filesSkipped       chan int

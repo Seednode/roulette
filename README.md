@@ -35,20 +35,20 @@ If the `-i|--indexing` flag is passed, all specified paths will be indexed on st
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
-The index can be regenerated at any time by accessing the `/rebuild_index` endpoint.
+The index can be regenerated at any time by accessing the `/index/rebuild` endpoint.
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
 ## Info
 If the `-i|--info` flag is passed, six additional endpoints are registered.
 
-The first of these—`/html` and `/json`—return the contents of the index, in HTML and JSON formats respectively. 
+The first of these—`/index/html` and `/index/json`—return the contents of the index, in HTML and JSON formats respectively. 
 
-If `--page-length` is also set, these can be viewed in paginated form by appending `/n`, e.g. `/html/5` for the fifth page.
+If `--page-length` is also set, these can be viewed in paginated form by appending a page number, e.g. `/index/html/5` for the fifth page.
 
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
-The remaining four endpoints—`/available/extensions`, `/enabled/extensions`, `/available/types` and `/enabled/types`—return information about the registered file types.
+The remaining four endpoints—`/extensions/available`, `/extensions/enabled`, `/types/available` and `/types/enabled`—return information about the registered file types.
 
 ## Refresh
 If the `--refresh` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
