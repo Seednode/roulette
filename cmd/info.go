@@ -57,18 +57,22 @@ func paginate(page int, fileCount int, ending bool) string {
 		html.WriteString("<tr><td>")
 	}
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">First</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\">First</button>",
+		Prefix,
 		firstPage))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Prev</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\"%s>Prev</button>",
+		Prefix,
 		prevPage,
 		prevStatus))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\"%s>Next</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\"%s>Next</button>",
+		Prefix,
 		nextPage,
 		nextStatus))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '/html/%d';\">Last</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\">Last</button>",
+		Prefix,
 		lastPage))
 
 	html.WriteString("</td></tr>\n")

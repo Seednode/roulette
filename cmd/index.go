@@ -184,19 +184,13 @@ func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileInd
 }
 
 func importIndex(args []string, index *fileIndex, formats types.Types) error {
-	skipIndex := false
-
 	if IndexFile != "" {
 		err := index.Import(IndexFile)
-		if err == nil {
-			skipIndex = true
-		}
-	}
-
-	if !skipIndex {
-		_, err := fileList(args, &filters{}, "", index, formats)
 		if err != nil {
-			return err
+			_, err := fileList(args, &filters{}, "", index, formats)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
