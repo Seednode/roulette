@@ -17,6 +17,8 @@ x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette
 
 Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/master/docker/Dockerfile).
 
+An example instance with most features enabled can be found [here](https://nature.seedno.de/).
+
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
