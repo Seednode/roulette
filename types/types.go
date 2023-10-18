@@ -29,7 +29,7 @@ type Type interface {
 	// Returns a map of file extensions to MIME type strings.
 	Extensions() map[string]string
 
-	// Given a file extension, returns the corresponding MIME type,
+	// Given a file extension, returns the corresponding media type,
 	// if one exists. Otherwise, returns an empty string.
 	MediaType(extension string) string
 
