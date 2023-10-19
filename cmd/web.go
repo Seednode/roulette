@@ -434,7 +434,7 @@ func ServePage(args []string) error {
 	formats := make(types.Types)
 
 	if Audio || All {
-		formats.Add(audio.Format{Fun: Fun})
+		formats.Add(audio.Format{})
 	}
 
 	if Code || All {
@@ -442,15 +442,15 @@ func ServePage(args []string) error {
 	}
 
 	if Flash || All {
-		formats.Add(flash.Format{Fun: Fun})
+		formats.Add(flash.Format{})
 	}
 
 	if Text || All {
-		formats.Add(text.Format{Fun: Fun})
+		formats.Add(text.Format{})
 	}
 
 	if Videos || All {
-		formats.Add(video.Format{Fun: Fun})
+		formats.Add(video.Format{})
 	}
 
 	// enable image support if no other flags are passed, to retain backwards compatibility

@@ -11,9 +11,7 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type Format struct {
-	Fun bool
-}
+type Format struct {}
 
 func (t Format) Css() string {
 	var css strings.Builder
