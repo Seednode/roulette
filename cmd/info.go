@@ -19,7 +19,7 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-func paginate(page int, fileCount int, ending bool) string {
+func paginateIndex(page int, fileCount int, ending bool) string {
 	var html strings.Builder
 
 	var firstPage int = 1
@@ -120,8 +120,8 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 		htmlBody.WriteString(`table,td,tr{border:none;}td{border-bottom:1px solid black;}td{white-space:nowrap;padding:.5em}</style>`)
 		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %d files</title></head><body><table>", fileCount))
 
-		if shouldPaginate {
-			htmlBody.WriteString(paginate(page, fileCount, false))
+		if shouldPaginate && !DisableButtons {
+			htmlBody.WriteString(paginateIndex(page, fileCount, false))
 		}
 
 		if len(indexDump) > 0 {
@@ -135,8 +135,8 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 			}
 		}
 
-		if shouldPaginate {
-			htmlBody.WriteString(paginate(page, fileCount, true))
+		if shouldPaginate && !DisableButtons {
+			htmlBody.WriteString(paginateIndex(page, fileCount, true))
 		}
 
 		htmlBody.WriteString(`</table></body></html>`)

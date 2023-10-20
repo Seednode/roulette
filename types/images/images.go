@@ -26,14 +26,21 @@ type dimensions struct {
 }
 
 type Format struct {
-	Fun bool
+	DisableButtons bool
+	Fun            bool
 }
 
 func (t Format) Css() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
-	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+
+	if t.DisableButtons {
+		css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+	} else {
+		css.WriteString(`a{color:inherit;display:block;height:97%;width:100%;text-decoration:none;}`)
+	}
+
 	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
 	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`)
 	if t.Fun {

@@ -87,7 +87,7 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats types.Ty
 			}
 		case sortOrder == "desc":
 			for {
-				splitPath.increment()
+				splitPath.number = splitPath.increment()
 
 				path, err = tryExtensions(splitPath, formats)
 				if err != nil {
@@ -95,7 +95,7 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats types.Ty
 				}
 
 				if path == "" {
-					splitPath.decrement()
+					splitPath.number = splitPath.decrement()
 
 					path, err = tryExtensions(splitPath, formats)
 					if err != nil {
@@ -119,9 +119,9 @@ func nextFile(filePath, sortOrder string, regexes *regexes, formats types.Types)
 
 	switch {
 	case sortOrder == "asc":
-		splitPath.increment()
+		splitPath.number = splitPath.increment()
 	case sortOrder == "desc":
-		splitPath.decrement()
+		splitPath.number = splitPath.decrement()
 	default:
 		return "", nil
 	}

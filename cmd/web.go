@@ -307,7 +307,9 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 
 		refreshTimer, refreshInterval := refreshInterval(r)
 
-		rootUrl := Prefix + "/" + generateQueryParams(filters, sortOrder, refreshInterval)
+		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+
+		rootUrl := Prefix + "/" + queryParams
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
@@ -324,6 +326,33 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 		}
 		htmlBody.WriteString(title)
 		htmlBody.WriteString(`</head><body>`)
+
+		var first, last string
+
+		if Index && sortOrder != "" {
+			first, last, err = getRange(path, regexes, index)
+			if err != nil {
+				errorChannel <- err
+
+				serverError(w, r, nil)
+
+				return
+			}
+		}
+
+		if Index && !DisableButtons && sortOrder != "" {
+			paginate, err := paginateSorted(path, first, last, queryParams, regexes, formats)
+			if err != nil {
+				errorChannel <- err
+
+				serverError(w, r, nil)
+
+				return
+			}
+
+			htmlBody.WriteString(paginate)
+		}
+
 		if refreshInterval != "0ms" {
 			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer))
 		}
@@ -337,6 +366,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 			return
 		}
 		htmlBody.WriteString(body)
+
 		htmlBody.WriteString(`</body></html>`)
 
 		startTime := time.Now()
@@ -456,7 +486,7 @@ func ServePage(args []string) error {
 	// enable image support if no other flags are passed, to retain backwards compatibility
 	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
 	if Images || All || len(formats) == 0 {
-		formats.Add(images.Format{Fun: Fun})
+		formats.Add(images.Format{DisableButtons: DisableButtons, Fun: Fun})
 	}
 
 	paths, err := validatePaths(args, formats)

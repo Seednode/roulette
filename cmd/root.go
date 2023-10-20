@@ -12,40 +12,41 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.0.2"
+	ReleaseVersion string = "3.1.0"
 )
 
 var (
-	All           bool
-	Audio         bool
-	Bind          string
-	CaseSensitive bool
-	Code          bool
-	CodeTheme     string
-	ExitOnError   bool
-	Fallback      bool
-	Filtering     bool
-	Flash         bool
-	Fun           bool
-	Handlers      bool
-	Images        bool
-	Index         bool
-	IndexFile     string
-	Info          bool
-	MaxFileCount  int
-	MinFileCount  int
-	PageLength    int
-	Port          int
-	Prefix        string
-	Profile       bool
-	Recursive     bool
-	Refresh       bool
-	Russian       bool
-	Sorting       bool
-	Text          bool
-	Verbose       bool
-	Version       bool
-	Videos        bool
+	All            bool
+	Audio          bool
+	Bind           string
+	CaseSensitive  bool
+	Code           bool
+	CodeTheme      string
+	DisableButtons bool
+	ExitOnError    bool
+	Fallback       bool
+	Filtering      bool
+	Flash          bool
+	Fun            bool
+	Handlers       bool
+	Images         bool
+	Index          bool
+	IndexFile      string
+	Info           bool
+	MaxFileCount   int
+	MinFileCount   int
+	PageLength     int
+	Port           int
+	Prefix         string
+	Profile        bool
+	Recursive      bool
+	Refresh        bool
+	Russian        bool
+	Sorting        bool
+	Text           bool
+	Verbose        bool
+	Version        bool
+	Videos         bool
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -88,6 +89,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
+	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
