@@ -116,11 +116,12 @@ Flags:
       --case-sensitive       use case-sensitive matching for filters
       --code                 enable support for source code files
       --code-theme string    theme for source code syntax highlighting (default "solarized-dark256")
+      --disable-buttons      disable first/prev/next/last buttons
       --exit-on-error        shut down webserver on error, instead of just printing the error
       --fallback             serve files as application/octet-stream if no matching format is registered
   -f, --filter               enable filtering
       --flash                enable support for shockwave flash files (via ruffle.rs)
-      --fun                  adds a bit of excitement to your day
+      --fun                  add a bit of excitement to your day
       --handlers             display registered handlers (for debugging)
   -h, --help                 help for roulette
       --images               enable support for image files
