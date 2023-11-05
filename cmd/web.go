@@ -483,9 +483,7 @@ func ServePage(args []string) error {
 		formats.Add(video.Format{})
 	}
 
-	// enable image support if no other flags are passed, to retain backwards compatibility
-	// to be replaced with rootCmd.MarkFlagsOneRequired on next spf13/cobra update
-	if Images || All || len(formats) == 0 {
+	if Images || All {
 		formats.Add(images.Format{DisableButtons: DisableButtons, Fun: Fun})
 	}
 

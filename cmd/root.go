@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.1.0"
+	ReleaseVersion string = "3.2.0"
 )
 
 var (
@@ -118,6 +118,8 @@ func init() {
 	rootCmd.Flags().SetInterspersed(true)
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
+	rootCmd.MarkFlagsOneRequired("audio", "code", "flash", "images", "text", "video")
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SetHelpCommand(&cobra.Command{
