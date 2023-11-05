@@ -20,7 +20,7 @@ func (filters *filters) isEmpty() bool {
 }
 
 func (filters *filters) hasIncludes() bool {
-	return len(filters.included) != 0
+	return len(filters.included) != 0 && Filtering
 }
 
 func (filters *filters) includes() string {
@@ -28,7 +28,7 @@ func (filters *filters) includes() string {
 }
 
 func (filters *filters) hasExcludes() bool {
-	return len(filters.excluded) != 0
+	return len(filters.excluded) != 0 && Filtering
 }
 
 func (filters *filters) excludes() string {
@@ -41,30 +41,30 @@ func (filters *filters) apply(fileList []string) []string {
 	copy(result, fileList)
 
 	if filters.hasExcludes() {
-		for _, exclude := range filters.excluded {
-			result = slices.DeleteFunc(result, func(s string) bool {
-				if CaseSensitive {
-					return strings.Contains(s, filepath.Base(exclude))
-				} else {
-					return strings.Contains(strings.ToLower(s), strings.ToLower(filepath.Base(exclude)))
+		result = slices.DeleteFunc(result, func(s string) bool {
+			p := filepath.Base(s)
+
+			for _, exclude := range filters.excluded {
+				if (CaseSensitive && strings.Contains(p, exclude)) || (!CaseSensitive && strings.Contains(strings.ToLower(p), strings.ToLower(exclude))) {
+					return true
 				}
-			})
-		}
+			}
+
+			return false
+		})
 	}
 
 	if filters.hasIncludes() {
 		result = slices.DeleteFunc(result, func(s string) bool {
-			var delete bool = true
-
 			p := filepath.Base(s)
 
 			for _, include := range filters.included {
 				if (CaseSensitive && strings.Contains(p, include)) || (!CaseSensitive && strings.Contains(strings.ToLower(p), strings.ToLower(include))) {
-					delete = false
+					return false
 				}
 			}
 
-			return delete
+			return true
 		})
 	}
 
