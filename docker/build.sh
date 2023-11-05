@@ -26,7 +26,7 @@ platforms+=",linux/ppc64le"
 docker buildx build \
                     --build-arg TAG="${tag}" \
                     -t "${registry}/${image_name}:${image_version}" \
-                    "$(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi)" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi) \
                     -f Dockerfile . \
                     --load
 
@@ -34,6 +34,6 @@ docker buildx build \
 docker buildx build --platform "${platforms}" \
                     --build-arg TAG="${tag}" \
                     -t "${registry}/${image_name}:${image_version}" \
-                    "$(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi)" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi) \
                     -f Dockerfile . \
                     --push
