@@ -14,7 +14,7 @@ registry="${REGISTRY:-local}"
 image_name="roulette"
 
 # set image version
-image_version="latest"
+image_version="$(grep "ReleaseVersion" ../cmd/root.go | head -n1 | awk '{print $4}' | sed 's/\"//g')"
 
 # platforms to build for
 platforms="linux/amd64"
@@ -26,6 +26,7 @@ platforms+=",linux/ppc64le"
 docker buildx build \
                     --build-arg TAG="${tag}" \
                     -t "${registry}/${image_name}:${image_version}" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi) \
                     -f Dockerfile . \
                     --load
 
@@ -33,5 +34,6 @@ docker buildx build \
 docker buildx build --platform "${platforms}" \
                     --build-arg TAG="${tag}" \
                     -t "${registry}/${image_name}:${image_version}" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi) \
                     -f Dockerfile . \
                     --push
