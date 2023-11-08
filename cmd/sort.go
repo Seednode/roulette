@@ -90,6 +90,10 @@ Loop:
 	return first, last, nil
 }
 
+func pathUrlEscape(path string) string {
+	return strings.Replace(path, `'`, `&#39;`, -1)
+}
+
 func paginateSorted(path, first, last, queryParams string, regexes *regexes, formats types.Types) (string, error) {
 	split, err := split(path, regexes)
 	if err != nil {
@@ -144,31 +148,31 @@ func paginateSorted(path, first, last, queryParams string, regexes *regexes, for
 
 	html.WriteString(`<table style="margin-left:auto;margin-right:auto;"><tr><td>`)
 
-	html.WriteString(fmt.Sprintf(`<button onclick='window.location.href = "%s%s%s%s";'%s>First</button>`,
+	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>First</button>`,
 		Prefix,
 		mediaPrefix,
-		first,
+		pathUrlEscape(first),
 		queryParams,
 		firstStatus))
 
-	html.WriteString(fmt.Sprintf(`<button onclick='window.location.href = "%s%s%s%s";'%s>Prev</button>`,
+	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Prev</button>`,
 		Prefix,
 		mediaPrefix,
-		prevPage,
+		pathUrlEscape(prevPage),
 		queryParams,
 		prevStatus))
 
-	html.WriteString(fmt.Sprintf(`<button onclick='window.location.href = "%s%s%s%s";'%s>Next</button>`,
+	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Next</button>`,
 		Prefix,
 		mediaPrefix,
-		nextPage,
+		pathUrlEscape(nextPage),
 		queryParams,
 		nextStatus))
 
-	html.WriteString(fmt.Sprintf(`<button onclick='window.location.href = "%s%s%s%s";'%s>Last</button>`,
+	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Last</button>`,
 		Prefix,
 		mediaPrefix,
-		last,
+		pathUrlEscape(last),
 		queryParams,
 		lastStatus))
 
