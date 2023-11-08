@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 
@@ -147,28 +148,28 @@ func paginateSorted(path, first, last, queryParams string, regexes *regexes, for
 	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>First</button>`,
 		Prefix,
 		mediaPrefix,
-		first,
+		url.QueryEscape(first),
 		queryParams,
 		firstStatus))
 
 	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Prev</button>`,
 		Prefix,
 		mediaPrefix,
-		prevPage,
+		url.QueryEscape(prevPage),
 		queryParams,
 		prevStatus))
 
 	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Next</button>`,
 		Prefix,
 		mediaPrefix,
-		nextPage,
+		url.QueryEscape(nextPage),
 		queryParams,
 		nextStatus))
 
 	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>Last</button>`,
 		Prefix,
 		mediaPrefix,
-		last,
+		url.QueryEscape(last),
 		queryParams,
 		lastStatus))
 
