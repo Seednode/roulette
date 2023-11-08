@@ -92,11 +92,11 @@ Loop:
 }
 
 func pathUrlEscape(path string) string {
-	placeholder := strings.Replace(path, "/", "<path_placeholder>", -1)
+	placeholder := strings.Replace(path, "/", "path_placeholder", -1)
 
 	escaped := url.QueryEscape(placeholder)
 
-	return strings.Replace(escaped, "<path_placeholder>", "/", -1)
+	return strings.Replace(escaped, "path_placeholder", "/", -1)
 }
 
 func paginateSorted(path, first, last, queryParams string, regexes *regexes, formats types.Types) (string, error) {
