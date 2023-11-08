@@ -91,7 +91,7 @@ Loop:
 }
 
 func pathUrlEscape(path string) string {
-	return strings.Replace(path, `'`, `&#39;`, -1)
+	return strings.Replace(path, `'`, `%27`, -1)
 }
 
 func paginateSorted(path, first, last, queryParams string, regexes *regexes, formats types.Types) (string, error) {
