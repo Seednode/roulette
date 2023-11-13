@@ -135,12 +135,12 @@ func realIP(r *http.Request) string {
 
 	remotePort := remoteAddr[len(remoteAddr)-1]
 
-	cfIP := r.Header.Get("Cf-Connecting-Ip")
+	cfIp := r.Header.Get("Cf-Connecting-Ip")
 	xRealIp := r.Header.Get("X-Real-Ip")
 
 	switch {
-	case cfIP != "":
-		return cfIP + ":" + remotePort
+	case cfIp != "":
+		return cfIp + ":" + remotePort
 	case xRealIp != "":
 		return xRealIp + ":" + remotePort
 	default:

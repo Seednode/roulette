@@ -88,7 +88,6 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 
 			return
 		}
-
 		if !exists {
 			notFound(w, r, filePath)
 

@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.2.9"
+	ReleaseVersion string = "3.2.10"
 )
 
 var (
@@ -119,7 +119,7 @@ func init() {
 
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
 
-	rootCmd.MarkFlagsOneRequired("all", "audio", "code", "flash", "images", "text", "video")
+	rootCmd.MarkFlagsOneRequired("all", "audio", "code", "fallback", "flash", "images", "text", "video")
 
 	rootCmd.SilenceErrors = true
 	rootCmd.SetHelpCommand(&cobra.Command{
