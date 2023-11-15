@@ -5,7 +5,7 @@ go 1.21
 require (
 	github.com/alecthomas/chroma/v2 v2.11.1
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/klauspost/compress v1.17.2
+	github.com/klauspost/compress v1.17.3
 	github.com/spf13/cobra v1.8.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	golang.org/x/image v0.14.0
