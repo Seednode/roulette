@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.2.10"
+	ReleaseVersion string = "3.3.0"
 )
 
 var (
@@ -29,6 +29,7 @@ var (
 	Flash          bool
 	Fun            bool
 	Handlers       bool
+	Ignore         bool
 	Images         bool
 	Index          bool
 	IndexFile      string
@@ -96,6 +97,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
+	rootCmd.Flags().BoolVar(&Ignore, "ignore", false, "skip all directories containing a file named .roulette_ignore")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")

@@ -32,6 +32,9 @@ You can combine these two parameters, with exclusions taking priority over inclu
 
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
+## Ignoring directories
+Any directory containing a file named `.roulette_ignore` will be skipped during the scanning stage.
+
 ## Indexing
 If the `-i|--indexing` flag is passed, all specified paths will be indexed on start.
 
@@ -124,6 +127,7 @@ Flags:
       --fun                  add a bit of excitement to your day
       --handlers             display registered handlers (for debugging)
   -h, --help                 help for roulette
+      --ignore               skip all directories containing a file named .roulette_ignore
       --images               enable support for image files
       --index                generate index of supported file paths at startup
       --index-file string    path to optional persistent index file

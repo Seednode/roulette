@@ -22,6 +22,10 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
+const (
+	ignoreFileName string = `.roulette_ignore`
+)
+
 type regexes struct {
 	alphanumeric *regexp.Regexp
 	filename     *regexp.Regexp
@@ -233,17 +237,23 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 
 	var directories, files = 0, 0
 
+	var skipDir = false
+
 	for _, node := range nodes {
 		if node.IsDir() {
 			directories++
 		} else {
+			if Ignore && node.Name() == ignoreFileName {
+				skipDir = true
+			}
+
 			files++
 		}
 	}
 
 	var skipFiles = false
 
-	if files <= MaxFileCount && files >= MinFileCount {
+	if files <= MaxFileCount && files >= MinFileCount && !skipDir {
 		stats.directoriesMatched <- 1
 	} else {
 		stats.filesSkipped <- files
