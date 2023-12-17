@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.4.0"
+	ReleaseVersion string = "3.4.1"
 )
 
 var (
@@ -128,17 +128,19 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
 	rootCmd.Flags().BoolVar(&Videos, "video", false, "enable support for video files")
 
-	rootCmd.Flags().SetInterspersed(true)
-
 	rootCmd.CompletionOptions.HiddenDefaultCmd = true
+
+	rootCmd.Flags().SetInterspersed(true)
 
 	rootCmd.MarkFlagsOneRequired("all", "audio", "code", "fallback", "flash", "images", "text", "video")
 
-	rootCmd.SilenceErrors = true
 	rootCmd.SetHelpCommand(&cobra.Command{
 		Hidden: true,
 	})
 
 	rootCmd.SetVersionTemplate("roulette v{{.Version}}\n")
+
+	rootCmd.SilenceErrors = true
+
 	rootCmd.Version = ReleaseVersion
 }
