@@ -19,6 +19,25 @@ Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/m
 
 An example instance with most features enabled can be found [here](https://nature.seedno.de/).
 
+## Admin prefix
+You can restrict access to certain functionality by prepending a secret string to the paths.
+
+For example, providing the `--admin-prefix=abc123` flag will register the index rebuild path as `/abc123/index/rebuild`.
+
+The affected paths are:
+- `/debug/pprof/`
+- `/debug/pprof/cmdline`
+- `/debug/pprof/profile`
+- `/debug/pprof/symbol`
+- `/debug/pprof/trace`
+- `/extensions/available`
+- `/extensions/enabled`
+- `/index/html`
+- `/index/json`
+- `/index/rebuild`
+- `/types/available`
+- `/types/enabled`
+
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
@@ -113,39 +132,41 @@ Usage:
   roulette <path> [path]... [flags]
 
 Flags:
-  -a, --all                  enable all supported file types
-      --audio                enable support for audio files
-  -b, --bind string          address to bind to (default "0.0.0.0")
-      --case-sensitive       use case-sensitive matching for filters
-      --code                 enable support for source code files
-      --code-theme string    theme for source code syntax highlighting (default "solarized-dark256")
-      --disable-buttons      disable first/prev/next/last buttons
-      --exit-on-error        shut down webserver on error, instead of just printing the error
-      --fallback             serve files as application/octet-stream if no matching format is registered
-  -f, --filter               enable filtering
-      --flash                enable support for shockwave flash files (via ruffle.rs)
-      --fun                  add a bit of excitement to your day
-      --handlers             display registered handlers (for debugging)
-  -h, --help                 help for roulette
-      --ignore               skip all directories containing a file named .roulette_ignore
-      --images               enable support for image files
-      --index                generate index of supported file paths at startup
-      --index-file string    path to optional persistent index file
-  -i, --info                 expose informational endpoints
-      --max-file-count int   skip directories with file counts above this value (default 2147483647)
-      --min-file-count int   skip directories with file counts below this value
-      --page-length int      pagination length for info pages
-  -p, --port int             port to listen on (default 8080)
-      --prefix string        root path for http handlers (for reverse proxying) (default "/")
-      --profile              register net/http/pprof handlers
-  -r, --recursive            recurse into subdirectories
-      --refresh              enable automatic page refresh via query parameter
-      --russian              remove selected images after serving
-  -s, --sort                 enable sorting
-      --text                 enable support for text files
-  -v, --verbose              log accessed files and other information to stdout
-  -V, --version              display version and exit
-      --video                enable support for video files
+      --admin-prefix string   string to prepend to administrative paths
+  -a, --all                   enable all supported file types
+      --audio                 enable support for audio files
+  -b, --bind string           address to bind to (default "0.0.0.0")
+      --case-sensitive        use case-sensitive matching for filters
+      --code                  enable support for source code files
+      --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
+      --concurrency int       maximum concurrency for scan threads (default 1024)
+      --disable-buttons       disable first/prev/next/last buttons
+      --exit-on-error         shut down webserver on error, instead of just printing the error
+      --fallback              serve files as application/octet-stream if no matching format is registered
+  -f, --filter                enable filtering
+      --flash                 enable support for shockwave flash files (via ruffle.rs)
+      --fun                   add a bit of excitement to your day
+      --handlers              display registered handlers (for debugging)
+  -h, --help                  help for roulette
+      --ignore                skip all directories containing a file named .roulette_ignore
+      --images                enable support for image files
+      --index                 generate index of supported file paths at startup
+      --index-file string     path to optional persistent index file
+  -i, --info                  expose informational endpoints
+      --max-file-count int    skip directories with file counts above this value (default 2147483647)
+      --min-file-count int    skip directories with file counts below this value
+      --page-length int       pagination length for info pages
+  -p, --port int              port to listen on (default 8080)
+      --prefix string         root path for http handlers (for reverse proxying) (default "/")
+      --profile               register net/http/pprof handlers
+  -r, --recursive             recurse into subdirectories
+      --refresh               enable automatic page refresh via query parameter
+      --russian               remove selected images after serving
+  -s, --sort                  enable sorting
+      --text                  enable support for text files
+  -v, --verbose               log accessed files and other information to stdout
+  -V, --version               display version and exit
+      --video                 enable support for video files
 ```
 
 ## Building the Docker container
