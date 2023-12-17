@@ -327,14 +327,8 @@ Poll:
 func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types) ([]string, error) {
 	startTime := time.Now()
 
-	var list []string
-
-	var filesMatched int
-	var filesSkipped int
-	var directoriesMatched int
-	var directoriesSkipped int
-
-	var wg sync.WaitGroup
+	var filesMatched, filesSkipped int
+	var directoriesMatched, directoriesSkipped int
 
 	fileChannel := make(chan string)
 	errorChannel := make(chan error)
@@ -346,6 +340,8 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		directoriesMatched: make(chan int),
 		directoriesSkipped: make(chan int),
 	}
+
+	var list []string
 
 	go func() {
 		for {
@@ -401,6 +397,8 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 			}
 		}
 	}()
+
+	var wg sync.WaitGroup
 
 	for i := 0; i < len(paths); i++ {
 		wg.Add(1)

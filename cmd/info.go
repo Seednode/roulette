@@ -20,8 +20,6 @@ import (
 )
 
 func paginateIndex(page int, fileCount int, ending bool) string {
-	var html strings.Builder
-
 	var firstPage int = 1
 	var lastPage int
 
@@ -50,6 +48,8 @@ func paginateIndex(page int, fileCount int, ending bool) string {
 	if nextPage > lastPage {
 		nextPage = fileCount / PageLength
 	}
+
+	var html strings.Builder
 
 	if ending {
 		html.WriteString("<tr><td style=\"border-bottom:none;\">")
@@ -82,9 +82,9 @@ func paginateIndex(page int, fileCount int, ending bool) string {
 
 func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "text/html")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/html")
 
 		indexDump := index.List()
 
@@ -159,9 +159,9 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 
 func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "application/json")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "application/json")
 
 		indexedFiles := index.List()
 
@@ -217,9 +217,9 @@ func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) 
 
 func serveAvailableExtensions(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "text/plain")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/plain")
 
 		written, err := w.Write([]byte(types.SupportedFormats.GetExtensions()))
 		if err != nil {
@@ -239,9 +239,9 @@ func serveAvailableExtensions(errorChannel chan<- error) httprouter.Handle {
 
 func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "text/plain")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/plain")
 
 		written, err := w.Write([]byte(formats.GetExtensions()))
 		if err != nil {
@@ -261,9 +261,9 @@ func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) http
 
 func serveAvailableMediaTypes(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "text/plain")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/plain")
 
 		written, err := w.Write([]byte(types.SupportedFormats.GetMediaTypes()))
 		if err != nil {
@@ -283,9 +283,9 @@ func serveAvailableMediaTypes(errorChannel chan<- error) httprouter.Handle {
 
 func serveEnabledMediaTypes(formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Set("Content-Type", "text/plain")
-
 		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/plain")
 
 		written, err := w.Write([]byte(formats.GetMediaTypes()))
 		if err != nil {
