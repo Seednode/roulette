@@ -38,6 +38,8 @@ The affected paths are:
 - `/types/available`
 - `/types/enabled`
 
+While this might thwart very basic attacks, the proper solution for most use cases would likely be to add authentication via a reverse proxy.
+
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
