@@ -173,14 +173,8 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 
 		w.Header().Set("Content-Type", "text/plain")
 
-		w.Write([]byte("Ok"))
+		w.Write([]byte("Ok\n"))
 	}
-}
-
-func registerIndexHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) error {
-	registerHandler(mux, Prefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
-
-	return nil
 }
 
 func importIndex(args []string, index *fileIndex, formats types.Types) error {

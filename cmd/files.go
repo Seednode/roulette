@@ -433,12 +433,6 @@ Poll:
 		}
 	}
 
-	if filesMatched < 1 {
-		fmt.Println("No files matched")
-
-		return []string{}, nil
-	}
-
 	if Verbose {
 		fmt.Printf("%s | INDEX: Selected %d/%d files across %d/%d directories in %s\n",
 			time.Now().Format(logDate),
