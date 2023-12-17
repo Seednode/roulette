@@ -544,7 +544,7 @@ func ServePage(args []string) error {
 	registerHandler(mux, Prefix+"/version", serveVersion())
 
 	if Index {
-		registerHandler(mux, Prefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
+		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
 
 		err = importIndex(paths, index, formats)
 		if err != nil {

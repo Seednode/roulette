@@ -305,19 +305,19 @@ func serveEnabledMediaTypes(formats types.Types, errorChannel chan<- error) http
 
 func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
-		registerHandler(mux, Prefix+"/index/html", serveIndexHtml(args, index, false))
+		registerHandler(mux, Prefix+AdminPrefix+"/index/html", serveIndexHtml(args, index, false))
 		if PageLength != 0 {
-			registerHandler(mux, Prefix+"/index/html/:page", serveIndexHtml(args, index, true))
+			registerHandler(mux, Prefix+AdminPrefix+"/index/html/:page", serveIndexHtml(args, index, true))
 		}
 
-		registerHandler(mux, Prefix+"/index/json", serveIndexJson(args, index, errorChannel))
+		registerHandler(mux, Prefix+AdminPrefix+"/index/json", serveIndexJson(args, index, errorChannel))
 		if PageLength != 0 {
-			registerHandler(mux, Prefix+"/index/json/:page", serveIndexJson(args, index, errorChannel))
+			registerHandler(mux, Prefix+AdminPrefix+"/index/json/:page", serveIndexJson(args, index, errorChannel))
 		}
 	}
 
-	registerHandler(mux, Prefix+"/extensions/available", serveAvailableExtensions(errorChannel))
-	registerHandler(mux, Prefix+"/extensions/enabled", serveEnabledExtensions(formats, errorChannel))
-	registerHandler(mux, Prefix+"/types/available", serveAvailableMediaTypes(errorChannel))
-	registerHandler(mux, Prefix+"/types/enabled", serveEnabledMediaTypes(formats, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/extensions/available", serveAvailableExtensions(errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/extensions/enabled", serveEnabledExtensions(formats, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/types/available", serveAvailableMediaTypes(errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/types/enabled", serveEnabledMediaTypes(formats, errorChannel))
 }

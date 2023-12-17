@@ -226,7 +226,13 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, formats types.Types) error {
+func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, limit chan int, formats types.Types) error {
+	limit <- 1
+
+	defer func() {
+		<-limit
+	}()
+
 	errorChannel := make(chan error)
 	done := make(chan bool, 1)
 
@@ -277,7 +283,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 
 				switch {
 				case node.IsDir() && Recursive:
-					err := walkPath(fullPath, fileChannel, stats, formats)
+					err := walkPath(fullPath, fileChannel, stats, limit, formats)
 					if err != nil {
 						errorChannel <- err
 
@@ -398,6 +404,8 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
+	limit := make(chan int, Concurrency)
+
 	var wg sync.WaitGroup
 
 	for i := 0; i < len(paths); i++ {
@@ -407,7 +415,8 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 			defer func() {
 				wg.Done()
 			}()
-			err := walkPath(paths[i], fileChannel, statsChannels, formats)
+
+			err := walkPath(paths[i], fileChannel, statsChannels, limit, formats)
 
 			if err != nil {
 				errorChannel <- err

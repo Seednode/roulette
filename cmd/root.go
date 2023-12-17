@@ -7,21 +7,24 @@ package cmd
 import (
 	"log"
 	"math"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "3.3.2"
+	ReleaseVersion string = "3.4.0"
 )
 
 var (
+	AdminPrefix    string
 	All            bool
 	Audio          bool
 	Bind           string
 	CaseSensitive  bool
 	Code           bool
 	CodeTheme      string
+	Concurrency    int
 	DisableButtons bool
 	ExitOnError    bool
 	Fallback       bool
@@ -61,6 +64,12 @@ var (
 				return ErrInvalidFileCountRange
 			case Port < 1 || Port > 65535:
 				return ErrInvalidPort
+			case Concurrency < 1 || Concurrency > 8192:
+				return ErrInvalidConcurrency
+			case strings.Contains(AdminPrefix, "/"):
+				return ErrInvalidAdminPrefix
+			case AdminPrefix != "":
+				AdminPrefix = "/" + AdminPrefix
 			}
 
 			return nil
@@ -84,12 +93,14 @@ func Execute() {
 }
 
 func init() {
+	rootCmd.Flags().StringVar(&AdminPrefix, "admin-prefix", "", "string to prepend to administrative paths")
 	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
+	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 1024, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")

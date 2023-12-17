@@ -25,9 +25,9 @@ func registerProfileHandler(mux *httprouter.Router, verb, path string, handler h
 }
 
 func registerProfileHandlers(mux *httprouter.Router) {
-	registerProfileHandler(mux, "GET", Prefix+"/debug/pprof/", pprof.Index)
-	registerProfileHandler(mux, "GET", Prefix+"/debug/pprof/cmdline", pprof.Cmdline)
-	registerProfileHandler(mux, "GET", Prefix+"/debug/pprof/profile", pprof.Profile)
-	registerProfileHandler(mux, "GET", Prefix+"/debug/pprof/symbol", pprof.Symbol)
-	registerProfileHandler(mux, "GET", Prefix+"/debug/pprof/trace", pprof.Trace)
+	registerProfileHandler(mux, "GET", Prefix+AdminPrefix+"/debug/pprof/", pprof.Index)
+	registerProfileHandler(mux, "GET", Prefix+AdminPrefix+"/debug/pprof/cmdline", pprof.Cmdline)
+	registerProfileHandler(mux, "GET", Prefix+AdminPrefix+"/debug/pprof/profile", pprof.Profile)
+	registerProfileHandler(mux, "GET", Prefix+AdminPrefix+"/debug/pprof/symbol", pprof.Symbol)
+	registerProfileHandler(mux, "GET", Prefix+AdminPrefix+"/debug/pprof/trace", pprof.Trace)
 }
