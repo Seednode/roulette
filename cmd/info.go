@@ -57,22 +57,26 @@ func paginateIndex(page int, fileCount int, ending bool) string {
 		html.WriteString("<tr><td>")
 	}
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\">First</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\">First</button>",
 		Prefix,
+		AdminPrefix,
 		firstPage))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\"%s>Prev</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\"%s>Prev</button>",
 		Prefix,
+		AdminPrefix,
 		prevPage,
 		prevStatus))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\"%s>Next</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\"%s>Next</button>",
 		Prefix,
+		AdminPrefix,
 		nextPage,
 		nextStatus))
 
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s/index/html/%d';\">Last</button>",
+	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\">Last</button>",
 		Prefix,
+		AdminPrefix,
 		lastPage))
 
 	html.WriteString("</td></tr>\n")
