@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	ReleaseVersion string = "3.4.2"
+	ReleaseVersion string = "3.4.3"
 )
 
 var (
@@ -51,6 +51,17 @@ var (
 	Verbose        bool
 	Version        bool
 	Videos         bool
+
+	RequiredArgs = []string{
+		"all",
+		"audio",
+		"code",
+		"fallback",
+		"flash",
+		"images",
+		"text",
+		"video",
+	}
 
 	rootCmd = &cobra.Command{
 		Use:   "roulette <path> [path]...",
@@ -132,7 +143,7 @@ func init() {
 
 	rootCmd.Flags().SetInterspersed(true)
 
-	rootCmd.MarkFlagsOneRequired("all", "audio", "code", "fallback", "flash", "images", "text", "video")
+	rootCmd.MarkFlagsOneRequired(RequiredArgs...)
 
 	rootCmd.SetHelpCommand(&cobra.Command{
 		Hidden: true,
