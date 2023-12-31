@@ -7,13 +7,14 @@ package cmd
 import (
 	"log"
 	"math"
+	"regexp"
 	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "3.4.3"
+	ReleaseVersion string = "3.5.0"
 )
 
 var (
@@ -33,6 +34,7 @@ var (
 	Fun            bool
 	Handlers       bool
 	Ignore         bool
+	IgnoreFile     string
 	Images         bool
 	Index          bool
 	IndexFile      string
@@ -77,6 +79,8 @@ var (
 				return ErrInvalidPort
 			case Concurrency < 1 || Concurrency > 8192:
 				return ErrInvalidConcurrency
+			case Ignore && !regexp.MustCompile(ignoreFilePattern).MatchString(IgnoreFile):
+				return ErrInvalidIgnoreFile
 			case strings.Contains(AdminPrefix, "/"):
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
@@ -119,7 +123,8 @@ func init() {
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
 	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
-	rootCmd.Flags().BoolVar(&Ignore, "ignore", false, "skip all directories containing a file named .roulette_ignore")
+	rootCmd.Flags().BoolVar(&Ignore, "ignore", false, "skip all directories containing a specified filename")
+	rootCmd.Flags().StringVar(&IgnoreFile, "ignore-file", ".roulette-ignore", "filename used to indicate directory to be skipped")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")

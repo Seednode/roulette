@@ -24,7 +24,7 @@ You can restrict access to certain functionality by prepending a secret string t
 
 For example, providing the `--admin-prefix=abc123` flag will register the index rebuild path as `/abc123/index/rebuild`.
 
-The affected paths are:
+The restricted paths are:
 - `/debug/pprof/`
 - `/debug/pprof/cmdline`
 - `/debug/pprof/profile`
@@ -54,7 +54,7 @@ You can combine these two parameters, with exclusions taking priority over inclu
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
 ## Ignoring directories
-Any directory containing a file named `.roulette_ignore` will be skipped during the scanning stage.
+If the `--ignore` flag is passed, any directory containing a file named `.roulette_ignore` (configurable with `--ignore-file`) will be skipped during the scanning stage.
 
 ## Indexing
 If the `-i|--indexing` flag is passed, all specified paths will be indexed on start.
@@ -64,6 +64,8 @@ This will slightly increase the delay before the application begins responding t
 The index can be regenerated at any time by accessing the `/index/rebuild` endpoint.
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
+
+The index file consists of [zstd](https://pkg.go.dev/github.com/klauspost/compress/zstd)-compressed [gobs](https://pkg.go.dev/encoding/gob).
 
 ## Info
 If the `-i|--info` flag is passed, six additional endpoints are registered.
@@ -150,7 +152,8 @@ Flags:
       --fun                   add a bit of excitement to your day
       --handlers              display registered handlers (for debugging)
   -h, --help                  help for roulette
-      --ignore                skip all directories containing a file named .roulette_ignore
+      --ignore                skip all directories containing a specified filename
+      --ignore-file string    filename used to indicate directory to be skipped (default ".roulette-ignore")
       --images                enable support for image files
       --index                 generate index of supported file paths at startup
       --index-file string     path to optional persistent index file

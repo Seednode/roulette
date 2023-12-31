@@ -22,9 +22,7 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-const (
-	ignoreFileName string = `.roulette_ignore`
-)
+const ignoreFilePattern string = `^[A-z0-9.]+$`
 
 type regexes struct {
 	alphanumeric *regexp.Regexp
@@ -249,7 +247,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, 
 		if node.IsDir() {
 			directories++
 		} else {
-			if Ignore && node.Name() == ignoreFileName {
+			if Ignore && node.Name() == IgnoreFile {
 				skipDir = true
 			}
 

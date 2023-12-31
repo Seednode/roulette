@@ -20,6 +20,7 @@ var (
 	ErrInvalidConcurrency    = errors.New("concurrency limit must be between 1 and 8192 inclusive")
 	ErrInvalidFileCountRange = errors.New("maximum file count limit must be greater than or equal to minimum file count limit")
 	ErrInvalidFileCountValue = errors.New("file count limits must be non-negative integers no greater than 2147483647")
+	ErrInvalidIgnoreFile     = errors.New("ignore filename must match the pattern " + ignoreFilePattern)
 	ErrInvalidPort           = errors.New("listen port must be an integer between 1 and 65535 inclusive")
 	ErrNoMediaFound          = errors.New("no supported media formats found which match all criteria")
 )
