@@ -22,7 +22,7 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-const ignoreFilePattern string = `^[A-z0-9.-_]+$`
+const ignoreFilePattern string = `^[A-z0-9.\-_]+$`
 
 type regexes struct {
 	alphanumeric *regexp.Regexp
