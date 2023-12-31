@@ -8,13 +8,13 @@ import (
 	"log"
 	"math"
 	"regexp"
-	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	ReleaseVersion string = "3.5.2"
+	AllowedCharacters string = `^[A-z0-9.\-_]+$`
+	ReleaseVersion    string = "3.5.3"
 )
 
 var (
@@ -79,9 +79,9 @@ var (
 				return ErrInvalidPort
 			case Concurrency < 1 || Concurrency > 8192:
 				return ErrInvalidConcurrency
-			case Ignore && !regexp.MustCompile(ignoreFilePattern).MatchString(IgnoreFile):
+			case Ignore && !regexp.MustCompile(AllowedCharacters).MatchString(IgnoreFile):
 				return ErrInvalidIgnoreFile
-			case strings.Contains(AdminPrefix, "/"):
+			case AdminPrefix != "" && !regexp.MustCompile(AllowedCharacters).MatchString(AdminPrefix):
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
 				AdminPrefix = "/" + AdminPrefix
