@@ -143,7 +143,7 @@ Flags:
       --case-sensitive        use case-sensitive matching for filters
       --code                  enable support for source code files
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
-      --concurrency int       maximum concurrency for scan threads (default 1024)
+      --concurrency int       maximum concurrency for scan threads (default 8192)
       --disable-buttons       disable first/prev/next/last buttons
       --exit-on-error         shut down webserver on error, instead of just printing the error
       --fallback              serve files as application/octet-stream if no matching format is registered
