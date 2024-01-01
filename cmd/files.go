@@ -222,8 +222,8 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, limit chan int, formats types.Types) error {
-	limit <- 1
+func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, limit chan struct{}, formats types.Types) error {
+	limit <- struct{}{}
 
 	defer func() {
 		<-limit
@@ -400,7 +400,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
-	limit := make(chan int, Concurrency)
+	limit := make(chan struct{}, Concurrency)
 
 	var wg sync.WaitGroup
 

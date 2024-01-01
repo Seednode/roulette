@@ -14,7 +14,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.5.3"
+	ReleaseVersion    string = "3.6.0"
 )
 
 var (
@@ -115,7 +115,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
-	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 1024, "maximum concurrency for scan threads")
+	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 8192, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
