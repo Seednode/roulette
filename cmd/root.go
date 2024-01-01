@@ -14,7 +14,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.6.0"
+	ReleaseVersion    string = "3.6.1"
 )
 
 var (
@@ -77,7 +77,7 @@ var (
 				return ErrInvalidFileCountRange
 			case Port < 1 || Port > 65535:
 				return ErrInvalidPort
-			case Concurrency < 1 || Concurrency > 8192:
+			case Concurrency < 1:
 				return ErrInvalidConcurrency
 			case Ignore && !regexp.MustCompile(AllowedCharacters).MatchString(IgnoreFile):
 				return ErrInvalidIgnoreFile

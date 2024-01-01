@@ -17,7 +17,7 @@ import (
 
 var (
 	ErrInvalidAdminPrefix    = errors.New("admin path must match the pattern " + AllowedCharacters)
-	ErrInvalidConcurrency    = errors.New("concurrency limit must be between 1 and 8192 inclusive")
+	ErrInvalidConcurrency    = errors.New("concurrency limit must be a positive integer")
 	ErrInvalidFileCountRange = errors.New("maximum file count limit must be greater than or equal to minimum file count limit")
 	ErrInvalidFileCountValue = errors.New("file count limits must be non-negative integers no greater than 2147483647")
 	ErrInvalidIgnoreFile     = errors.New("ignore filename must match the pattern " + AllowedCharacters)
