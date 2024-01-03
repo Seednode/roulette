@@ -35,21 +35,33 @@ type scanStatsChannels struct {
 }
 
 func humanReadableSize(bytes int) string {
-	const unit = 1000
+	var unit int
+	var suffix string
+	var prefixes string
+
+	if BinaryPrefix {
+		unit = 1024
+		suffix = "iB"
+		prefixes = "KMGTPE"
+	} else {
+		unit = 1000
+		suffix = "B"
+		prefixes = "kMGTPE"
+	}
 
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)
 	}
 
-	div, exp := int64(unit), 0
+	div, exp := unit, 0
 
 	for n := bytes / unit; n >= unit; n /= unit {
 		div *= unit
 		exp++
 	}
 
-	return fmt.Sprintf("%.1f %cB",
-		float64(bytes)/float64(div), "KMGTPE"[exp])
+	return fmt.Sprintf("%.1f %c%s",
+		float64(bytes)/float64(div), prefixes[exp], suffix)
 }
 
 func kill(path string, index *fileIndex) error {

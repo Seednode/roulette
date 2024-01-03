@@ -139,6 +139,7 @@ Flags:
       --admin-prefix string   string to prepend to administrative paths
   -a, --all                   enable all supported file types
       --audio                 enable support for audio files
+      --binary-prefix         use IEC binary prefixes instead of SI decimal prefixes
   -b, --bind string           address to bind to (default "0.0.0.0")
       --case-sensitive        use case-sensitive matching for filters
       --code                  enable support for source code files
