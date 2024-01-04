@@ -106,10 +106,16 @@ func (index *fileIndex) Export(path string) error {
 	index.mutex.RLock()
 	err = enc.Encode(&index.list)
 	if err != nil {
+		index.mutex.RUnlock()
+
 		return err
 	}
 	length := len(index.list)
 	index.mutex.RUnlock()
+
+	// Close encoder prior to checking file size,
+	// to ensure the correct value is returned.
+	z.Close()
 
 	stats, err := file.Stat()
 	if err != nil {
@@ -154,6 +160,8 @@ func (index *fileIndex) Import(path string) error {
 	index.mutex.Lock()
 	err = dec.Decode(&index.list)
 	if err != nil {
+		index.mutex.Unlock()
+
 		return err
 	}
 	length := len(index.list)
