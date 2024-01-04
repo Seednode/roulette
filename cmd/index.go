@@ -111,11 +111,17 @@ func (index *fileIndex) Export(path string) error {
 	length := len(index.list)
 	index.mutex.RUnlock()
 
+	stats, err := file.Stat()
+	if err != nil {
+		return err
+	}
+
 	if Verbose {
-		fmt.Printf("%s | INDEX: Exported %d entries to %s in %s\n",
+		fmt.Printf("%s | INDEX: Exported %d entries to %s (%s) in %s\n",
 			time.Now().Format(logDate),
 			length,
 			path,
+			humanReadableSize(int(stats.Size())),
 			time.Since(startTime),
 		)
 	}
@@ -131,6 +137,11 @@ func (index *fileIndex) Import(path string) error {
 		return err
 	}
 	defer file.Close()
+
+	stats, err := file.Stat()
+	if err != nil {
+		return err
+	}
 
 	z, err := zstd.NewReader(file)
 	if err != nil {
@@ -149,10 +160,11 @@ func (index *fileIndex) Import(path string) error {
 	index.mutex.Unlock()
 
 	if Verbose {
-		fmt.Printf("%s | INDEX: Imported %d entries from %s in %s\n",
+		fmt.Printf("%s | INDEX: Imported %d entries from %s (%s) in %s\n",
 			time.Now().Format(logDate),
 			length,
 			path,
+			humanReadableSize(int(stats.Size())),
 			time.Since(startTime),
 		)
 	}

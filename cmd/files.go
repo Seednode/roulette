@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"math/big"
 	"regexp"
+	"slices"
 
 	"crypto/rand"
 	"os"
@@ -460,6 +461,8 @@ Poll:
 			time.Since(startTime),
 		)
 	}
+
+	slices.Sort(list)
 
 	return list, nil
 }
