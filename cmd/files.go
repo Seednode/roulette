@@ -28,7 +28,7 @@ type regexes struct {
 	filename     *regexp.Regexp
 }
 
-type scanStatsChannels struct {
+type scanStats struct {
 	filesMatched       chan int
 	filesSkipped       chan int
 	directoriesMatched chan int
@@ -42,12 +42,12 @@ func humanReadableSize(bytes int) string {
 
 	if BinaryPrefix {
 		unit = 1024
-		suffix = "iB"
 		prefixes = "KMGTPE"
+		suffix = "iB"
 	} else {
 		unit = 1000
-		suffix = "B"
 		prefixes = "kMGTPE"
+		suffix = "B"
 	}
 
 	if bytes < unit {
@@ -235,7 +235,7 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, stats *scanStatsChannels, limit chan struct{}, formats types.Types) error {
+func walkPath(path string, fileChannel chan<- string, stats *scanStats, limit chan struct{}, formats types.Types) error {
 	limit <- struct{}{}
 
 	defer func() {
@@ -349,7 +349,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	errorChannel := make(chan error)
 	done := make(chan bool)
 
-	statsChannels := &scanStatsChannels{
+	stats := &scanStats{
 		filesMatched:       make(chan int),
 		filesSkipped:       make(chan int),
 		directoriesMatched: make(chan int),
@@ -372,7 +372,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		for {
 			select {
-			case stat := <-statsChannels.filesMatched:
+			case stat := <-stats.filesMatched:
 				filesMatched += stat
 			case <-done:
 				return
@@ -383,7 +383,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		for {
 			select {
-			case stat := <-statsChannels.filesSkipped:
+			case stat := <-stats.filesSkipped:
 				filesSkipped += stat
 			case <-done:
 				return
@@ -394,7 +394,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		for {
 			select {
-			case stat := <-statsChannels.directoriesMatched:
+			case stat := <-stats.directoriesMatched:
 				directoriesMatched += stat
 			case <-done:
 				return
@@ -405,7 +405,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		for {
 			select {
-			case stat := <-statsChannels.directoriesSkipped:
+			case stat := <-stats.directoriesSkipped:
 				directoriesSkipped += stat
 			case <-done:
 				return
@@ -425,7 +425,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 				wg.Done()
 			}()
 
-			err := walkPath(paths[i], fileChannel, statsChannels, limit, formats)
+			err := walkPath(paths[i], fileChannel, stats, limit, formats)
 
 			if err != nil {
 				errorChannel <- err
@@ -437,6 +437,11 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 
 	go func() {
 		wg.Wait()
+
+		// Without this delay, occasionally a single file is missed when indexing,
+		// presumably due to a timing issue with closing the done channel.
+		// Pending a proper fix.
+		time.Sleep((100 * time.Millisecond))
 
 		close(done)
 	}()
