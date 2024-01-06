@@ -20,7 +20,7 @@ import (
 	"github.com/golang/snappy"
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
-	lz4 "github.com/pierrec/lz4/v4"
+	"github.com/pierrec/lz4/v4"
 	"seedno.de/seednode/roulette/types"
 )
 
@@ -236,7 +236,6 @@ func (index *fileIndex) Import(path string) error {
 	if err != nil {
 		return err
 	}
-	//defer reader.Close()
 
 	dec := gob.NewDecoder(reader)
 
