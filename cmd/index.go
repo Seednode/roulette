@@ -266,12 +266,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		index.clear()
 
-		_, err := fileList(args, &filters{}, "", index, formats)
-		if err != nil {
-			errorChannel <- err
-
-			return
-		}
+		fileList(args, &filters{}, "", index, formats, errorChannel)
 
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -279,18 +274,13 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 	}
 }
 
-func importIndex(args []string, index *fileIndex, formats types.Types) error {
+func importIndex(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if IndexFile != "" {
 		err := index.Import(IndexFile)
 		if err == nil {
-			return nil
+			return
 		}
 	}
 
-	_, err := fileList(args, &filters{}, "", index, formats)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	fileList(args, &filters{}, "", index, formats, errorChannel)
 }

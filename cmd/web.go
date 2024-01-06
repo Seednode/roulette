@@ -206,14 +206,7 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 			}
 		}
 
-		list, err := fileList(paths, filters, sortOrder, index, formats)
-		if err != nil {
-			errorChannel <- err
-
-			serverError(w, r, nil)
-
-			return
-		}
+		list := fileList(paths, filters, sortOrder, index, formats, errorChannel)
 
 	loop:
 		for timeout := time.After(timeout); ; {
@@ -552,6 +545,31 @@ func ServePage(args []string) error {
 
 	errorChannel := make(chan error)
 
+	go func() {
+		for err := range errorChannel {
+			prefix := "ERROR"
+
+			switch {
+			case errors.Is(err, os.ErrNotExist) && Debug:
+				prefix = "DEBUG"
+			case errors.Is(err, os.ErrNotExist):
+				continue
+			case errors.Is(err, os.ErrPermission) && Debug:
+				prefix = "DEBUG"
+			case errors.Is(err, os.ErrPermission):
+				continue
+			}
+
+			fmt.Printf("%s | %s: %v\n", time.Now().Format(logDate), prefix, err)
+
+			if ExitOnError {
+				fmt.Printf("%s | %s: Shutting down...\n", time.Now().Format(logDate), prefix)
+
+				srv.Shutdown(context.Background())
+			}
+		}
+	}()
+
 	registerHandler(mux, Prefix, serveRoot(paths, regexes, index, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
@@ -573,10 +591,7 @@ func ServePage(args []string) error {
 	if Index {
 		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
 
-		err = importIndex(paths, index, formats)
-		if err != nil {
-			return err
-		}
+		importIndex(paths, index, formats, errorChannel)
 	}
 
 	if Info {
@@ -590,18 +605,6 @@ func ServePage(args []string) error {
 	if Russian {
 		fmt.Printf("WARNING! Files *will* be deleted after serving!\n\n")
 	}
-
-	go func() {
-		for err := range errorChannel {
-			fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
-
-			if ExitOnError {
-				fmt.Printf("%s | ERROR: Shutting down...\n", time.Now().Format(logDate))
-
-				srv.Shutdown(context.Background())
-			}
-		}
-	}()
 
 	if Verbose {
 		fmt.Printf("%s | SERVE: Listening on http://%s%s/\n",

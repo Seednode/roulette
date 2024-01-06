@@ -240,73 +240,73 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, stats *scanStats, limit chan struct{}, formats types.Types) error {
+func walkPath(path string, fileChannel chan<- string, wg0 *sync.WaitGroup, stats *scanStats, limit chan struct{}, formats types.Types, errorChannel chan<- error) {
+	defer func() {
+		wg0.Done()
+	}()
+
 	limit <- struct{}{}
 
 	defer func() {
 		<-limit
 	}()
 
-	errorChannel := make(chan error)
-	done := make(chan bool)
-
 	nodes, err := os.ReadDir(path)
 	if err != nil {
-		return err
+		stats.directoriesSkipped <- 1
+
+		errorChannel <- err
+
+		return
 	}
 
-	var directories, files = 0, 0
+	var files = 0
 
 	var skipDir = false
 
 	for _, node := range nodes {
-		if node.IsDir() {
-			directories++
-		} else {
-			if Ignore && node.Name() == IgnoreFile {
-				skipDir = true
-			}
-
-			files++
+		if Ignore && !node.IsDir() && node.Name() == IgnoreFile {
+			skipDir = true
 		}
+
+		files++
 	}
 
 	var skipFiles = false
 
-	if files <= MaxFileCount && files >= MinFileCount && !skipDir {
-		stats.directoriesMatched <- 1
-	} else {
+	if files > MaxFileCount || files < MinFileCount || skipDir {
 		stats.filesSkipped <- files
 		stats.directoriesSkipped <- 1
 
 		skipFiles = true
+	} else {
+		stats.directoriesMatched <- 1
 	}
 
-	var wg sync.WaitGroup
+	var wg1 sync.WaitGroup
 
-	wg.Add(1)
+	wg1.Add(1)
 	go func() {
-		defer wg.Done()
+		defer wg1.Done()
 		for _, node := range nodes {
-			wg.Add(1)
+			wg1.Add(1)
 
 			go func(node fs.DirEntry) {
-				defer wg.Done()
+				defer wg1.Done()
 
 				fullPath := filepath.Join(path, node.Name())
 
 				switch {
 				case node.IsDir() && Recursive:
-					err := walkPath(fullPath, fileChannel, stats, limit, formats)
-					if err != nil {
-						errorChannel <- err
+					wg0.Add(1)
 
-						return
-					}
+					walkPath(fullPath, fileChannel, wg0, stats, limit, formats, errorChannel)
 				case !node.IsDir() && !skipFiles:
 					path, err := normalizePath(fullPath)
 					if err != nil {
 						errorChannel <- err
+
+						stats.filesSkipped <- 1
 
 						return
 					}
@@ -325,35 +325,16 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStats, limit ch
 		}
 	}()
 
-	go func() {
-		wg.Wait()
-
-		time.Sleep(1 * time.Microsecond)
-
-		close(done)
-	}()
-
-Poll:
-	for {
-		select {
-		case err := <-errorChannel:
-			return err
-		case <-done:
-			break Poll
-		}
-	}
-
-	return nil
+	wg1.Wait()
 }
 
-func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types) ([]string, error) {
+func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	startTime := time.Now()
 
 	var filesMatched, filesSkipped int
 	var directoriesMatched, directoriesSkipped int
 
 	fileChannel := make(chan string)
-	errorChannel := make(chan error)
 	done := make(chan bool)
 
 	stats := &scanStats{
@@ -422,41 +403,19 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 
 	limit := make(chan struct{}, Concurrency)
 
-	var wg sync.WaitGroup
+	var wg0 sync.WaitGroup
 
 	for i := 0; i < len(paths); i++ {
-		wg.Add(1)
+		wg0.Add(1)
 
 		go func(i int) {
-			defer func() {
-				wg.Done()
-			}()
-
-			err := walkPath(paths[i], fileChannel, stats, limit, formats)
-
-			if err != nil {
-				errorChannel <- err
-
-				return
-			}
+			walkPath(paths[i], fileChannel, &wg0, stats, limit, formats, errorChannel)
 		}(i)
 	}
 
-	go func() {
-		wg.Wait()
+	wg0.Wait()
 
-		close(done)
-	}()
-
-Poll:
-	for {
-		select {
-		case err := <-errorChannel:
-			return []string{}, err
-		case <-done:
-			break Poll
-		}
-	}
+	close(done)
 
 	if Verbose {
 		fmt.Printf("%s | INDEX: Selected %d/%d files across %d/%d directories in %s\n",
@@ -471,45 +430,27 @@ Poll:
 
 	slices.Sort(list)
 
-	return list, nil
+	return list
 }
 
-func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types) ([]string, error) {
+func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	switch {
 	case Index && !index.isEmpty() && filters.isEmpty():
-		return index.List(), nil
+		return index.List()
 	case Index && !index.isEmpty() && !filters.isEmpty():
-		return filters.apply(index.List()), nil
+		return filters.apply(index.List())
 	case Index && index.isEmpty() && !filters.isEmpty():
-		list, err := scanPaths(paths, sort, index, formats)
-		if err != nil {
-			return []string{}, err
-		}
-		index.set(list)
+		index.set(scanPaths(paths, sort, index, formats, errorChannel))
 
-		return filters.apply(index.List()), nil
+		return filters.apply(index.List())
 	case Index && index.isEmpty() && filters.isEmpty():
-		list, err := scanPaths(paths, sort, index, formats)
-		if err != nil {
-			return []string{}, err
-		}
-		index.set(list)
+		index.set(scanPaths(paths, sort, index, formats, errorChannel))
 
-		return index.List(), nil
+		return index.List()
 	case !Index && !filters.isEmpty():
-		list, err := scanPaths(paths, sort, index, formats)
-		if err != nil {
-			return []string{}, err
-		}
-
-		return filters.apply(list), nil
+		return filters.apply(scanPaths(paths, sort, index, formats, errorChannel))
 	default:
-		list, err := scanPaths(paths, sort, index, formats)
-		if err != nil {
-			return []string{}, err
-		}
-
-		return list, nil
+		return scanPaths(paths, sort, index, formats, errorChannel)
 	}
 }
 
