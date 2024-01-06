@@ -40,6 +40,8 @@ The restricted paths are:
 
 While this might thwart very basic attacks, the proper solution for most use cases would likely be to add authentication via a reverse proxy.
 
+If the `--redact` flag is passed, references to the admin prefix will be redacted in log output.
+
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
@@ -65,7 +67,11 @@ The index can be regenerated at any time by accessing the `/index/rebuild` endpo
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
-The index file consists of [zstd](https://pkg.go.dev/github.com/klauspost/compress/zstd)-compressed [gobs](https://pkg.go.dev/encoding/gob).
+The index file consists of compressed [gobs](https://pkg.go.dev/encoding/gob).
+
+The compression format can be specified via the `--compression` flag.
+
+Supported formats are `flate`, `gzip`, `lzw`, `none`, `zlib`, and `zstd`.
 
 ## Info
 If the `-i|--info` flag is passed, six additional endpoints are registered.
