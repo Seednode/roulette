@@ -16,7 +16,7 @@ import (
 
 var (
 	ErrInvalidAdminPrefix    = errors.New("admin path must match the pattern " + AllowedCharacters)
-	ErrInvalidCompression    = errors.New("supported compression formats: flate, gzip, lzw, none, zlib, zstd")
+	ErrInvalidCompression    = errors.New("supported compression formats: flate, gzip, lz4, lzw, none, snappy, zlib, zstd")
 	ErrInvalidConcurrency    = errors.New("concurrency limit must be a positive integer")
 	ErrInvalidFileCountRange = errors.New("maximum file count limit must be greater than or equal to minimum file count limit")
 	ErrInvalidFileCountValue = errors.New("file count limits must be non-negative integers no greater than 2147483647")

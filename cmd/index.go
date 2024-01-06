@@ -17,8 +17,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/snappy"
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
+	lz4 "github.com/pierrec/lz4/v4"
 	"seedno.de/seednode/roulette/types"
 )
 
@@ -91,16 +93,20 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
-func getReader(format string, file io.Reader) (io.ReadCloser, error) {
+func getReader(format string, file io.Reader) (io.Reader, error) {
 	switch format {
 	case "flate":
 		return flate.NewReader(file), nil
 	case "gzip":
 		return gzip.NewReader(file)
+	case "lz4":
+		return lz4.NewReader(file), nil
 	case "lzw":
 		return lzw.NewReader(file, lzw.LSB, 8), nil
 	case "none":
 		return io.NopCloser(file), nil
+	case "snappy":
+		return snappy.NewReader(file), nil
 	case "zlib":
 		return zlib.NewReader(file)
 	case "zstd":
@@ -117,11 +123,22 @@ func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
 	case "flate":
 		return flate.NewWriter(file, flate.DefaultCompression)
 	case "gzip":
-		return gzip.NewWriter(file), nil
+		return gzip.NewWriterLevel(file, gzip.BestCompression)
+	case "lz4":
+		encoder := lz4.NewWriter(file)
+
+		err := encoder.Apply(lz4.CompressionLevelOption(lz4.Level9))
+		if err != nil {
+			return file, err
+		}
+
+		return encoder, nil
 	case "lzw":
 		return lzw.NewWriter(file, lzw.LSB, 8), nil
 	case "none":
 		return file, nil
+	case "snappy":
+		return snappy.NewBufferedWriter(file), nil
 	case "zlib":
 		return zlib.NewWriter(file), nil
 	case "zstd":
@@ -202,7 +219,7 @@ func (index *fileIndex) Import(path string) error {
 	if err != nil {
 		return err
 	}
-	defer reader.Close()
+	//defer reader.Close()
 
 	dec := gob.NewDecoder(reader)
 

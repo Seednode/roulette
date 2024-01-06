@@ -15,7 +15,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.10.0"
+	ReleaseVersion    string = "3.11.0"
 )
 
 var (
@@ -62,8 +62,10 @@ var (
 	CompressionFormats = []string{
 		"flate",
 		"gzip",
+		"lz4",
 		"lzw",
 		"none",
+		"snappy",
 		"zlib",
 		"zstd",
 	}
@@ -133,7 +135,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
-	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lzw, none, zlib, zstd)")
+	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lz5, lzw, none, snappy, zlib, zstd)")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 8192, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing error")
