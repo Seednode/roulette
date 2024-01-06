@@ -248,7 +248,7 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStats, limit ch
 	}()
 
 	errorChannel := make(chan error)
-	done := make(chan bool, 1)
+	done := make(chan bool)
 
 	nodes, err := os.ReadDir(path)
 	if err != nil {
@@ -328,7 +328,9 @@ func walkPath(path string, fileChannel chan<- string, stats *scanStats, limit ch
 	go func() {
 		wg.Wait()
 
-		done <- true
+		time.Sleep(1 * time.Microsecond)
+
+		close(done)
 	}()
 
 Poll:
@@ -443,11 +445,6 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	go func() {
 		wg.Wait()
 
-		// Without this delay, occasionally a single file is missed when indexing,
-		// presumably due to a timing issue with closing the done channel.
-		// Pending a proper fix.
-		time.Sleep((100 * time.Millisecond))
-
 		close(done)
 	}()
 
@@ -468,7 +465,7 @@ Poll:
 			filesMatched+filesSkipped,
 			directoriesMatched,
 			directoriesMatched+directoriesSkipped,
-			time.Since(startTime)-100*time.Millisecond,
+			time.Since(startTime),
 		)
 	}
 
