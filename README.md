@@ -67,7 +67,7 @@ The index can be regenerated at any time by accessing the `/index/rebuild` endpo
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
-The index file consists of compressed [gobs](https://pkg.go.dev/encoding/gob).
+The index file consists of (optionally compressed) [gobs](https://pkg.go.dev/encoding/gob).
 
 The compression format can be specified via the `--compression` flag.
 
