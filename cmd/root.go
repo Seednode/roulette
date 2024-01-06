@@ -5,10 +5,12 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"log"
+	"fmt"
 	"math"
+	"os"
 	"regexp"
 	"slices"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -123,7 +125,9 @@ var (
 func Execute() {
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Fatal(err)
+		fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
+
+		os.Exit(1)
 	}
 }
 
@@ -137,7 +141,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
-	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lz5, lzw, none, snappy, zlib, zstd)")
+	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lz4, lzw, none, snappy, zlib, zstd)")
 	rootCmd.Flags().BoolVar(&CompressionFast, "compression-fast", false, "use fastest compression level (default is best)")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", math.MaxInt32, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "display even more verbose logs")
