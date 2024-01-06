@@ -138,6 +138,7 @@ Usage:
 Flags:
       --admin-prefix string   string to prepend to administrative paths
   -a, --all                   enable all supported file types
+      --allow-empty           allow specifying paths containing no supported files
       --audio                 enable support for audio files
       --binary-prefix         use IEC binary prefixes instead of SI decimal prefixes
   -b, --bind string           address to bind to (default "0.0.0.0")
@@ -166,6 +167,7 @@ Flags:
       --prefix string         root path for http handlers (for reverse proxying) (default "/")
       --profile               register net/http/pprof handlers
   -r, --recursive             recurse into subdirectories
+      --redact                redact admin prefix in log output
       --refresh               enable automatic page refresh via query parameter
       --russian               remove selected images after serving
   -s, --sort                  enable sorting

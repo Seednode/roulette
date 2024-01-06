@@ -62,7 +62,7 @@ func noFiles(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("No files found in the specified path(s).\n"))
 
 	if Verbose {
-		fmt.Printf("%s | SERVE: Empty path notice served to %s\n",
+		fmt.Printf("%s | SERVE: Empty path notification to %s\n",
 			startTime.Format(logDate),
 			r.RemoteAddr,
 		)
@@ -434,6 +434,10 @@ func serveVersion() httprouter.Handle {
 
 func registerHandler(mux *httprouter.Router, path string, handle httprouter.Handle) {
 	mux.GET(path, handle)
+
+	if Redact && AdminPrefix != "" {
+		path = strings.ReplaceAll(path, AdminPrefix, "/<admin_prefix>")
+	}
 
 	if Handlers {
 		fmt.Printf("%s | SERVE: Registered handler for %s\n",

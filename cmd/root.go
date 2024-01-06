@@ -14,7 +14,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.8.0"
+	ReleaseVersion    string = "3.9.0"
 )
 
 var (
@@ -48,6 +48,7 @@ var (
 	Prefix         string
 	Profile        bool
 	Recursive      bool
+	Redact         bool
 	Refresh        bool
 	Russian        bool
 	Sorting        bool
@@ -140,6 +141,7 @@ func init() {
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
+	rootCmd.Flags().BoolVar(&Redact, "redact", false, "redact admin prefix in log output")
 	rootCmd.Flags().BoolVar(&Refresh, "refresh", false, "enable automatic page refresh via query parameter")
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
