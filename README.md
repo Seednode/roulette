@@ -155,7 +155,7 @@ Flags:
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
       --compression string    compression format to use for index (flate, gzip, lz5, lzw, none, snappy, zlib, zstd) (default "zstd")
       --compression-fast      use fastest compression level (default is best)
-      --concurrency int       maximum concurrency for scan threads (default 9223372036854775807)
+      --concurrency int       maximum concurrency for scan threads (default 2147483647)
   -d, --debug                 display even more verbose logs
       --disable-buttons       disable first/prev/next/last buttons
       --exit-on-error         shut down webserver on error, instead of just printing error
