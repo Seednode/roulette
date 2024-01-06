@@ -5,8 +5,13 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"compress/flate"
+	"compress/gzip"
+	"compress/lzw"
+	"compress/zlib"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -86,6 +91,46 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
+func getReader(format string, file io.Reader) (io.ReadCloser, error) {
+	switch format {
+	case "flate":
+		return flate.NewReader(file), nil
+	case "gzip":
+		return gzip.NewReader(file)
+	case "lzw":
+		return lzw.NewReader(file, lzw.LSB, 8), nil
+	case "none":
+		return io.NopCloser(file), nil
+	case "zlib":
+		return zlib.NewReader(file)
+	case "zstd":
+		decoder, err := zstd.NewReader(file)
+
+		return decoder.IOReadCloser(), err
+	}
+
+	return io.NopCloser(file), ErrInvalidCompression
+}
+
+func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
+	switch format {
+	case "flate":
+		return flate.NewWriter(file, flate.DefaultCompression)
+	case "gzip":
+		return gzip.NewWriter(file), nil
+	case "lzw":
+		return lzw.NewWriter(file, lzw.LSB, 8), nil
+	case "none":
+		return file, nil
+	case "zlib":
+		return zlib.NewWriter(file), nil
+	case "zstd":
+		return zstd.NewWriter(file)
+	}
+
+	return file, ErrInvalidCompression
+}
+
 func (index *fileIndex) Export(path string) error {
 	startTime := time.Now()
 
@@ -95,13 +140,13 @@ func (index *fileIndex) Export(path string) error {
 	}
 	defer file.Close()
 
-	z, err := zstd.NewWriter(file)
+	encoder, err := getWriter(Compression, file)
 	if err != nil {
 		return err
 	}
-	defer z.Close()
+	defer encoder.Close()
 
-	enc := gob.NewEncoder(z)
+	enc := gob.NewEncoder(encoder)
 
 	index.mutex.RLock()
 	err = enc.Encode(&index.list)
@@ -115,7 +160,11 @@ func (index *fileIndex) Export(path string) error {
 
 	// Close encoder prior to checking file size,
 	// to ensure the correct value is returned.
-	z.Close()
+	// If no compression is used, skip this step,
+	// as the encoder is just the file itself.
+	if Compression != "none" {
+		encoder.Close()
+	}
 
 	stats, err := file.Stat()
 	if err != nil {
@@ -149,13 +198,13 @@ func (index *fileIndex) Import(path string) error {
 		return err
 	}
 
-	z, err := zstd.NewReader(file)
+	reader, err := getReader(Compression, file)
 	if err != nil {
 		return err
 	}
-	defer z.Close()
+	defer reader.Close()
 
-	dec := gob.NewDecoder(z)
+	dec := gob.NewDecoder(reader)
 
 	index.mutex.Lock()
 	err = dec.Decode(&index.list)

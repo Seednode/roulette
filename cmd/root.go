@@ -8,13 +8,14 @@ import (
 	"log"
 	"math"
 	"regexp"
+	"slices"
 
 	"github.com/spf13/cobra"
 )
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.9.1"
+	ReleaseVersion    string = "3.10.0"
 )
 
 var (
@@ -27,6 +28,7 @@ var (
 	CaseSensitive  bool
 	Code           bool
 	CodeTheme      string
+	Compression    string
 	Concurrency    int
 	DisableButtons bool
 	ExitOnError    bool
@@ -57,6 +59,15 @@ var (
 	Version        bool
 	Videos         bool
 
+	CompressionFormats = []string{
+		"flate",
+		"gzip",
+		"lzw",
+		"none",
+		"zlib",
+		"zstd",
+	}
+
 	RequiredArgs = []string{
 		"all",
 		"audio",
@@ -84,6 +95,8 @@ var (
 				return ErrInvalidConcurrency
 			case Ignore && !regexp.MustCompile(AllowedCharacters).MatchString(IgnoreFile):
 				return ErrInvalidIgnoreFile
+			case !slices.Contains(CompressionFormats, Compression):
+				return ErrInvalidCompression
 			case AdminPrefix != "" && !regexp.MustCompile(AllowedCharacters).MatchString(AdminPrefix):
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
@@ -120,9 +133,10 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
+	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lzw, none, zlib, zstd)")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 8192, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
-	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing the error")
+	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
