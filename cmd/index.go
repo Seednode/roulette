@@ -119,12 +119,25 @@ func getReader(format string, file io.Reader) (io.Reader, error) {
 }
 
 func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
-	switch format {
-	case "flate":
-		return flate.NewWriter(file, flate.DefaultCompression)
-	case "gzip":
+	switch {
+	case format == "flate" && CompressionFast:
+		return flate.NewWriter(file, flate.BestCompression)
+	case format == "flate":
+		return flate.NewWriter(file, flate.BestSpeed)
+	case format == "gzip" && CompressionFast:
+		return gzip.NewWriterLevel(file, gzip.BestSpeed)
+	case format == "gzip":
 		return gzip.NewWriterLevel(file, gzip.BestCompression)
-	case "lz4":
+	case format == "lz4" && CompressionFast:
+		encoder := lz4.NewWriter(file)
+
+		err := encoder.Apply(lz4.CompressionLevelOption(lz4.Fast))
+		if err != nil {
+			return file, err
+		}
+
+		return encoder, nil
+	case format == "lz4":
 		encoder := lz4.NewWriter(file)
 
 		err := encoder.Apply(lz4.CompressionLevelOption(lz4.Level9))
@@ -133,16 +146,20 @@ func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
 		}
 
 		return encoder, nil
-	case "lzw":
+	case format == "lzw":
 		return lzw.NewWriter(file, lzw.LSB, 8), nil
-	case "none":
+	case format == "none":
 		return file, nil
-	case "snappy":
+	case format == "snappy":
 		return snappy.NewBufferedWriter(file), nil
-	case "zlib":
-		return zlib.NewWriter(file), nil
-	case "zstd":
-		return zstd.NewWriter(file)
+	case format == "zlib" && CompressionFast:
+		return zlib.NewWriterLevel(file, zlib.BestSpeed)
+	case format == "zlib":
+		return zlib.NewWriterLevel(file, zlib.BestCompression)
+	case format == "zstd" && CompressionFast:
+		return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedFastest))
+	case format == "zstd":
+		return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 	}
 
 	return file, ErrInvalidCompression

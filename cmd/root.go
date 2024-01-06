@@ -15,49 +15,50 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.11.0"
+	ReleaseVersion    string = "3.12.0"
 )
 
 var (
-	AdminPrefix    string
-	All            bool
-	AllowEmpty     bool
-	Audio          bool
-	BinaryPrefix   bool
-	Bind           string
-	CaseSensitive  bool
-	Code           bool
-	CodeTheme      string
-	Compression    string
-	Concurrency    int
-	DisableButtons bool
-	ExitOnError    bool
-	Fallback       bool
-	Filtering      bool
-	Flash          bool
-	Fun            bool
-	Handlers       bool
-	Ignore         bool
-	IgnoreFile     string
-	Images         bool
-	Index          bool
-	IndexFile      string
-	Info           bool
-	MaxFileCount   int
-	MinFileCount   int
-	PageLength     int
-	Port           int
-	Prefix         string
-	Profile        bool
-	Recursive      bool
-	Redact         bool
-	Refresh        bool
-	Russian        bool
-	Sorting        bool
-	Text           bool
-	Verbose        bool
-	Version        bool
-	Videos         bool
+	AdminPrefix     string
+	All             bool
+	AllowEmpty      bool
+	Audio           bool
+	BinaryPrefix    bool
+	Bind            string
+	CaseSensitive   bool
+	Code            bool
+	CodeTheme       string
+	Compression     string
+	CompressionFast bool
+	Concurrency     int
+	DisableButtons  bool
+	ExitOnError     bool
+	Fallback        bool
+	Filtering       bool
+	Flash           bool
+	Fun             bool
+	Handlers        bool
+	Ignore          bool
+	IgnoreFile      string
+	Images          bool
+	Index           bool
+	IndexFile       string
+	Info            bool
+	MaxFileCount    int
+	MinFileCount    int
+	PageLength      int
+	Port            int
+	Prefix          string
+	Profile         bool
+	Recursive       bool
+	Redact          bool
+	Refresh         bool
+	Russian         bool
+	Sorting         bool
+	Text            bool
+	Verbose         bool
+	Version         bool
+	Videos          bool
 
 	CompressionFormats = []string{
 		"flate",
@@ -136,6 +137,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (flate, gzip, lz5, lzw, none, snappy, zlib, zstd)")
+	rootCmd.Flags().BoolVar(&CompressionFast, "compression-fast", false, "use fastest compression level (default is best)")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 8192, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing error")
