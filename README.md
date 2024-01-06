@@ -56,7 +56,7 @@ You can combine these two parameters, with exclusions taking priority over inclu
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
 ## Ignoring directories
-If the `--ignore` flag is passed, any directory containing a file named `.roulette_ignore` (configurable with `--ignore-file`) will be skipped during the scanning stage.
+If the `--ignore` flag is passed, any directory containing a file named `.roulette-ignore` (configurable with `--ignore-file`) will be skipped during the scanning stage.
 
 ## Indexing
 If the `-i|--indexing` flag is passed, all specified paths will be indexed on start.
@@ -71,7 +71,9 @@ The index file consists of compressed [gobs](https://pkg.go.dev/encoding/gob).
 
 The compression format can be specified via the `--compression` flag.
 
-Supported formats are `flate`, `gzip`, `lzw`, `none`, `zlib`, and `zstd`.
+Supported formats are `flate`, `gzip`, `lz4`, `lzw`, `none`, `snappy`, `zlib`, and `zstd`.
+
+Optionally, `--compression-fast` can be used to use the fastest instead of the best compression mode.
 
 ## Info
 If the `-i|--info` flag is passed, six additional endpoints are registered.
@@ -151,7 +153,7 @@ Flags:
       --case-sensitive        use case-sensitive matching for filters
       --code                  enable support for source code files
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
-      --compression string    compression format to use for index (flate, gzip, lz5, lzw, none, snappy, zlib, zstd) (default "zstd")
+      --compression string    compression format to use for index (flate, gzip, lz4, lzw, none, snappy, zlib, zstd) (default "zstd")
       --compression-fast      use fastest compression level (default is best)
       --concurrency int       maximum concurrency for scan threads (default 8192)
       --disable-buttons       disable first/prev/next/last buttons
