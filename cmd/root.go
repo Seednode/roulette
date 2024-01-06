@@ -14,12 +14,13 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "3.7.2"
+	ReleaseVersion    string = "3.8.0"
 )
 
 var (
 	AdminPrefix    string
 	All            bool
+	AllowEmpty     bool
 	Audio          bool
 	BinaryPrefix   bool
 	Bind           string
@@ -111,6 +112,7 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&AdminPrefix, "admin-prefix", "", "string to prepend to administrative paths")
 	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
+	rootCmd.Flags().BoolVar(&AllowEmpty, "allow-empty", false, "allow specifying paths containing no supported files")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().BoolVar(&BinaryPrefix, "binary-prefix", false, "use IEC binary prefixes instead of SI decimal prefixes")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")

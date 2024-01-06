@@ -42,12 +42,31 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func preparePath(prefix, path string) string {
-	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s/%s", prefix, filepath.ToSlash(path))
-	}
+func newPage(title, body string) string {
+	var htmlBody strings.Builder
 
-	return prefix + path
+	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
+	htmlBody.WriteString(faviconHtml)
+	htmlBody.WriteString(`<style>html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
+	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
+
+	return htmlBody.String()
+}
+
+func noFiles(w http.ResponseWriter, r *http.Request) {
+	startTime := time.Now()
+
+	w.Header().Set("Content-Type", "text/plain")
+
+	w.Write([]byte("No files found in the specified path(s).\n"))
+
+	if Verbose {
+		fmt.Printf("%s | SERVE: Empty path notice served to %s\n",
+			startTime.Format(logDate),
+			r.RemoteAddr,
+		)
+	}
 }
 
 func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
@@ -210,6 +229,10 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 
 			path, err = newFile(list, sortOrder, regexes, formats)
 			switch {
+			case path == "":
+				noFiles(w, r)
+
+				return
 			case err != nil && err == ErrNoMediaFound:
 				notFound(w, r, path)
 

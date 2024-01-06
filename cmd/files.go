@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"math/big"
 	"regexp"
+	"runtime"
 	"slices"
 
 	"crypto/rand"
@@ -205,6 +206,10 @@ func pathIsValid(path string, paths []string) bool {
 }
 
 func hasSupportedFiles(path string, formats types.Types) (bool, error) {
+	if AllowEmpty {
+		return true, nil
+	}
+
 	hasRegisteredFiles := make(chan bool, 1)
 
 	err := filepath.WalkDir(path, func(p string, info os.DirEntry, err error) error {
@@ -463,7 +468,7 @@ Poll:
 			filesMatched+filesSkipped,
 			directoriesMatched,
 			directoriesMatched+directoriesSkipped,
-			time.Since(startTime),
+			time.Since(startTime)-100*time.Millisecond,
 		)
 	}
 
@@ -514,7 +519,10 @@ func fileList(paths []string, filters *filters, sort string, index *fileIndex, f
 func pickFile(list []string) (string, error) {
 	fileCount := len(list)
 
-	if fileCount < 1 {
+	switch {
+	case fileCount < 1 && AllowEmpty:
+		return "", nil
+	case fileCount < 1:
 		return "", ErrNoMediaFound
 	}
 
@@ -529,6 +537,14 @@ func pickFile(list []string) (string, error) {
 	}
 
 	return list[val], nil
+}
+
+func preparePath(prefix, path string) string {
+	if runtime.GOOS == "windows" {
+		return fmt.Sprintf("%s/%s", prefix, filepath.ToSlash(path))
+	}
+
+	return prefix + path
 }
 
 func normalizePath(path string) (string, error) {

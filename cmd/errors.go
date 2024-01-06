@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/yosssi/gohtml"
@@ -25,20 +24,16 @@ var (
 	ErrNoMediaFound          = errors.New("no supported media formats found which match all criteria")
 )
 
-func newErrorPage(title, body string) string {
-	var htmlBody strings.Builder
-
-	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(faviconHtml)
-	htmlBody.WriteString(`<style>html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
-	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
-	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
-
-	return htmlBody.String()
-}
-
 func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	startTime := time.Now()
+
+	w.WriteHeader(http.StatusNotFound)
+	w.Header().Add("Content-Type", "text/html")
+
+	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found")))
+	if err != nil {
+		return err
+	}
 
 	if Verbose {
 		fmt.Printf("%s | ERROR: Unavailable file %s requested by %s\n",
@@ -48,19 +43,15 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 		)
 	}
 
-	w.WriteHeader(http.StatusNotFound)
-	w.Header().Add("Content-Type", "text/html")
-
-	_, err := io.WriteString(w, gohtml.Format(newErrorPage("Not Found", "404 Page not found")))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
 func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
+
+	w.Header().Add("Content-Type", "text/html")
+
+	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.")))
 
 	if Verbose {
 		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
@@ -69,10 +60,6 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 			r.RemoteAddr,
 		)
 	}
-
-	w.Header().Add("Content-Type", "text/html")
-
-	io.WriteString(w, gohtml.Format(newErrorPage("Server Error", "An error has occurred. Please try again.")))
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
