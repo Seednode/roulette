@@ -10,7 +10,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.19
 	github.com/spf13/cobra v1.8.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
-	golang.org/x/image v0.14.0
+	golang.org/x/image v0.15.0
 )
 
 require (
