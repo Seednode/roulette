@@ -145,7 +145,7 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 
 		htmlBody.WriteString(`</table></body></html>`)
 
-		length, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
+		written, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
 		if err != nil {
 			return
 		}
@@ -153,7 +153,7 @@ func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httpro
 		if Verbose {
 			fmt.Printf("%s | SERVE: HTML index page (%s) to %s in %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(length),
+				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)

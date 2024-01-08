@@ -27,7 +27,7 @@ const (
 	<meta name="theme-color" content="#ffffff">`
 )
 
-func serveFavicons() httprouter.Handle {
+func serveFavicons(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		fname := strings.TrimPrefix(r.URL.Path, "/")
 
@@ -36,8 +36,18 @@ func serveFavicons() httprouter.Handle {
 			return
 		}
 
-		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		err = w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		if err != nil {
+			errorChannel <- err
 
-		w.Write(data)
+			return
+		}
+
+		_, err = w.Write(data)
+		if err != nil {
+			errorChannel <- err
+
+			return
+		}
 	}
 }

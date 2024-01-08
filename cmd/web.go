@@ -253,6 +253,8 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 
 func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		startTime := time.Now()
+
 		filters := &filters{
 			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
 			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
@@ -384,8 +386,6 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 
 		htmlBody.WriteString(`</body></html>`)
 
-		startTime := time.Now()
-
 		formattedPage := gohtml.Format(htmlBody.String())
 
 		written, err := io.WriteString(w, formattedPage)
@@ -409,19 +409,45 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 			}
 
 			if Russian {
-				kill(path, index)
+				err := kill(path, index)
+				if err != nil {
+					errorChannel <- err
+
+					return
+				}
 			}
 		}
 	}
 }
 
-func serveVersion() httprouter.Handle {
+func serveVersion(errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		startTime := time.Now()
+
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
 
-		w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		err := w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
+		if err != nil {
+			errorChannel <- err
 
-		w.Write(data)
+			return
+		}
+
+		written, err := w.Write(data)
+		if err != nil {
+			errorChannel <- err
+
+			return
+		}
+
+		if Verbose {
+			fmt.Printf("%s | SERVE: Version page (%s) to %s in %s\n",
+				startTime.Format(logDate),
+				humanReadableSize(written),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
 	}
 }
 
@@ -578,15 +604,15 @@ func ServePage(args []string) error {
 		registerHandler(mux, "/", redirectRoot())
 	}
 
-	registerHandler(mux, Prefix+"/favicons/*favicon", serveFavicons())
+	registerHandler(mux, Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
 
-	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons())
+	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
 	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, index, formats, errorChannel))
 
 	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 
-	registerHandler(mux, Prefix+"/version", serveVersion())
+	registerHandler(mux, Prefix+"/version", serveVersion(errorChannel))
 
 	if Index {
 		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))

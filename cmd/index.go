@@ -262,13 +262,28 @@ func (index *fileIndex) Import(path string) error {
 
 func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		startTime := time.Now()
+
 		index.clear()
 
 		fileList(args, &filters{}, "", index, formats, errorChannel)
 
 		w.Header().Set("Content-Type", "text/plain")
 
-		w.Write([]byte("Ok\n"))
+		_, err := w.Write([]byte("Ok\n"))
+		if err != nil {
+			errorChannel <- err
+
+			return
+		}
+
+		if Verbose {
+			fmt.Printf("%s | SERVE: Index rebuild requested by %s took %s\n",
+				startTime.Format(logDate),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
 	}
 }
 
