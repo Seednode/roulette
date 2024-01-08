@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -15,6 +16,10 @@ import (
 
 func registerProfileHandler(mux *httprouter.Router, verb, path string, handler http.HandlerFunc) {
 	mux.HandlerFunc(verb, path, handler)
+
+	if Redact && AdminPrefix != "" {
+		path = strings.ReplaceAll(path, AdminPrefix, "/<admin_prefix>")
+	}
 
 	if Handlers {
 		fmt.Printf("%s | SERVE: Registered handler for %s\n",
