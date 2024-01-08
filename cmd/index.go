@@ -24,6 +24,17 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
+var CompressionFormats = []string{
+	"flate",
+	"gzip",
+	"lz4",
+	"lzw",
+	"none",
+	"snappy",
+	"zlib",
+	"zstd",
+}
+
 type fileIndex struct {
 	mutex *sync.RWMutex
 	list  []string

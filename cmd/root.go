@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "4.0.4"
+	ReleaseVersion    string = "4.0.5"
 )
 
 var (
@@ -62,17 +62,6 @@ var (
 	Verbose         bool
 	Version         bool
 	Videos          bool
-
-	CompressionFormats = []string{
-		"flate",
-		"gzip",
-		"lz4",
-		"lzw",
-		"none",
-		"snappy",
-		"zlib",
-		"zstd",
-	}
 
 	RequiredArgs = []string{
 		"all",
