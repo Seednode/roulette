@@ -113,7 +113,7 @@ func getReader(format string, file io.Reader) (io.Reader, error) {
 	case "lz4":
 		return lz4.NewReader(file), nil
 	case "lzw":
-		return lzw.NewReader(file, lzw.LSB, 8), nil
+		return lzw.NewReader(file, lzw.MSB, 8), nil
 	case "none":
 		return io.NopCloser(file), nil
 	case "snappy":
@@ -156,7 +156,7 @@ func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
 
 		return encoder, nil
 	case format == "lzw":
-		return lzw.NewWriter(file, lzw.LSB, 8), nil
+		return lzw.NewWriter(file, lzw.MSB, 8), nil
 	case format == "none":
 		return file, nil
 	case format == "snappy":
