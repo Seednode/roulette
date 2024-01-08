@@ -110,9 +110,7 @@ func getReader(format string, file io.Reader) (io.Reader, error) {
 	case "zlib":
 		return zlib.NewReader(file)
 	case "zstd":
-		decoder, err := zstd.NewReader(file)
-
-		return decoder.IOReadCloser(), err
+		return zstd.NewReader(file)
 	}
 
 	return io.NopCloser(file), ErrInvalidCompression
