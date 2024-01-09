@@ -240,9 +240,9 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 	}
 }
 
-func walkPath(path string, fileChannel chan<- string, wg0 *sync.WaitGroup, stats *scanStats, limit chan struct{}, formats types.Types, errorChannel chan<- error) {
+func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats *scanStats, limit chan struct{}, formats types.Types, errorChannel chan<- error) {
 	defer func() {
-		wg0.Done()
+		wg1.Done()
 	}()
 
 	limit <- struct{}{}
@@ -283,54 +283,45 @@ func walkPath(path string, fileChannel chan<- string, wg0 *sync.WaitGroup, stats
 		stats.directoriesMatched <- 1
 	}
 
-	var wg1 sync.WaitGroup
+	var wg2 sync.WaitGroup
 
-	wg1.Add(1)
-	go func() {
-		defer wg1.Done()
-		for _, node := range nodes {
-			wg1.Add(1)
+	for _, node := range nodes {
+		wg2.Add(1)
 
-			go func(node fs.DirEntry) {
-				defer wg1.Done()
+		go func(node fs.DirEntry) {
+			defer wg2.Done()
 
-				fullPath := filepath.Join(path, node.Name())
+			fullPath := filepath.Join(path, node.Name())
 
-				switch {
-				case node.IsDir() && Recursive:
-					wg0.Add(1)
+			switch {
+			case node.IsDir() && Recursive:
+				wg1.Add(1)
 
-					walkPath(fullPath, fileChannel, wg0, stats, limit, formats, errorChannel)
-				case !node.IsDir() && !skipFiles:
-					path, err := normalizePath(fullPath)
-					if err != nil {
-						errorChannel <- err
-
-						stats.filesSkipped <- 1
-
-						return
-					}
-
-					if formats.Validate(path) || Fallback {
-						fileChannel <- path
-
-						stats.filesMatched <- 1
-
-						return
-					}
+				walkPath(fullPath, fileChannel, wg1, stats, limit, formats, errorChannel)
+			case !node.IsDir() && !skipFiles:
+				path, err := normalizePath(fullPath)
+				if err != nil {
+					errorChannel <- err
 
 					stats.filesSkipped <- 1
+
+					return
 				}
-			}(node)
-		}
-	}()
 
-	wg1.Wait()
+				if formats.Validate(path) || Fallback {
+					fileChannel <- path
 
-	// Without this, file counts randomly vary.
-	// Pending further debugging, likely relating
-	// to stats channel close timing issues.
-	time.Sleep(1 * time.Microsecond)
+					stats.filesMatched <- 1
+
+					return
+				}
+
+				stats.filesSkipped <- 1
+			}
+		}(node)
+	}
+
+	wg2.Wait()
 }
 
 func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
@@ -351,7 +342,11 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 
 	var list []string
 
+	var wg0 sync.WaitGroup
+
+	wg0.Add(1)
 	go func() {
+		defer wg0.Done()
 		for {
 			select {
 			case path := <-fileChannel:
@@ -362,7 +357,10 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
+	wg0.Add(1)
 	go func() {
+		defer wg0.Done()
+
 		for {
 			select {
 			case stat := <-stats.filesMatched:
@@ -373,7 +371,10 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
+	wg0.Add(1)
 	go func() {
+		defer wg0.Done()
+
 		for {
 			select {
 			case stat := <-stats.filesSkipped:
@@ -384,7 +385,10 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
+	wg0.Add(1)
 	go func() {
+		defer wg0.Done()
+
 		for {
 			select {
 			case stat := <-stats.directoriesMatched:
@@ -395,7 +399,10 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		}
 	}()
 
+	wg0.Add(1)
 	go func() {
+		defer wg0.Done()
+
 		for {
 			select {
 			case stat := <-stats.directoriesSkipped:
@@ -408,19 +415,21 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 
 	limit := make(chan struct{}, Concurrency)
 
-	var wg0 sync.WaitGroup
+	var wg1 sync.WaitGroup
 
 	for i := 0; i < len(paths); i++ {
-		wg0.Add(1)
+		wg1.Add(1)
 
 		go func(i int) {
-			walkPath(paths[i], fileChannel, &wg0, stats, limit, formats, errorChannel)
+			walkPath(paths[i], fileChannel, &wg1, stats, limit, formats, errorChannel)
 		}(i)
 	}
 
-	wg0.Wait()
+	wg1.Wait()
 
 	close(done)
+
+	wg0.Wait()
 
 	if Verbose {
 		fmt.Printf("%s | INDEX: Selected %d/%d files across %d/%d directories in %s\n",
