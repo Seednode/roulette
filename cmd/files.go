@@ -326,6 +326,11 @@ func walkPath(path string, fileChannel chan<- string, wg0 *sync.WaitGroup, stats
 	}()
 
 	wg1.Wait()
+
+	// Without this, file counts randomly vary.
+	// Pending further debugging, likely relating
+	// to stats channel close timing issues.
+	time.Sleep(1 * time.Microsecond)
 }
 
 func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
