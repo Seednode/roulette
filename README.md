@@ -71,7 +71,7 @@ The index file consists of (optionally compressed) [gobs](https://pkg.go.dev/enc
 
 The compression format can be specified via the `--compression` flag.
 
-Supported formats are `flate`, `gzip`, `lz4`, `lzw`, `none`, `snappy`, `zlib`, and `zstd`.
+Supported formats are `none`, `zlib`, and `zstd`.
 
 Optionally, `--compression-fast` can be used to use the fastest instead of the best compression mode.
 
@@ -153,7 +153,7 @@ Flags:
       --case-sensitive        use case-sensitive matching for filters
       --code                  enable support for source code files
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
-      --compression string    compression format to use for index (flate, gzip, lz4, lzw, none, snappy, zlib, zstd) (default "zstd")
+      --compression string    compression format to use for index (none, zlib, zstd) (default "zstd")
       --compression-fast      use fastest compression level (default is best)
       --concurrency int       maximum concurrency for scan threads (default 2147483647)
   -d, --debug                 display even more verbose logs

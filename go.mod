@@ -4,10 +4,8 @@ go 1.21
 
 require (
 	github.com/alecthomas/chroma/v2 v2.12.0
-	github.com/golang/snappy v0.0.4
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.17.4
-	github.com/pierrec/lz4/v4 v4.1.21
 	github.com/spf13/cobra v1.8.0
 	github.com/yosssi/gohtml v0.0.0-20201013000340-ee4748c638f4
 	golang.org/x/image v0.15.0

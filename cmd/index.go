@@ -5,9 +5,6 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"compress/flate"
-	"compress/gzip"
-	"compress/lzw"
 	"compress/zlib"
 	"encoding/gob"
 	"fmt"
@@ -17,20 +14,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/snappy"
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
-	"github.com/pierrec/lz4/v4"
 	"seedno.de/seednode/roulette/types"
 )
 
 var CompressionFormats = []string{
-	"flate",
-	"gzip",
-	"lz4",
-	"lzw",
 	"none",
-	"snappy",
 	"zlib",
 	"zstd",
 }
@@ -104,24 +94,19 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
-func getReader(format string, file io.Reader) (io.Reader, error) {
+func getReader(format string, file io.Reader) (io.ReadCloser, error) {
 	switch format {
-	case "flate":
-		return flate.NewReader(file), nil
-	case "gzip":
-		return gzip.NewReader(file)
-	case "lz4":
-		return lz4.NewReader(file), nil
-	case "lzw":
-		return lzw.NewReader(file, lzw.MSB, 8), nil
 	case "none":
 		return io.NopCloser(file), nil
-	case "snappy":
-		return snappy.NewReader(file), nil
 	case "zlib":
 		return zlib.NewReader(file)
 	case "zstd":
-		return zstd.NewReader(file)
+		reader, err := zstd.NewReader(file)
+		if err != nil {
+			return io.NopCloser(file), err
+		}
+
+		return reader.IOReadCloser(), nil
 	}
 
 	return io.NopCloser(file), ErrInvalidCompression
@@ -129,38 +114,8 @@ func getReader(format string, file io.Reader) (io.Reader, error) {
 
 func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
 	switch {
-	case format == "flate" && CompressionFast:
-		return flate.NewWriter(file, flate.BestCompression)
-	case format == "flate":
-		return flate.NewWriter(file, flate.BestSpeed)
-	case format == "gzip" && CompressionFast:
-		return gzip.NewWriterLevel(file, gzip.BestSpeed)
-	case format == "gzip":
-		return gzip.NewWriterLevel(file, gzip.BestCompression)
-	case format == "lz4" && CompressionFast:
-		encoder := lz4.NewWriter(file)
-
-		err := encoder.Apply(lz4.CompressionLevelOption(lz4.Fast))
-		if err != nil {
-			return file, err
-		}
-
-		return encoder, nil
-	case format == "lz4":
-		encoder := lz4.NewWriter(file)
-
-		err := encoder.Apply(lz4.CompressionLevelOption(lz4.Level9))
-		if err != nil {
-			return file, err
-		}
-
-		return encoder, nil
-	case format == "lzw":
-		return lzw.NewWriter(file, lzw.MSB, 8), nil
 	case format == "none":
 		return file, nil
-	case format == "snappy":
-		return snappy.NewBufferedWriter(file), nil
 	case format == "zlib" && CompressionFast:
 		return zlib.NewWriterLevel(file, zlib.BestSpeed)
 	case format == "zlib":
@@ -245,6 +200,7 @@ func (index *fileIndex) Import(path string) error {
 	if err != nil {
 		return err
 	}
+	defer reader.Close()
 
 	dec := gob.NewDecoder(reader)
 
