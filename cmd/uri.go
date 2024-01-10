@@ -21,7 +21,7 @@ func sortOrder(r *http.Request) string {
 	return ""
 }
 
-func splitQueryParams(query string, regexes *regexes) []string {
+func splitQueryParams(query string) []string {
 	results := []string{}
 
 	if query == "" {

@@ -6,16 +6,13 @@ package cmd
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"os"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -171,7 +168,7 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -185,8 +182,8 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 		strippedRefererUri := strings.TrimPrefix(refererUri, Prefix+mediaPrefix)
 
 		filters := &filters{
-			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
-			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
+			included: splitQueryParams(r.URL.Query().Get("include")),
+			excluded: splitQueryParams(r.URL.Query().Get("exclude")),
 		}
 
 		sortOrder := sortOrder(r)
@@ -196,7 +193,7 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 		var path string
 
 		if refererUri != "" {
-			path, err = nextFile(strippedRefererUri, sortOrder, regexes, formats)
+			path, err = nextFile(strippedRefererUri, sortOrder, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -220,7 +217,7 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 				break loop
 			}
 
-			path, err = newFile(list, sortOrder, regexes, formats)
+			path, err = newFile(list, sortOrder, formats)
 			switch {
 			case path == "":
 				noFiles(w, r)
@@ -251,13 +248,13 @@ func serveRoot(paths []string, regexes *regexes, index *fileIndex, formats types
 	}
 }
 
-func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
 		filters := &filters{
-			included: splitQueryParams(r.URL.Query().Get("include"), regexes),
-			excluded: splitQueryParams(r.URL.Query().Get("exclude"), regexes),
+			included: splitQueryParams(r.URL.Query().Get("include")),
+			excluded: splitQueryParams(r.URL.Query().Get("exclude")),
 		}
 
 		sortOrder := sortOrder(r)
@@ -347,7 +344,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 		var first, last string
 
 		if Index && sortOrder != "" {
-			first, last, err = getRange(path, regexes, index)
+			first, last, err = getRange(path, index)
 			if err != nil {
 				errorChannel <- err
 
@@ -358,7 +355,7 @@ func serveMedia(paths []string, regexes *regexes, index *fileIndex, formats type
 		}
 
 		if Index && !DisableButtons && sortOrder != "" {
-			paginate, err := paginateSorted(path, first, last, queryParams, regexes, formats)
+			paginate, err := paginateSorted(path, first, last, queryParams, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -478,8 +475,6 @@ func redirectRoot() httprouter.Handle {
 }
 
 func ServePage(args []string) error {
-	log.SetFlags(0)
-
 	timeZone := os.Getenv("TZ")
 	if timeZone != "" {
 		var err error
@@ -541,11 +536,6 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
-	regexes := &regexes{
-		filename:     regexp.MustCompile(`(.+?)([0-9]*)(\..+)`),
-		alphanumeric: regexp.MustCompile(`^[A-z0-9]*$`),
-	}
-
 	if !strings.HasSuffix(Prefix, "/") {
 		Prefix = Prefix + "/"
 	}
@@ -573,30 +563,20 @@ func ServePage(args []string) error {
 
 	go func() {
 		for err := range errorChannel {
-			prefix := "ERROR"
-
 			switch {
-			case errors.Is(err, os.ErrNotExist) && Debug:
-				prefix = "DEBUG"
-			case errors.Is(err, os.ErrNotExist):
+			case ExitOnError:
+				fmt.Printf("%s | FATAL: %v\n", time.Now().Format(logDate), err)
+			case Debug && errors.Is(err, os.ErrNotExist) || errors.Is(err, os.ErrPermission):
+				fmt.Printf("%s | DEBUG: %v\n", time.Now().Format(logDate), err)
+			case errors.Is(err, os.ErrNotExist) || errors.Is(err, os.ErrPermission):
 				continue
-			case errors.Is(err, os.ErrPermission) && Debug:
-				prefix = "DEBUG"
-			case errors.Is(err, os.ErrPermission):
-				continue
-			}
-
-			fmt.Printf("%s | %s: %v\n", time.Now().Format(logDate), prefix, err)
-
-			if ExitOnError {
-				fmt.Printf("%s | %s: Shutting down...\n", time.Now().Format(logDate), prefix)
-
-				srv.Shutdown(context.Background())
+			default:
+				fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
 			}
 		}
 	}()
 
-	registerHandler(mux, Prefix, serveRoot(paths, regexes, index, formats, errorChannel))
+	registerHandler(mux, Prefix, serveRoot(paths, index, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -608,7 +588,7 @@ func ServePage(args []string) error {
 
 	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, regexes, index, formats, errorChannel))
+	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, index, formats, errorChannel))
 
 	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 

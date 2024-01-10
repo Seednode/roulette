@@ -24,10 +24,9 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type regexes struct {
-	alphanumeric *regexp.Regexp
-	filename     *regexp.Regexp
-}
+var (
+	filename = regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
+)
 
 type scanStats struct {
 	filesMatched       chan int
@@ -79,14 +78,14 @@ func kill(path string, index *fileIndex) error {
 	return nil
 }
 
-func newFile(list []string, sortOrder string, regexes *regexes, formats types.Types) (string, error) {
+func newFile(list []string, sortOrder string, formats types.Types) (string, error) {
 	path, err := pickFile(list)
 	if err != nil {
 		return "", err
 	}
 
 	if sortOrder == "asc" || sortOrder == "desc" {
-		splitPath, err := split(path, regexes)
+		splitPath, err := split(path)
 		if err != nil {
 			return "", err
 		}
@@ -125,8 +124,8 @@ func newFile(list []string, sortOrder string, regexes *regexes, formats types.Ty
 	return path, nil
 }
 
-func nextFile(filePath, sortOrder string, regexes *regexes, formats types.Types) (string, error) {
-	splitPath, err := split(filePath, regexes)
+func nextFile(filePath, sortOrder string, formats types.Types) (string, error) {
+	splitPath, err := split(filePath)
 	if err != nil {
 		return "", err
 	}
@@ -261,11 +260,13 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 	var skipDir = false
 
 	for _, node := range nodes {
-		if Ignore && !node.IsDir() && node.Name() == IgnoreFile {
-			skipDir = true
-		}
+		if !node.IsDir() {
+			files++
 
-		files++
+			if Ignore && node.Name() == IgnoreFile {
+				skipDir = true
+			}
+		}
 	}
 
 	var skipFiles = false
@@ -301,15 +302,11 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 
 			case !node.IsDir() && !skipFiles:
 				path, err := normalizePath(fullPath)
-				if err != nil {
+
+				switch {
+				case err != nil:
 					errorChannel <- err
-
-					stats.filesSkipped <- 1
-
-					return
-				}
-
-				if formats.Validate(path) || Fallback {
+				case formats.Validate(path) || Fallback:
 					fileChannel <- path
 
 					stats.filesMatched <- 1

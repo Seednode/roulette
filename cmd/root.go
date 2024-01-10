@@ -6,6 +6,7 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"regexp"
@@ -167,8 +168,6 @@ func init() {
 
 	rootCmd.Flags().SetInterspersed(true)
 
-	rootCmd.MarkFlagsMutuallyExclusive("debug", "exit-on-error")
-
 	rootCmd.MarkFlagsOneRequired(RequiredArgs...)
 
 	rootCmd.SetHelpCommand(&cobra.Command{
@@ -180,4 +179,6 @@ func init() {
 	rootCmd.SilenceErrors = true
 
 	rootCmd.Version = ReleaseVersion
+
+	log.SetFlags(0)
 }

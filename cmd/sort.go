@@ -38,8 +38,8 @@ func (splitPath *splitPath) decrement() string {
 	return fmt.Sprintf("%0*d", len(splitPath.number), asInt-1)
 }
 
-func split(path string, regexes *regexes) (*splitPath, error) {
-	split := regexes.filename.FindAllStringSubmatch(path, -1)
+func split(path string) (*splitPath, error) {
+	split := filename.FindAllStringSubmatch(path, -1)
 
 	if len(split) < 1 || len(split[0]) < 3 {
 		return &splitPath{}, nil
@@ -54,8 +54,8 @@ func split(path string, regexes *regexes) (*splitPath, error) {
 	return p, nil
 }
 
-func getRange(path string, regexes *regexes, index *fileIndex) (string, string, error) {
-	splitPath, err := split(path, regexes)
+func getRange(path string, index *fileIndex) (string, string, error) {
+	splitPath, err := split(path)
 	if err != nil {
 		return "", "", err
 	}
@@ -70,7 +70,7 @@ func getRange(path string, regexes *regexes, index *fileIndex) (string, string, 
 
 Loop:
 	for _, val := range list {
-		splitVal, err := split(val, regexes)
+		splitVal, err := split(val)
 		if err != nil {
 			return "", "", err
 		}
@@ -94,8 +94,8 @@ func pathUrlEscape(path string) string {
 	return strings.Replace(path, `'`, `%27`, -1)
 }
 
-func paginateSorted(path, first, last, queryParams string, regexes *regexes, formats types.Types) (string, error) {
-	split, err := split(path, regexes)
+func paginateSorted(path, first, last, queryParams string, formats types.Types) (string, error) {
+	split, err := split(path)
 	if err != nil {
 		return "", err
 	}
