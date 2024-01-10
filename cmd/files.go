@@ -241,10 +241,6 @@ func hasSupportedFiles(path string, formats types.Types) (bool, error) {
 }
 
 func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats *scanStats, limit chan struct{}, formats types.Types, errorChannel chan<- error) {
-	defer func() {
-		wg1.Done()
-	}()
-
 	limit <- struct{}{}
 
 	defer func() {
@@ -297,7 +293,12 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 			case node.IsDir() && Recursive:
 				wg1.Add(1)
 
-				walkPath(fullPath, fileChannel, wg1, stats, limit, formats, errorChannel)
+				go func() {
+					defer wg1.Done()
+
+					walkPath(fullPath, fileChannel, wg1, stats, limit, formats, errorChannel)
+				}()
+
 			case !node.IsDir() && !skipFiles:
 				path, err := normalizePath(fullPath)
 				if err != nil {
@@ -421,6 +422,8 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 		wg1.Add(1)
 
 		go func(i int) {
+			defer wg1.Done()
+
 			walkPath(paths[i], fileChannel, &wg1, stats, limit, formats, errorChannel)
 		}(i)
 	}
