@@ -438,7 +438,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 			filesMatched+filesSkipped,
 			directoriesMatched,
 			directoriesMatched+directoriesSkipped,
-			time.Since(startTime),
+			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
 

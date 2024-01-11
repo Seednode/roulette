@@ -175,7 +175,7 @@ func (index *fileIndex) Export(path string) error {
 			length,
 			path,
 			humanReadableSize(int(stats.Size())),
-			time.Since(startTime),
+			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
 
@@ -220,7 +220,7 @@ func (index *fileIndex) Import(path string) error {
 			length,
 			path,
 			humanReadableSize(int(stats.Size())),
-			time.Since(startTime),
+			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
 
