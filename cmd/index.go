@@ -5,7 +5,6 @@ Copyright © 2023 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"compress/zlib"
 	"encoding/gob"
 	"fmt"
 	"io"
@@ -63,7 +62,7 @@ func (index *fileIndex) remove(path string) {
 	index.mutex.Unlock()
 }
 
-func (index *fileIndex) set(val []string) {
+func (index *fileIndex) set(val []string, errorChannel chan<- error) {
 	length := len(val)
 
 	if length < 1 {
@@ -76,7 +75,7 @@ func (index *fileIndex) set(val []string) {
 	index.mutex.Unlock()
 
 	if Index && IndexFile != "" {
-		index.Export(IndexFile)
+		index.Export(IndexFile, errorChannel)
 	}
 }
 
@@ -94,53 +93,37 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
-func getReader(format string, file io.Reader) (io.ReadCloser, error) {
-	switch format {
-	case "none":
-		return io.NopCloser(file), nil
-	case "zlib":
-		return zlib.NewReader(file)
-	case "zstd":
-		reader, err := zstd.NewReader(file)
-		if err != nil {
-			return io.NopCloser(file), err
-		}
-
-		return reader.IOReadCloser(), nil
+func getReader(file io.Reader) (*zstd.Decoder, error) {
+	reader, err := zstd.NewReader(file)
+	if err != nil {
+		return nil, err
 	}
 
-	return io.NopCloser(file), ErrInvalidCompression
+	return reader, nil
 }
 
-func getWriter(format string, file io.WriteCloser) (io.WriteCloser, error) {
-	switch {
-	case format == "none":
-		return file, nil
-	case format == "zlib" && CompressionFast:
-		return zlib.NewWriterLevel(file, zlib.BestSpeed)
-	case format == "zlib":
-		return zlib.NewWriterLevel(file, zlib.BestCompression)
-	case format == "zstd" && CompressionFast:
-		return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedFastest))
-	case format == "zstd":
-		return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	}
-
-	return file, ErrInvalidCompression
+func getWriter(file io.WriteCloser) (*zstd.Encoder, error) {
+	return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
 }
 
-func (index *fileIndex) Export(path string) error {
+func (index *fileIndex) Export(path string, errorChannel chan<- error) {
 	startTime := time.Now()
 
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		return
 	}
 	defer file.Close()
 
-	encoder, err := getWriter(Compression, file)
+	encoder, err := getWriter(file)
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		encoder.Close()
+
+		return
 	}
 	defer encoder.Close()
 
@@ -151,22 +134,22 @@ func (index *fileIndex) Export(path string) error {
 	if err != nil {
 		index.mutex.RUnlock()
 
-		return err
+		errorChannel <- err
+
+		return
 	}
 	length := len(index.list)
 	index.mutex.RUnlock()
 
 	// Close encoder prior to checking file size,
 	// to ensure the correct value is returned.
-	// If no compression is used, skip this step,
-	// as the encoder is just the file itself.
-	if Compression != "none" {
-		encoder.Close()
-	}
+	encoder.Close()
 
 	stats, err := file.Stat()
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		return
 	}
 
 	if Verbose {
@@ -178,27 +161,31 @@ func (index *fileIndex) Export(path string) error {
 			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
-
-	return nil
 }
 
-func (index *fileIndex) Import(path string) error {
+func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	startTime := time.Now()
 
 	file, err := os.OpenFile(path, os.O_RDONLY, 0600)
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		return
 	}
 	defer file.Close()
 
 	stats, err := file.Stat()
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		return
 	}
 
-	reader, err := getReader(Compression, file)
+	reader, err := getReader(file)
 	if err != nil {
-		return err
+		errorChannel <- err
+
+		return
 	}
 	defer reader.Close()
 
@@ -209,7 +196,9 @@ func (index *fileIndex) Import(path string) error {
 	if err != nil {
 		index.mutex.Unlock()
 
-		return err
+		errorChannel <- err
+
+		return
 	}
 	length := len(index.list)
 	index.mutex.Unlock()
@@ -223,8 +212,6 @@ func (index *fileIndex) Import(path string) error {
 			time.Since(startTime).Round(time.Microsecond),
 		)
 	}
-
-	return nil
 }
 
 func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
@@ -256,10 +243,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 
 func importIndex(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if IndexFile != "" {
-		err := index.Import(IndexFile)
-		if err == nil {
-			return
-		}
+		index.Import(IndexFile, errorChannel)
 	}
 
 	fileList(args, &filters{}, "", index, formats, errorChannel)

@@ -454,11 +454,11 @@ func fileList(paths []string, filters *filters, sort string, index *fileIndex, f
 	case Index && !index.isEmpty() && !filters.isEmpty():
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && !filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel))
+		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
 
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel))
+		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
 
 		return index.List()
 	case !Index && !filters.isEmpty():

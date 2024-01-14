@@ -10,7 +10,6 @@ import (
 	"math"
 	"os"
 	"regexp"
-	"slices"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -18,51 +17,49 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "5.3.0"
+	ReleaseVersion    string = "5.4.0"
 )
 
 var (
-	AdminPrefix     string
-	All             bool
-	AllowEmpty      bool
-	Audio           bool
-	BinaryPrefix    bool
-	Bind            string
-	CaseSensitive   bool
-	Code            bool
-	CodeTheme       string
-	Compression     string
-	CompressionFast bool
-	Concurrency     int
-	Debug           bool
-	DisableButtons  bool
-	ExitOnError     bool
-	Fallback        bool
-	Filtering       bool
-	Flash           bool
-	Fun             bool
-	Handlers        bool
-	Ignore          bool
-	IgnoreFile      string
-	Images          bool
-	Index           bool
-	IndexFile       string
-	Info            bool
-	MaxFileCount    int
-	MinFileCount    int
-	PageLength      int
-	Port            int
-	Prefix          string
-	Profile         bool
-	Recursive       bool
-	Redact          bool
-	Refresh         bool
-	Russian         bool
-	Sorting         bool
-	Text            bool
-	Verbose         bool
-	Version         bool
-	Videos          bool
+	AdminPrefix    string
+	All            bool
+	AllowEmpty     bool
+	Audio          bool
+	BinaryPrefix   bool
+	Bind           string
+	CaseSensitive  bool
+	Code           bool
+	CodeTheme      string
+	Concurrency    int
+	Debug          bool
+	DisableButtons bool
+	ExitOnError    bool
+	Fallback       bool
+	Filtering      bool
+	Flash          bool
+	Fun            bool
+	Handlers       bool
+	Ignore         bool
+	IgnoreFile     string
+	Images         bool
+	Index          bool
+	IndexFile      string
+	Info           bool
+	MaxFileCount   int
+	MinFileCount   int
+	PageLength     int
+	Port           int
+	Prefix         string
+	Profile        bool
+	Recursive      bool
+	Redact         bool
+	Refresh        bool
+	Russian        bool
+	Sorting        bool
+	Text           bool
+	Verbose        bool
+	Version        bool
+	Videos         bool
 
 	RequiredArgs = []string{
 		"all",
@@ -91,8 +88,6 @@ var (
 				return ErrInvalidConcurrency
 			case Ignore && !regexp.MustCompile(AllowedCharacters).MatchString(IgnoreFile):
 				return ErrInvalidIgnoreFile
-			case !slices.Contains(CompressionFormats, Compression):
-				return ErrInvalidCompression
 			case AdminPrefix != "" && !regexp.MustCompile(AllowedCharacters).MatchString(AdminPrefix):
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
@@ -131,8 +126,6 @@ func init() {
 	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
-	rootCmd.Flags().StringVar(&Compression, "compression", "zstd", "compression format to use for index (none, zlib, zstd)")
-	rootCmd.Flags().BoolVar(&CompressionFast, "compression-fast", false, "use fastest compression level (default is best)")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 10240, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "display even more verbose logs")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")

@@ -25,10 +25,15 @@ You can restrict access to certain functionality by prepending a secret string t
 For example, providing the `--admin-prefix=abc123` flag will register the index rebuild path as `/abc123/index/rebuild`.
 
 The restricted paths are:
-- `/debug/pprof/`
+- `/debug/pprof/allocs`
+- `/debug/pprof/block`
 - `/debug/pprof/cmdline`
+- `/debug/pprof/goroutine`
+- `/debug/pprof/heap`
+- `/debug/pprof/mutex`
 - `/debug/pprof/profile`
 - `/debug/pprof/symbol`
+- `/debug/pprof/threadcreate`
 - `/debug/pprof/trace`
 - `/extensions/available`
 - `/extensions/enabled`
@@ -153,8 +158,6 @@ Flags:
       --case-sensitive        use case-sensitive matching for filters
       --code                  enable support for source code files
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
-      --compression string    compression format to use for index (none, zlib, zstd) (default "zstd")
-      --compression-fast      use fastest compression level (default is best)
       --concurrency int       maximum concurrency for scan threads (default 2147483647)
   -d, --debug                 display even more verbose logs
       --disable-buttons       disable first/prev/next/last buttons
