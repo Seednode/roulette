@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
 	"seedno.de/seednode/roulette/types/audio"
@@ -30,6 +31,8 @@ import (
 	"seedno.de/seednode/roulette/types/text"
 	"seedno.de/seednode/roulette/types/video"
 )
+
+var ()
 
 const (
 	logDate            string        = `2006-01-02T15:04:05.000-07:00`
@@ -168,7 +171,7 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -203,7 +206,7 @@ func serveRoot(paths []string, index *fileIndex, formats types.Types, errorChann
 			}
 		}
 
-		list := fileList(paths, filters, sortOrder, index, formats, errorChannel)
+		list := fileList(paths, filters, sortOrder, index, formats, encoder, errorChannel)
 
 	loop:
 		for timeout := time.After(timeout); ; {
@@ -576,7 +579,12 @@ func ServePage(args []string) error {
 		}
 	}()
 
-	registerHandler(mux, Prefix, serveRoot(paths, index, formats, errorChannel))
+	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		return err
+	}
+
+	registerHandler(mux, Prefix, serveRoot(paths, index, formats, encoder, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -595,9 +603,9 @@ func ServePage(args []string) error {
 	registerHandler(mux, Prefix+"/version", serveVersion(errorChannel))
 
 	if Index {
-		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, errorChannel))
+		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
 
-		importIndex(paths, index, formats, errorChannel)
+		importIndex(paths, index, formats, encoder, errorChannel)
 	}
 
 	if Info {

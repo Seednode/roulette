@@ -7,7 +7,6 @@ package cmd
 import (
 	"encoding/gob"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"sync"
@@ -62,7 +61,7 @@ func (index *fileIndex) remove(path string) {
 	index.mutex.Unlock()
 }
 
-func (index *fileIndex) set(val []string, errorChannel chan<- error) {
+func (index *fileIndex) set(val []string, encoder *zstd.Encoder, errorChannel chan<- error) {
 	length := len(val)
 
 	if length < 1 {
@@ -75,7 +74,7 @@ func (index *fileIndex) set(val []string, errorChannel chan<- error) {
 	index.mutex.Unlock()
 
 	if Index && IndexFile != "" {
-		index.Export(IndexFile, errorChannel)
+		index.Export(IndexFile, encoder, errorChannel)
 	}
 }
 
@@ -93,20 +92,7 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
-func getReader(file io.Reader) (*zstd.Decoder, error) {
-	reader, err := zstd.NewReader(file)
-	if err != nil {
-		return nil, err
-	}
-
-	return reader, nil
-}
-
-func getWriter(file io.WriteCloser) (*zstd.Encoder, error) {
-	return zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-}
-
-func (index *fileIndex) Export(path string, errorChannel chan<- error) {
+func (index *fileIndex) Export(path string, encoder *zstd.Encoder, errorChannel chan<- error) {
 	startTime := time.Now()
 
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -117,14 +103,8 @@ func (index *fileIndex) Export(path string, errorChannel chan<- error) {
 	}
 	defer file.Close()
 
-	encoder, err := getWriter(file)
-	if err != nil {
-		errorChannel <- err
+	encoder.Reset(file)
 
-		encoder.Close()
-
-		return
-	}
 	defer encoder.Close()
 
 	enc := gob.NewEncoder(encoder)
@@ -181,7 +161,7 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 		return
 	}
 
-	reader, err := getReader(file)
+	reader, err := zstd.NewReader(file)
 	if err != nil {
 		errorChannel <- err
 
@@ -214,13 +194,13 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
-func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
 		index.clear()
 
-		fileList(args, &filters{}, "", index, formats, errorChannel)
+		fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
 
 		w.Header().Set("Content-Type", "text/plain")
 
@@ -241,10 +221,10 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, err
 	}
 }
 
-func importIndex(args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
+func importIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	if IndexFile != "" {
 		index.Import(IndexFile, errorChannel)
 	}
 
-	fileList(args, &filters{}, "", index, formats, errorChannel)
+	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
 }
