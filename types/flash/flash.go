@@ -1,5 +1,5 @@
 /*
-Copyright © 2023 Seednode <seednode@seedno.de>
+Copyright © 2024 Seednode <seednode@seedno.de>
 */
 
 package flash
@@ -11,7 +11,7 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-type Format struct {}
+type Format struct{}
 
 func (t Format) Css() string {
 	var css strings.Builder
