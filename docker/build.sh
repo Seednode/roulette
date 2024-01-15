@@ -37,3 +37,19 @@ docker buildx build --platform "${platforms}" \
                     $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:latest"; fi) \
                     -f Dockerfile . \
                     --push
+
+# copy debug image to local image repository
+docker buildx build \
+                    --build-arg TAG="${tag}" \
+                    -t "${registry}/${image_name}:${image_version}-debug" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:debug"; fi) \
+                    -f Dockerfile.debug	 . \
+                    --load
+
+# push debug image to remote registry
+docker buildx build --platform "${platforms}" \
+                    --build-arg TAG="${tag}" \
+                    -t "${registry}/${image_name}:${image_version}-debug" \
+                    $(if [ "${LATEST}" == "yes" ]; then echo "-t ${registry}/${image_name}:debug"; fi) \
+                    -f Dockerfile.debug . \
+                    --push
