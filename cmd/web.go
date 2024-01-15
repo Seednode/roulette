@@ -5,7 +5,6 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io"
@@ -425,12 +424,7 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
 
-		err := w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
-		if err != nil {
-			errorChannel <- err
-
-			return
-		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 
 		written, err := w.Write(data)
 		if err != nil {
