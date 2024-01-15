@@ -30,7 +30,7 @@ ARG app
 COPY --chown=root:root --chmod=0400 passwd /etc/passwd
 
 # run as nonroot
-USER nonroot
+USER root
 
 # copy in binary
 COPY --from=build --chown=root:root --chmod=0005 /src/$app/$app /$app
