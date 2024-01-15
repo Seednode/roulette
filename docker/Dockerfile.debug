@@ -29,7 +29,7 @@ ARG app
 # copy in user info
 COPY --chown=root:root --chmod=0400 passwd /etc/passwd
 
-# run as nonroot
+# run as root for debug
 USER root
 
 # copy in binary
