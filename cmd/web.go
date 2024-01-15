@@ -450,21 +450,6 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 	}
 }
 
-func registerHandler(mux *httprouter.Router, path string, handle httprouter.Handle) {
-	mux.GET(path, handle)
-
-	if Redact && AdminPrefix != "" {
-		path = strings.ReplaceAll(path, AdminPrefix, "/<admin_prefix>")
-	}
-
-	if Handlers {
-		fmt.Printf("%s | SERVE: Registered handler for %s\n",
-			time.Now().Format(logDate),
-			path,
-		)
-	}
-}
-
 func redirectRoot() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		newUrl := fmt.Sprintf("http://%s%s",
@@ -538,10 +523,6 @@ func ServePage(args []string) error {
 		return ErrNoMediaFound
 	}
 
-	if !strings.HasSuffix(Prefix, "/") {
-		Prefix = Prefix + "/"
-	}
-
 	listenHost := net.JoinHostPort(Bind, strconv.Itoa(Port))
 
 	index := &fileIndex{
@@ -585,26 +566,30 @@ func ServePage(args []string) error {
 
 	filename := regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
 
-	registerHandler(mux, Prefix, serveRoot(paths, index, filename, formats, encoder, errorChannel))
+	if !strings.HasSuffix(Prefix, "/") {
+		Prefix = Prefix + "/"
+	}
+
+	mux.GET(Prefix, serveRoot(paths, index, filename, formats, encoder, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
 	if Prefix != "" {
-		registerHandler(mux, "/", redirectRoot())
+		mux.GET("/", redirectRoot())
 	}
 
-	registerHandler(mux, Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
+	mux.GET(Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
 
-	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
+	mux.GET(Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, index, filename, formats, errorChannel))
+	mux.GET(Prefix+mediaPrefix+"/*media", serveMedia(paths, index, filename, formats, errorChannel))
 
-	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
+	mux.GET(Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 
-	registerHandler(mux, Prefix+"/version", serveVersion(errorChannel))
+	mux.GET(Prefix+"/version", serveVersion(errorChannel))
 
 	if Index {
-		registerHandler(mux, Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
+		mux.GET(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
 
 		importIndex(paths, index, formats, encoder, errorChannel)
 	}

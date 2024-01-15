@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "6.0.0"
+	ReleaseVersion    string = "6.1.0"
 )
 
 var (
@@ -38,7 +38,6 @@ var (
 	Filtering      bool
 	Flash          bool
 	Fun            bool
-	Handlers       bool
 	Ignore         bool
 	IgnoreFile     string
 	Images         bool
@@ -51,7 +50,6 @@ var (
 	Prefix         string
 	Profile        bool
 	Recursive      bool
-	Redact         bool
 	Refresh        bool
 	Russian        bool
 	Sorting        bool
@@ -133,9 +131,8 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
-	rootCmd.Flags().BoolVar(&Handlers, "handlers", false, "display registered handlers (for debugging)")
 	rootCmd.Flags().BoolVar(&Ignore, "ignore", false, "skip all directories containing a specified filename")
-	rootCmd.Flags().StringVar(&IgnoreFile, "ignore-file", ".roulette-ignore", "filename used to indicate directory to be skipped")
+	rootCmd.Flags().StringVar(&IgnoreFile, "ignore-file", ".roulette-ignore", "filename used to indicate directory should be skipped")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
@@ -146,7 +143,6 @@ func init() {
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
 	rootCmd.Flags().BoolVarP(&Recursive, "recursive", "r", false, "recurse into subdirectories")
-	rootCmd.Flags().BoolVar(&Redact, "redact", false, "redact admin prefix in log output")
 	rootCmd.Flags().BoolVar(&Refresh, "refresh", false, "enable automatic page refresh via query parameter")
 	rootCmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	rootCmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")

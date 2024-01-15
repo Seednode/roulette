@@ -539,31 +539,39 @@ func validatePaths(args []string, formats types.Types) ([]string, error) {
 
 		switch {
 		case pathMatches && hasSupportedFiles:
-			fmt.Printf("%s | PATHS: Added %s\n",
-				time.Now().Format(logDate),
-				args[i],
-			)
+			if Verbose {
+				fmt.Printf("%s | PATHS: Added %s\n",
+					time.Now().Format(logDate),
+					args[i],
+				)
+			}
 
 			paths = append(paths, path)
 		case !pathMatches && hasSupportedFiles:
-			fmt.Printf("%s | PATHS: Added %s [resolved to %s]\n",
-				time.Now().Format(logDate),
-				args[i],
-				path,
-			)
+			if Verbose {
+				fmt.Printf("%s | PATHS: Added %s [resolved to %s]\n",
+					time.Now().Format(logDate),
+					args[i],
+					path,
+				)
+			}
 
 			paths = append(paths, path)
 		case pathMatches && !hasSupportedFiles:
-			fmt.Printf("%s | PATHS: Skipped %s (No supported files found)\n",
-				time.Now().Format(logDate),
-				args[i],
-			)
+			if Verbose {
+				fmt.Printf("%s | PATHS: Skipped %s (No supported files found)\n",
+					time.Now().Format(logDate),
+					args[i],
+				)
+			}
 		case !pathMatches && !hasSupportedFiles:
-			fmt.Printf("%s | PATHS: Skipped %s [resolved to %s] (No supported files found)\n",
-				time.Now().Format(logDate),
-				args[i],
-				path,
-			)
+			if Verbose {
+				fmt.Printf("%s | PATHS: Skipped %s [resolved to %s] (No supported files found)\n",
+					time.Now().Format(logDate),
+					args[i],
+					path,
+				)
+			}
 		}
 	}
 

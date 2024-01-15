@@ -117,11 +117,11 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 
 func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
-		registerHandler(mux, Prefix+AdminPrefix+"/index", serveIndex(args, index, errorChannel))
+		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(args, index, errorChannel))
 	}
 
-	registerHandler(mux, Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/extensions/enabled", serveExtensions(formats, false, errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/types/available", serveMediaTypes(formats, true, errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/types/enabled", serveMediaTypes(formats, false, errorChannel))
+	mux.GET(Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))
+	mux.GET(Prefix+AdminPrefix+"/extensions/enabled", serveExtensions(formats, false, errorChannel))
+	mux.GET(Prefix+AdminPrefix+"/types/available", serveMediaTypes(formats, true, errorChannel))
+	mux.GET(Prefix+AdminPrefix+"/types/enabled", serveMediaTypes(formats, false, errorChannel))
 }

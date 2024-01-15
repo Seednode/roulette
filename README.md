@@ -63,7 +63,7 @@ Both filtering parameters ignore the file extension and full path; they only com
 If the `--ignore` flag is passed, any directory containing a file named `.roulette-ignore` (configurable with `--ignore-file`) will be skipped during the scanning stage.
 
 ## Indexing
-If the `-i|--indexing` flag is passed, all specified paths will be indexed on start.
+If the `-i|--index` flag is passed, all specified paths will be indexed on start.
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
@@ -80,11 +80,9 @@ Supported formats are `none`, `zlib`, and `zstd`.
 Optionally, `--compression-fast` can be used to use the fastest instead of the best compression mode.
 
 ## Info
-If the `-i|--info` flag is passed, six additional endpoints are registered.
+If the `-i|--info` flag is passed, five additional endpoints are registered.
 
-The first of these—`/index/html` and `/index/json`—return the contents of the index, in HTML and JSON formats respectively. 
-
-If `--page-length` is also set, these can be viewed in paginated form by appending a page number, e.g. `/index/html/5` for the fifth page.
+The first of these—`/index/`—returns the contents of the index, in JSON format.
 
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 
@@ -165,7 +163,6 @@ Flags:
   -f, --filter                enable filtering
       --flash                 enable support for shockwave flash files (via ruffle.rs)
       --fun                   add a bit of excitement to your day
-      --handlers              display registered handlers (for debugging)
   -h, --help                  help for roulette
       --ignore                skip all directories containing a specified filename
       --ignore-file string    filename used to indicate directory to be skipped (default ".roulette-ignore")
