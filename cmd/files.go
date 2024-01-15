@@ -25,10 +25,6 @@ import (
 	"seedno.de/seednode/roulette/types"
 )
 
-var (
-	filename = regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
-)
-
 type scanStats struct {
 	filesMatched       chan int
 	filesSkipped       chan int
@@ -79,14 +75,14 @@ func kill(path string, index *fileIndex) error {
 	return nil
 }
 
-func newFile(list []string, sortOrder string, formats types.Types) (string, error) {
+func newFile(list []string, sortOrder string, filename *regexp.Regexp, formats types.Types) (string, error) {
 	path, err := pickFile(list)
 	if err != nil {
 		return "", err
 	}
 
 	if sortOrder == "asc" || sortOrder == "desc" {
-		splitPath, err := split(path)
+		splitPath, err := split(path, filename)
 		if err != nil {
 			return "", err
 		}
@@ -125,8 +121,8 @@ func newFile(list []string, sortOrder string, formats types.Types) (string, erro
 	return path, nil
 }
 
-func nextFile(filePath, sortOrder string, formats types.Types) (string, error) {
-	splitPath, err := split(filePath)
+func nextFile(filePath, sortOrder string, filename *regexp.Regexp, formats types.Types) (string, error) {
+	splitPath, err := split(filePath, filename)
 	if err != nil {
 		return "", err
 	}

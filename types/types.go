@@ -99,8 +99,11 @@ func (t Types) GetMediaTypes() string {
 
 	for _, j := range t {
 		extensions := j.Extensions()
+
 		for _, v := range extensions {
-			mediaTypes = append(mediaTypes, v)
+			if v != "" {
+				mediaTypes = append(mediaTypes, v)
+			}
 		}
 	}
 

@@ -37,8 +37,7 @@ The restricted paths are:
 - `/debug/pprof/trace`
 - `/extensions/available`
 - `/extensions/enabled`
-- `/index/html`
-- `/index/json`
+- `/index/`
 - `/index/rebuild`
 - `/types/available`
 - `/types/enabled`
@@ -176,7 +175,6 @@ Flags:
   -i, --info                  expose informational endpoints
       --max-file-count int    skip directories with file counts above this value (default 2147483647)
       --min-file-count int    skip directories with file counts below this value
-      --page-length int       pagination length for info pages
   -p, --port int              port to listen on (default 8080)
       --prefix string         root path for http handlers (for reverse proxying) (default "/")
       --profile               register net/http/pprof handlers

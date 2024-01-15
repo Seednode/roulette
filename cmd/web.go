@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,8 +32,6 @@ import (
 	"seedno.de/seednode/roulette/types/text"
 	"seedno.de/seednode/roulette/types/video"
 )
-
-var ()
 
 const (
 	logDate            string        = `2006-01-02T15:04:05.000-07:00`
@@ -171,7 +170,7 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
@@ -196,7 +195,7 @@ func serveRoot(paths []string, index *fileIndex, formats types.Types, encoder *z
 		var path string
 
 		if refererUri != "" {
-			path, err = nextFile(strippedRefererUri, sortOrder, formats)
+			path, err = nextFile(strippedRefererUri, sortOrder, filename, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -220,7 +219,7 @@ func serveRoot(paths []string, index *fileIndex, formats types.Types, encoder *z
 				break loop
 			}
 
-			path, err = newFile(list, sortOrder, formats)
+			path, err = newFile(list, sortOrder, filename, formats)
 			switch {
 			case path == "":
 				noFiles(w, r)
@@ -251,7 +250,7 @@ func serveRoot(paths []string, index *fileIndex, formats types.Types, encoder *z
 	}
 }
 
-func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
@@ -314,7 +313,7 @@ func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChan
 			return
 		}
 
-		mediaType := format.MediaType(path)
+		mediaType := format.MediaType(filepath.Ext(path))
 
 		fileUri := Prefix + generateFileUri(path)
 
@@ -347,7 +346,7 @@ func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChan
 		var first, last string
 
 		if Index && sortOrder != "" {
-			first, last, err = getRange(path, index)
+			first, last, err = getRange(path, index, filename)
 			if err != nil {
 				errorChannel <- err
 
@@ -358,7 +357,7 @@ func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChan
 		}
 
 		if Index && !DisableButtons && sortOrder != "" {
-			paginate, err := paginateSorted(path, first, last, queryParams, formats)
+			paginated, err := paginate(path, first, last, queryParams, filename, formats)
 			if err != nil {
 				errorChannel <- err
 
@@ -367,7 +366,7 @@ func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChan
 				return
 			}
 
-			htmlBody.WriteString(paginate)
+			htmlBody.WriteString(paginated)
 		}
 
 		if refreshInterval != "0ms" {
@@ -388,7 +387,7 @@ func serveMedia(paths []string, index *fileIndex, formats types.Types, errorChan
 
 		formattedPage := gohtml.Format(htmlBody.String())
 
-		written, err := io.WriteString(w, formattedPage)
+		written, err := io.WriteString(w, formattedPage+"\n")
 		if err != nil {
 			errorChannel <- err
 
@@ -584,7 +583,9 @@ func ServePage(args []string) error {
 		return err
 	}
 
-	registerHandler(mux, Prefix, serveRoot(paths, index, formats, encoder, errorChannel))
+	filename := regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
+
+	registerHandler(mux, Prefix, serveRoot(paths, index, filename, formats, encoder, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -596,7 +597,7 @@ func ServePage(args []string) error {
 
 	registerHandler(mux, Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, index, formats, errorChannel))
+	registerHandler(mux, Prefix+mediaPrefix+"/*media", serveMedia(paths, index, filename, formats, errorChannel))
 
 	registerHandler(mux, Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 

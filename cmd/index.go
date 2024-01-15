@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"runtime"
 	"sync"
 	"time"
 
@@ -213,8 +212,6 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 				time.Since(startTime).Round(time.Microsecond),
 			)
 		}
-
-		runtime.GC()
 	}
 }
 

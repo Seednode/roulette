@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "5.4.3"
+	ReleaseVersion    string = "6.0.0"
 )
 
 var (
@@ -47,7 +47,6 @@ var (
 	Info           bool
 	MaxFileCount   int
 	MinFileCount   int
-	PageLength     int
 	Port           int
 	Prefix         string
 	Profile        bool
@@ -143,7 +142,6 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 0, "skip directories with file counts below this value")
-	rootCmd.Flags().IntVar(&PageLength, "page-length", 0, "pagination length for info pages")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")

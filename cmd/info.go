@@ -7,194 +7,28 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
 )
 
-func paginateIndex(page int, fileCount int, ending bool) string {
-	var firstPage int = 1
-	var lastPage int
-
-	if fileCount%PageLength == 0 {
-		lastPage = fileCount / PageLength
-	} else {
-		lastPage = (fileCount / PageLength) + 1
-	}
-
-	var prevStatus, nextStatus string = "", ""
-
-	if page <= 1 {
-		prevStatus = " disabled"
-	}
-
-	if page >= lastPage {
-		nextStatus = " disabled"
-	}
-
-	prevPage := page - 1
-	if prevPage < 1 {
-		prevPage = 1
-	}
-
-	nextPage := page + 1
-	if nextPage > lastPage {
-		nextPage = fileCount / PageLength
-	}
-
-	var html strings.Builder
-
-	if ending {
-		html.WriteString("<tr><td style=\"border-bottom:none;\">")
-	} else {
-		html.WriteString("<tr><td>")
-	}
-
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\">First</button>",
-		Prefix,
-		AdminPrefix,
-		firstPage))
-
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\"%s>Prev</button>",
-		Prefix,
-		AdminPrefix,
-		prevPage,
-		prevStatus))
-
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\"%s>Next</button>",
-		Prefix,
-		AdminPrefix,
-		nextPage,
-		nextStatus))
-
-	html.WriteString(fmt.Sprintf("<button onclick=\"window.location.href = '%s%s/index/html/%d';\">Last</button>",
-		Prefix,
-		AdminPrefix,
-		lastPage))
-
-	html.WriteString("</td></tr>\n")
-
-	return html.String()
-}
-
-func serveIndexHtml(args []string, index *fileIndex, shouldPaginate bool) httprouter.Handle {
+func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
-		w.Header().Set("Content-Type", "text/html")
-
 		indexDump := index.List()
-
-		fileCount := len(indexDump)
-
-		var startIndex, stopIndex int
-
-		page, err := strconv.Atoi(p.ByName("page"))
-		if err != nil || page <= 0 {
-			startIndex = 0
-			stopIndex = fileCount
-		} else {
-			startIndex = ((page - 1) * PageLength)
-			stopIndex = (startIndex + PageLength)
-		}
-
-		if startIndex > (fileCount - 1) {
-			indexDump = []string{}
-		}
-
-		if stopIndex > fileCount {
-			stopIndex = fileCount
-		}
 
 		sort.SliceStable(indexDump, func(p, q int) bool {
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
 
-		var htmlBody strings.Builder
-		htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-		htmlBody.WriteString(faviconHtml)
-		htmlBody.WriteString(`<style>a{text-decoration:none;height:100%;width:100%;color:inherit;cursor:pointer}`)
-		htmlBody.WriteString(`table,td,tr{border:none;}td{border-bottom:1px solid black;}td{white-space:nowrap;padding:.5em}</style>`)
-		htmlBody.WriteString(fmt.Sprintf("<title>Index contains %d files</title></head><body><table>", fileCount))
-
-		if shouldPaginate && !DisableButtons {
-			htmlBody.WriteString(paginateIndex(page, fileCount, false))
-		}
-
-		if len(indexDump) > 0 {
-			for _, v := range indexDump[startIndex:stopIndex] {
-				var shouldSort = ""
-
-				if Sorting {
-					shouldSort = "?sort=asc"
-				}
-				htmlBody.WriteString(fmt.Sprintf("<tr><td><a href=\"%s%s%s%s\">%s</a></td></tr>\n", Prefix, mediaPrefix, v, shouldSort, v))
-			}
-		}
-
-		if shouldPaginate && !DisableButtons {
-			htmlBody.WriteString(paginateIndex(page, fileCount, true))
-		}
-
-		htmlBody.WriteString(`</table></body></html>`)
-
-		written, err := io.WriteString(w, gohtml.Format(htmlBody.String()))
-		if err != nil {
-			return
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: HTML index page (%s) to %s in %s\n",
-				startTime.Format(logDate),
-				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
-}
-
-func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
 		w.Header().Set("Content-Type", "application/json")
 
-		indexedFiles := index.List()
-
-		fileCount := len(indexedFiles)
-
-		sort.SliceStable(indexedFiles, func(p, q int) bool {
-			return strings.ToLower(indexedFiles[p]) < strings.ToLower(indexedFiles[q])
-		})
-
-		var startIndex, stopIndex int
-
-		page, err := strconv.Atoi(p.ByName("page"))
-		if err != nil || page <= 0 {
-			startIndex = 0
-			stopIndex = fileCount
-		} else {
-			startIndex = ((page - 1) * PageLength)
-			stopIndex = (startIndex + PageLength)
-		}
-
-		if startIndex > (fileCount - 1) {
-			indexedFiles = []string{}
-		}
-
-		if stopIndex > fileCount {
-			stopIndex = fileCount
-		}
-
-		response, err := json.MarshalIndent(indexedFiles[startIndex:stopIndex], "", "    ")
+		response, err := json.MarshalIndent(indexDump, "", "    ")
 		if err != nil {
 			errorChannel <- err
 
@@ -202,6 +36,8 @@ func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) 
 
 			return
 		}
+
+		response = append(response, []byte("\n")...)
 
 		written, err := w.Write(response)
 		if err != nil {
@@ -219,35 +55,21 @@ func serveIndexJson(args []string, index *fileIndex, errorChannel chan<- error) 
 	}
 }
 
-func serveAvailableExtensions(errorChannel chan<- error) httprouter.Handle {
+func serveExtensions(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
 		w.Header().Set("Content-Type", "text/plain")
 
-		written, err := w.Write([]byte(types.SupportedFormats.GetExtensions()))
-		if err != nil {
-			errorChannel <- err
+		var extensions string
+
+		if available {
+			extensions = types.SupportedFormats.GetExtensions()
+		} else {
+			extensions = formats.GetExtensions()
 		}
 
-		if Verbose {
-			fmt.Printf("%s | SERVE: Available extension list (%s) to %s in %s\n",
-				startTime.Format(logDate),
-				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
-}
-
-func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		w.Header().Set("Content-Type", "text/plain")
-
-		written, err := w.Write([]byte(formats.GetExtensions()))
+		written, err := w.Write([]byte(extensions))
 		if err != nil {
 			errorChannel <- err
 		}
@@ -263,13 +85,21 @@ func serveEnabledExtensions(formats types.Types, errorChannel chan<- error) http
 	}
 }
 
-func serveAvailableMediaTypes(errorChannel chan<- error) httprouter.Handle {
+func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
 		w.Header().Set("Content-Type", "text/plain")
 
-		written, err := w.Write([]byte(types.SupportedFormats.GetMediaTypes()))
+		var mediaTypes string
+
+		if available {
+			mediaTypes = types.SupportedFormats.GetMediaTypes()
+		} else {
+			mediaTypes = formats.GetMediaTypes()
+		}
+
+		written, err := w.Write([]byte(mediaTypes))
 		if err != nil {
 			errorChannel <- err
 		}
@@ -285,43 +115,13 @@ func serveAvailableMediaTypes(errorChannel chan<- error) httprouter.Handle {
 	}
 }
 
-func serveEnabledMediaTypes(formats types.Types, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		w.Header().Set("Content-Type", "text/plain")
-
-		written, err := w.Write([]byte(formats.GetMediaTypes()))
-		if err != nil {
-			errorChannel <- err
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: Registered media type list (%s) to %s in %s\n",
-				startTime.Format(logDate),
-				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
-}
-
 func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
-		registerHandler(mux, Prefix+AdminPrefix+"/index/html", serveIndexHtml(args, index, false))
-		if PageLength != 0 {
-			registerHandler(mux, Prefix+AdminPrefix+"/index/html/:page", serveIndexHtml(args, index, true))
-		}
-
-		registerHandler(mux, Prefix+AdminPrefix+"/index/json", serveIndexJson(args, index, errorChannel))
-		if PageLength != 0 {
-			registerHandler(mux, Prefix+AdminPrefix+"/index/json/:page", serveIndexJson(args, index, errorChannel))
-		}
+		registerHandler(mux, Prefix+AdminPrefix+"/index", serveIndex(args, index, errorChannel))
 	}
 
-	registerHandler(mux, Prefix+AdminPrefix+"/extensions/available", serveAvailableExtensions(errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/extensions/enabled", serveEnabledExtensions(formats, errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/types/available", serveAvailableMediaTypes(errorChannel))
-	registerHandler(mux, Prefix+AdminPrefix+"/types/enabled", serveEnabledMediaTypes(formats, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/extensions/enabled", serveExtensions(formats, false, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/types/available", serveMediaTypes(formats, true, errorChannel))
+	registerHandler(mux, Prefix+AdminPrefix+"/types/enabled", serveMediaTypes(formats, false, errorChannel))
 }

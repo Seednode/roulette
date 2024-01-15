@@ -5,7 +5,6 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"bytes"
 	"embed"
 	"net/http"
 	"strconv"
@@ -36,12 +35,7 @@ func serveFavicons(errorChannel chan<- error) httprouter.Handle {
 			return
 		}
 
-		err = w.Header().Write(bytes.NewBufferString("Content-Length: " + strconv.Itoa(len(data))))
-		if err != nil {
-			errorChannel <- err
-
-			return
-		}
+		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 
 		_, err = w.Write(data)
 		if err != nil {
