@@ -18,7 +18,7 @@ ARG TARGETOS TARGETARCH
 RUN CGO_ENABLED=0 \
     GOOS=$TARGETOS \
     GOARCH=$TARGETARCH \
-    go build -trimpath -ldflags "-s -w" -o $app \
+    go build -trimpath -ldflags "-s -w" -tags timetzdata -o $app \
     && upx --best --lzma $app \
     && chmod 500 $app
 
@@ -34,12 +34,6 @@ USER root
 
 # copy in binary
 COPY --from=build --chown=root:root --chmod=0005 /src/$app/$app /$app
-
-# copy in time zone info
-COPY --from=build --chown=root:root --chmod=0004 /usr/local/go/lib/time/zoneinfo.zip /
-
-# load time zone info
-ENV ZONEINFO=/zoneinfo.zip
 
 # listen on an unprivileged port
 EXPOSE 8080
