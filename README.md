@@ -44,8 +44,6 @@ The restricted paths are:
 
 While this might thwart very basic attacks, the proper solution for most use cases would likely be to add authentication via a reverse proxy.
 
-If the `--redact` flag is passed, references to the admin prefix will be redacted in log output.
-
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
 
@@ -152,10 +150,10 @@ Flags:
       --audio                 enable support for audio files
       --binary-prefix         use IEC binary prefixes instead of SI decimal prefixes
   -b, --bind string           address to bind to (default "0.0.0.0")
-      --case-sensitive        use case-sensitive matching for filters
+      --case-insensitive      use case-insensitive matching for filters
       --code                  enable support for source code files
       --code-theme string     theme for source code syntax highlighting (default "solarized-dark256")
-      --concurrency int       maximum concurrency for scan threads (default 2147483647)
+      --concurrency int       maximum concurrency for scan threads (default 1024)
   -d, --debug                 display even more verbose logs
       --disable-buttons       disable first/prev/next/last buttons
       --exit-on-error         shut down webserver on error, instead of just printing error
@@ -165,7 +163,7 @@ Flags:
       --fun                   add a bit of excitement to your day
   -h, --help                  help for roulette
       --ignore                skip all directories containing a specified filename
-      --ignore-file string    filename used to indicate directory to be skipped (default ".roulette-ignore")
+      --ignore-file string    filename used to indicate directory should be skipped (default ".roulette-ignore")
       --images                enable support for image files
       --index                 generate index of supported file paths at startup
       --index-file string     path to optional persistent index file
@@ -176,7 +174,6 @@ Flags:
       --prefix string         root path for http handlers (for reverse proxying) (default "/")
       --profile               register net/http/pprof handlers
   -r, --recursive             recurse into subdirectories
-      --redact                redact admin prefix in log output
       --refresh               enable automatic page refresh via query parameter
       --russian               remove selected images after serving
   -s, --sort                  enable sorting
