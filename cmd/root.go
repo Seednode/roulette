@@ -17,46 +17,46 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "6.1.1"
+	ReleaseVersion    string = "6.2.0"
 )
 
 var (
-	AdminPrefix    string
-	All            bool
-	AllowEmpty     bool
-	Audio          bool
-	BinaryPrefix   bool
-	Bind           string
-	CaseSensitive  bool
-	Code           bool
-	CodeTheme      string
-	Concurrency    int
-	Debug          bool
-	DisableButtons bool
-	ExitOnError    bool
-	Fallback       bool
-	Filtering      bool
-	Flash          bool
-	Fun            bool
-	Ignore         bool
-	IgnoreFile     string
-	Images         bool
-	Index          bool
-	IndexFile      string
-	Info           bool
-	MaxFileCount   int
-	MinFileCount   int
-	Port           int
-	Prefix         string
-	Profile        bool
-	Recursive      bool
-	Refresh        bool
-	Russian        bool
-	Sorting        bool
-	Text           bool
-	Verbose        bool
-	Version        bool
-	Videos         bool
+	AdminPrefix     string
+	All             bool
+	AllowEmpty      bool
+	Audio           bool
+	BinaryPrefix    bool
+	Bind            string
+	CaseInsensitive bool
+	Code            bool
+	CodeTheme       string
+	Concurrency     int
+	Debug           bool
+	DisableButtons  bool
+	ExitOnError     bool
+	Fallback        bool
+	Filtering       bool
+	Flash           bool
+	Fun             bool
+	Ignore          bool
+	IgnoreFile      string
+	Images          bool
+	Index           bool
+	IndexFile       string
+	Info            bool
+	MaxFileCount    int
+	MinFileCount    int
+	Port            int
+	Prefix          string
+	Profile         bool
+	Recursive       bool
+	Refresh         bool
+	Russian         bool
+	Sorting         bool
+	Text            bool
+	Verbose         bool
+	Version         bool
+	Videos          bool
 
 	RequiredArgs = []string{
 		"all",
@@ -120,7 +120,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().BoolVar(&BinaryPrefix, "binary-prefix", false, "use IEC binary prefixes instead of SI decimal prefixes")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
-	rootCmd.Flags().BoolVar(&CaseSensitive, "case-sensitive", false, "use case-sensitive matching for filters")
+	rootCmd.Flags().BoolVar(&CaseInsensitive, "case-insensitive", false, "use case-insensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 1024, "maximum concurrency for scan threads")

@@ -45,7 +45,7 @@ func (filters *filters) apply(fileList []string) []string {
 			p := filepath.Base(s)
 
 			for _, exclude := range filters.excluded {
-				if (CaseSensitive && strings.Contains(p, exclude)) || (!CaseSensitive && strings.Contains(strings.ToLower(p), strings.ToLower(exclude))) {
+				if (!CaseInsensitive && strings.Contains(p, exclude)) || (CaseInsensitive && strings.Contains(strings.ToLower(p), strings.ToLower(exclude))) {
 					return true
 				}
 			}
@@ -59,7 +59,7 @@ func (filters *filters) apply(fileList []string) []string {
 			p := filepath.Base(s)
 
 			for _, include := range filters.included {
-				if (CaseSensitive && strings.Contains(p, include)) || (!CaseSensitive && strings.Contains(strings.ToLower(p), strings.ToLower(include))) {
+				if (!CaseInsensitive && strings.Contains(p, include)) || (CaseInsensitive && strings.Contains(strings.ToLower(p), strings.ToLower(include))) {
 					return false
 				}
 			}
