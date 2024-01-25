@@ -26,7 +26,7 @@ func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) http
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
 
-		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
 		response, err := json.MarshalIndent(indexDump, "", "    ")
 		if err != nil {
@@ -59,7 +59,7 @@ func serveExtensions(formats types.Types, available bool, errorChannel chan<- er
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 		var extensions string
 
@@ -89,7 +89,7 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 		var mediaTypes string
 

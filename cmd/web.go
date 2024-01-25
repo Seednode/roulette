@@ -55,7 +55,7 @@ func newPage(title, body string) string {
 func noFiles(w http.ResponseWriter, r *http.Request) {
 	startTime := time.Now()
 
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 	w.Write([]byte("No files found in the specified path(s).\n"))
 
@@ -423,6 +423,8 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 		startTime := time.Now()
 
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
+
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 

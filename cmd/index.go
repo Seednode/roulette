@@ -196,7 +196,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 
 		fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
 
-		w.Header().Set("Content-Type", "text/plain")
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 		_, err := w.Write([]byte("Ok\n"))
 		if err != nil {
