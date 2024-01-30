@@ -188,13 +188,17 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
+func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+	index.clear()
+
+	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+}
+
 func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
-		index.clear()
-
-		fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+		rebuildIndex(args, index, formats, encoder, errorChannel)
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 

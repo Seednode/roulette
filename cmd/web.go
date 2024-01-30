@@ -584,10 +584,43 @@ func ServePage(args []string) error {
 
 	mux.GET(Prefix+"/version", serveVersion(errorChannel))
 
+	quit := make(chan struct{})
+
 	if Index {
 		mux.GET(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
 
 		importIndex(paths, index, formats, encoder, errorChannel)
+
+		if IndexInterval != "" {
+			interval, err := time.ParseDuration(IndexInterval)
+			if err != nil {
+				return err
+			}
+
+			ticker := time.NewTicker(interval)
+
+			go func() {
+				for {
+					select {
+					case <-ticker.C:
+						startTime := time.Now()
+
+						rebuildIndex(args, index, formats, encoder, errorChannel)
+
+						if Verbose {
+							fmt.Printf("%s | INDEX: Automatic rebuild took %s\n",
+								startTime.Format(logDate),
+								time.Since(startTime).Round(time.Microsecond),
+							)
+						}
+					case <-quit:
+						ticker.Stop()
+
+						return
+					}
+				}
+			}()
+		}
 	}
 
 	if Info {
@@ -614,6 +647,8 @@ func ServePage(args []string) error {
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
+
+	close(quit)
 
 	return nil
 }

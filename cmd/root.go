@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "6.3.1"
+	ReleaseVersion    string = "6.4.0"
 )
 
 var (
@@ -43,6 +43,7 @@ var (
 	Images          bool
 	Index           bool
 	IndexFile       string
+	IndexInterval   string
 	Info            bool
 	MaxFileCount    int
 	MinFileCount    int
@@ -136,6 +137,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
+	rootCmd.Flags().StringVar(&IndexInterval, "index-interval", "", "regenerate index after this amount of time")
 	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 0, "skip directories with file counts below this value")
