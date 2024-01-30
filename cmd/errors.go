@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/yosssi/gohtml"
+	"seedno.de/seednode/roulette/types"
 )
 
 var (
@@ -30,7 +31,11 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	w.WriteHeader(http.StatusNotFound)
 	w.Header().Add("Content-Type", "text/html")
 
-	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found")))
+	nonce := types.GetNonce(6)
+
+	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
+
+	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found", nonce)))
 	if err != nil {
 		return err
 	}
@@ -49,9 +54,14 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
+	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Add("Content-Type", "text/html")
 
-	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.")))
+	nonce := types.GetNonce(6)
+
+	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
+
+	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.", nonce)))
 
 	if Verbose {
 		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",

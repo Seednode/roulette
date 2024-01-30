@@ -5,6 +5,9 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package types
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"net/http"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -17,14 +20,17 @@ type Type interface {
 	// should be displayed inline (e.g. code) or embedded (e.g. images)
 	Type() string
 
+	// Adds a CSP header and returns a nonce to be used in generated pages
+	CSP(http.ResponseWriter) string
+
 	// Returns a CSS string used to format the corresponding page
-	Css() string
+	CSS() string
 
 	// Returns an HTML <title> element for the specified file
 	Title(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
 
 	// Returns an HTML <body> element used to display the specified file
-	Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error)
+	Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error)
 
 	// Returns a map of file extensions to MIME type strings.
 	Extensions() map[string]string
@@ -128,4 +134,12 @@ func removeDuplicateStr(strSlice []string) []string {
 		}
 	}
 	return list
+}
+
+func GetNonce(length int) string {
+	b := make([]byte, length)
+	if _, err := rand.Read(b); err != nil {
+		return ""
+	}
+	return hex.EncodeToString(b)
 }

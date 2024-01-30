@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net/http"
 	"os"
 	"strings"
 
@@ -24,7 +25,11 @@ type Format struct {
 	Theme string
 }
 
-func (t Format) Css() string {
+func (t Format) CSP(w http.ResponseWriter) string {
+	return ""
+}
+
+func (t Format) CSS() string {
 	var css strings.Builder
 
 	formatter := html.New(
@@ -68,7 +73,7 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err

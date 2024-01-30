@@ -40,12 +40,13 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func newPage(title, body string) string {
+func newPage(title, body, nonce string) string {
 	var htmlBody strings.Builder
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(faviconHtml)
-	htmlBody.WriteString(`<style>html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
+	htmlBody.WriteString(getFavicon(nonce))
+	htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>`, nonce))
+	htmlBody.WriteString(`html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
 	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
 
@@ -308,6 +309,8 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 			return
 		}
 
+		nonce := format.CSP(w)
+
 		mediaType := format.MediaType(filepath.Ext(path))
 
 		fileUri := Prefix + generateFileUri(path)
@@ -324,8 +327,8 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
-		htmlBody.WriteString(faviconHtml)
-		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.Css()))
+		htmlBody.WriteString(getFavicon(nonce))
+		htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>%s</style>`, nonce, format.CSS()))
 
 		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mediaType)
 		if err != nil {
@@ -365,10 +368,10 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 		}
 
 		if refreshInterval != "0ms" {
-			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer))
+			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer, nonce))
 		}
 
-		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mediaType)
+		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mediaType, nonce)
 		if err != nil {
 			errorChannel <- err
 

@@ -12,6 +12,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"math/rand"
+	"net/http"
 	"os"
 	"strings"
 
@@ -30,7 +31,15 @@ type Format struct {
 	Fun            bool
 }
 
-func (t Format) Css() string {
+func (t Format) CSP(w http.ResponseWriter) string {
+	nonce := types.GetNonce(6)
+
+	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
+
+	return nonce
+}
+
+func (t Format) CSS() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -41,7 +50,7 @@ func (t Format) Css() string {
 		css.WriteString(`a{color:inherit;display:block;height:97%;width:100%;text-decoration:none;}`)
 	}
 
-	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
+	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;color:transparent;`)
 	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`)
 	if t.Fun {
 		rotate := rand.Intn(360)
@@ -69,19 +78,26 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 		dimensions.height), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		return "", err
 	}
 
-	return fmt.Sprintf(`<a href="%s"><img style="color: transparent;" onload="this.style.color='inherit'" onerror="this.style.color='inherit'" src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+	var w strings.Builder
+
+	w.WriteString(fmt.Sprintf(`<a href="%s"><img nonce=%q id="main" src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 		rootUrl,
+		nonce,
 		fileUri,
 		dimensions.width,
 		dimensions.height,
 		mime,
-		fileName), nil
+		fileName))
+
+	w.WriteString(fmt.Sprintf(`<script nonce=%q>window.addEventListener("load", function (){ document.getElementById("main").style.color='inherit' });</script>`, nonce))
+
+	return w.String(), nil
 }
 
 func (t Format) Extensions() map[string]string {

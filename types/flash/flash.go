@@ -6,6 +6,7 @@ package flash
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
 
 	"seedno.de/seednode/roulette/types"
@@ -13,7 +14,11 @@ import (
 
 type Format struct{}
 
-func (t Format) Css() string {
+func (t Format) CSP(w http.ResponseWriter) string {
+	return ""
+}
+
+func (t Format) CSS() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
@@ -26,10 +31,10 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
 	var html strings.Builder
 
-	html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
+	html.WriteString(fmt.Sprintf(`<script nonce=%q src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, nonce, fileUri))
 	html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '%s';">Next</button>`, rootUrl))
 
 	return html.String(), nil
