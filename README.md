@@ -80,8 +80,6 @@ If the `-i|--index` flag is passed, all specified paths will be indexed on start
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
-The index can be regenerated at any time by accessing the `/index/rebuild` endpoint.
-
 Automatic index rebuilds can be enabled via the `--index-interval` flag, which accepts [time.Duration](https://pkg.go.dev/time#ParseDuration) strings.
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
