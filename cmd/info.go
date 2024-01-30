@@ -13,8 +13,39 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/klauspost/compress/zstd"
 	"seedno.de/seednode/roulette/types"
 )
+
+func serveExtensions(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		startTime := time.Now()
+
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		var extensions string
+
+		if available {
+			extensions = types.SupportedFormats.GetExtensions()
+		} else {
+			extensions = formats.GetExtensions()
+		}
+
+		written, err := w.Write([]byte(extensions))
+		if err != nil {
+			errorChannel <- err
+		}
+
+		if Verbose {
+			fmt.Printf("%s | SERVE: Registered extension list (%s) to %s in %s\n",
+				startTime.Format(logDate),
+				humanReadableSize(written),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
 
 func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -55,29 +86,24 @@ func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) http
 	}
 }
 
-func serveExtensions(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
+		rebuildIndex(args, index, formats, encoder, errorChannel)
+
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
-		var extensions string
-
-		if available {
-			extensions = types.SupportedFormats.GetExtensions()
-		} else {
-			extensions = formats.GetExtensions()
-		}
-
-		written, err := w.Write([]byte(extensions))
+		_, err := w.Write([]byte("Ok\n"))
 		if err != nil {
 			errorChannel <- err
+
+			return
 		}
 
 		if Verbose {
-			fmt.Printf("%s | SERVE: Registered extension list (%s) to %s in %s\n",
+			fmt.Printf("%s | SERVE: Index rebuild requested by %s took %s\n",
 				startTime.Format(logDate),
-				humanReadableSize(written),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)
@@ -115,9 +141,10 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 	}
 }
 
-func registerInfoHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
+func registerAPIHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	if Index {
 		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(args, index, errorChannel))
+		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
 	}
 
 	mux.GET(Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))

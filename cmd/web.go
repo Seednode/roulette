@@ -584,18 +584,16 @@ func ServePage(args []string) error {
 	quit := make(chan struct{})
 	defer close(quit)
 
-	if Index {
-		mux.GET(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
+	if API {
+		registerAPIHandlers(mux, args, index, formats, encoder, errorChannel)
+	}
 
+	if Index {
 		importIndex(paths, index, formats, encoder, errorChannel)
 
 		if IndexInterval != "" {
 			registerIndexInterval(args, index, formats, encoder, quit, errorChannel)
 		}
-	}
-
-	if Info {
-		registerInfoHandlers(mux, args, index, formats, errorChannel)
 	}
 
 	if Profile {

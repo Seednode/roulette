@@ -17,13 +17,14 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "6.4.3"
+	ReleaseVersion    string = "7.0.0"
 )
 
 var (
 	AdminPrefix     string
 	All             bool
 	AllowEmpty      bool
+	API             bool
 	Audio           bool
 	BinaryPrefix    bool
 	Bind            string
@@ -38,13 +39,11 @@ var (
 	Filtering       bool
 	Flash           bool
 	Fun             bool
-	Ignore          bool
-	IgnoreFile      string
+	Ignore          string
 	Images          bool
 	Index           bool
 	IndexFile       string
 	IndexInterval   string
-	Info            bool
 	MaxFileCount    int
 	MinFileCount    int
 	Port            int
@@ -84,7 +83,7 @@ var (
 				return ErrInvalidPort
 			case Concurrency < 1:
 				return ErrInvalidConcurrency
-			case Ignore && !regexp.MustCompile(AllowedCharacters).MatchString(IgnoreFile):
+			case Ignore != "" && !regexp.MustCompile(AllowedCharacters).MatchString(Ignore):
 				return ErrInvalidIgnoreFile
 			case AdminPrefix != "" && !regexp.MustCompile(AllowedCharacters).MatchString(AdminPrefix):
 				return ErrInvalidAdminPrefix
@@ -118,6 +117,7 @@ func init() {
 	rootCmd.Flags().StringVar(&AdminPrefix, "admin-prefix", "", "string to prepend to administrative paths")
 	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&AllowEmpty, "allow-empty", false, "allow specifying paths containing no supported files")
+	rootCmd.Flags().BoolVar(&API, "api", false, "expose REST API")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().BoolVar(&BinaryPrefix, "binary-prefix", false, "use IEC binary prefixes instead of SI decimal prefixes")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
@@ -132,13 +132,11 @@ func init() {
 	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
-	rootCmd.Flags().BoolVar(&Ignore, "ignore", false, "skip all directories containing a specified filename")
-	rootCmd.Flags().StringVar(&IgnoreFile, "ignore-file", ".roulette-ignore", "filename used to indicate directory should be skipped")
+	rootCmd.Flags().StringVar(&Ignore, "ignore", "", "filename used to indicate directory should be skipped")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
 	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().StringVar(&IndexInterval, "index-interval", "", "interval at which to regenerate index (e.g. \"5m\" or \"1h\")")
-	rootCmd.Flags().BoolVarP(&Info, "info", "i", false, "expose informational endpoints")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFileCount, "min-file-count", 0, "skip directories with file counts below this value")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")

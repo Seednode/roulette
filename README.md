@@ -20,7 +20,7 @@ Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/m
 An example instance with most features enabled can be found [here](https://nature.seedno.de/).
 
 ## Admin prefix
-You can restrict access to certain functionality by prepending a secret string to the paths.
+You can restrict access to certain functionality (the REST API and profiling endpoints) by prepending a secret string to the paths.
 
 For example, providing the `--admin-prefix=abc123` flag will register the index rebuild path as `/abc123/index/rebuild`.
 
@@ -43,6 +43,21 @@ The restricted paths are:
 - `/types/enabled`
 
 While this might thwart very basic attacks, the proper solution for most use cases would likely be to add authentication via a reverse proxy.
+
+## API
+If the `--api` flag is passed, a number of REST endpoints are registered.
+
+The first of these—`/index/`—responds to GET requests with the contents of the index, in JSON format.
+
+The second—`/index/rebuild`—responds to POST requests by rebuilding the index.
+
+This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
+
+The remaining four endpoints respond to GET requests with information about the registered file types:
+- `/extensions/available`
+- `/extensions/enabled`
+- `/types/available`
+- `/types/enabled`
 
 ## Filtering
 You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
@@ -72,15 +87,6 @@ Automatic index rebuilds can be enabled via the `--index-interval` flag, which a
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
 The index file consists of [zstd](https://facebook.github.io/zstd/)-compressed [gobs](https://pkg.go.dev/encoding/gob).
-
-## Info
-If the `-i|--info` flag is passed, five additional endpoints are registered.
-
-The first of these—`/index/`—returns the contents of the index, in JSON format.
-
-This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
-
-The remaining four endpoints—`/extensions/available`, `/extensions/enabled`, `/types/available` and `/types/enabled`—return information about the registered file types.
 
 ## Refresh
 If the `--refresh` flag is passed and a positive-value `refresh=<integer><unit>` query parameter is provided, the page will reload after that interval.
@@ -143,6 +149,7 @@ Flags:
       --admin-prefix string     string to prepend to administrative paths
   -a, --all                     enable all supported file types
       --allow-empty             allow specifying paths containing no supported files
+      --api                     expose REST API
       --audio                   enable support for audio files
       --binary-prefix           use IEC binary prefixes instead of SI decimal prefixes
   -b, --bind string             address to bind to (default "0.0.0.0")
@@ -158,13 +165,11 @@ Flags:
       --flash                   enable support for shockwave flash files (via ruffle.rs)
       --fun                     add a bit of excitement to your day
   -h, --help                    help for roulette
-      --ignore                  skip all directories containing a specified filename
-      --ignore-file string      filename used to indicate directory should be skipped (default ".roulette-ignore")
+      --ignore string           filename used to indicate directory should be skipped
       --images                  enable support for image files
       --index                   generate index of supported file paths at startup
       --index-file string       path to optional persistent index file
-      --index-interval string   interval at which to regenerate index (e.g. "3s" or "1h")
-  -i, --info                    expose informational endpoints
+      --index-interval string   interval at which to regenerate index (e.g. "5m" or "1h")
       --max-file-count int      skip directories with file counts above this value (default 2147483647)
       --min-file-count int      skip directories with file counts below this value
   -p, --port int                port to listen on (default 8080)

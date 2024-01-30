@@ -7,12 +7,10 @@ package cmd
 import (
 	"encoding/gob"
 	"fmt"
-	"net/http"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"seedno.de/seednode/roulette/types"
 )
@@ -225,31 +223,6 @@ func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder 
 	index.clear()
 
 	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
-}
-
-func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		rebuildIndex(args, index, formats, encoder, errorChannel)
-
-		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
-
-		_, err := w.Write([]byte("Ok\n"))
-		if err != nil {
-			errorChannel <- err
-
-			return
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: Index rebuild requested by %s took %s\n",
-				startTime.Format(logDate),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
 }
 
 func importIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {

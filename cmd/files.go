@@ -260,7 +260,7 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 		if !node.IsDir() {
 			files++
 
-			if Ignore && node.Name() == IgnoreFile {
+			if Ignore != "" && node.Name() == Ignore {
 				skipDir = true
 			}
 		}
