@@ -31,7 +31,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	w.WriteHeader(http.StatusNotFound)
 	w.Header().Add("Content-Type", "text/html")
 
-	nonce := types.GetNonce(6)
+	nonce := types.GetNonce()
 
 	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
 
@@ -57,7 +57,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Add("Content-Type", "text/html")
 
-	nonce := types.GetNonce(6)
+	nonce := types.GetNonce()
 
 	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
 

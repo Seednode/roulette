@@ -13,6 +13,8 @@ import (
 	"strings"
 )
 
+const NonceLength = 6
+
 var SupportedFormats = make(Types)
 
 type Type interface {
@@ -136,8 +138,8 @@ func removeDuplicateStr(strSlice []string) []string {
 	return list
 }
 
-func GetNonce(length int) string {
-	b := make([]byte, length)
+func GetNonce() string {
+	b := make([]byte, NonceLength)
 	if _, err := rand.Read(b); err != nil {
 		return ""
 	}
