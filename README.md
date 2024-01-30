@@ -71,13 +71,7 @@ Automatic index rebuilds can be enabled via the `--index-interval` flag, which a
 
 If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
-The index file consists of (optionally compressed) [gobs](https://pkg.go.dev/encoding/gob).
-
-The compression format can be specified via the `--compression` flag.
-
-Supported formats are `none`, `zlib`, and `zstd`.
-
-Optionally, `--compression-fast` can be used to use the fastest instead of the best compression mode.
+The index file consists of [zstd](https://facebook.github.io/zstd/)-compressed [gobs](https://pkg.go.dev/encoding/gob).
 
 ## Info
 If the `-i|--info` flag is passed, five additional endpoints are registered.
@@ -104,7 +98,7 @@ If the `--russian` flag is passed, everything functions exactly as you would exp
 
 That is, files will be deleted after being served. This is not a joke, you *will* lose data.
 
-This uses `os.Remove()` and checks to ensure the specified file is inside one of the paths passed to `roulette`.
+This uses [os.Remove()](https://pkg.go.dev/os#Remove) and checks to ensure the specified file is inside one of the paths passed to `roulette`.
 
 That said, this has not been tested to any real extent, so only pass this flag on systems you don't care about.
 
