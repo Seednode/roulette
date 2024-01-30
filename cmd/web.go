@@ -585,6 +585,7 @@ func ServePage(args []string) error {
 	mux.GET(Prefix+"/version", serveVersion(errorChannel))
 
 	quit := make(chan struct{})
+	defer close(quit)
 
 	if Index {
 		mux.GET(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
@@ -647,8 +648,6 @@ func ServePage(args []string) error {
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}
-
-	close(quit)
 
 	return nil
 }
