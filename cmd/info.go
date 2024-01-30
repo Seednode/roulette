@@ -5,11 +5,8 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"sort"
-	"strings"
 	"time"
 
 	"github.com/julienschmidt/httprouter"
@@ -42,74 +39,6 @@ func serveExtensions(formats types.Types, available bool, errorChannel chan<- er
 			fmt.Printf("%s | SERVE: Registered extension list (%s) to %s in %s\n",
 				startTime.Format(logDate),
 				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
-}
-
-func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
-
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		indexDump := index.List()
-
-		sort.SliceStable(indexDump, func(p, q int) bool {
-			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
-		})
-
-		response, err := json.MarshalIndent(indexDump, "", "    ")
-		if err != nil {
-			errorChannel <- err
-
-			serverError(w, r, nil)
-
-			return
-		}
-
-		response = append(response, []byte("\n")...)
-
-		written, err := w.Write(response)
-		if err != nil {
-			errorChannel <- err
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: JSON index page (%s) to %s in %s\n",
-				startTime.Format(logDate),
-				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
-}
-
-func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
-
-		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
-
-		rebuildIndex(args, index, formats, encoder, errorChannel)
-
-		_, err := w.Write([]byte("Ok\n"))
-		if err != nil {
-			errorChannel <- err
-
-			return
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: Index rebuild requested by %s took %s\n",
-				startTime.Format(logDate),
 				realIP(r),
 				time.Since(startTime).Round(time.Microsecond),
 			)

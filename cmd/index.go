@@ -6,11 +6,16 @@ package cmd
 
 import (
 	"encoding/gob"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"sort"
+	"strings"
 	"sync"
 	"time"
 
+	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
 	"seedno.de/seednode/roulette/types"
 )
@@ -186,6 +191,85 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
+func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+	index.clear()
+
+	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+}
+
+func importIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+	if IndexFile != "" {
+		index.Import(IndexFile, errorChannel)
+	}
+
+	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+}
+
+func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		startTime := time.Now()
+
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
+		indexDump := index.List()
+
+		sort.SliceStable(indexDump, func(p, q int) bool {
+			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
+		})
+
+		response, err := json.MarshalIndent(indexDump, "", "    ")
+		if err != nil {
+			errorChannel <- err
+
+			serverError(w, r, nil)
+
+			return
+		}
+
+		response = append(response, []byte("\n")...)
+
+		written, err := w.Write(response)
+		if err != nil {
+			errorChannel <- err
+		}
+
+		if Verbose {
+			fmt.Printf("%s | SERVE: JSON index page (%s) to %s in %s\n",
+				startTime.Format(logDate),
+				humanReadableSize(written),
+				realIP(r),
+				time.Since(startTime).Round(time.Microsecond),
+			)
+		}
+	}
+}
+
+func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
+	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		if Verbose {
+			fmt.Printf("%s | SERVE: Index rebuild requested by %s\n",
+				time.Now().Format(logDate),
+				realIP(r),
+			)
+		}
+
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
+		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		rebuildIndex(args, index, formats, encoder, errorChannel)
+
+		_, err := w.Write([]byte("Ok\n"))
+		if err != nil {
+			errorChannel <- err
+
+			return
+		}
+	}
+}
+
 func registerIndexInterval(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, quit <-chan struct{}, errorChannel chan<- error) {
 	interval, err := time.ParseDuration(IndexInterval)
 	if err != nil {
@@ -200,16 +284,13 @@ func registerIndexInterval(args []string, index *fileIndex, formats types.Types,
 		for {
 			select {
 			case <-ticker.C:
-				startTime := time.Now()
-
-				rebuildIndex(args, index, formats, encoder, errorChannel)
-
 				if Verbose {
-					fmt.Printf("%s | INDEX: Automatic rebuild took %s\n",
-						startTime.Format(logDate),
-						time.Since(startTime).Round(time.Microsecond),
+					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n",
+						time.Now().Format(logDate),
 					)
 				}
+
+				rebuildIndex(args, index, formats, encoder, errorChannel)
 			case <-quit:
 				ticker.Stop()
 
@@ -217,18 +298,4 @@ func registerIndexInterval(args []string, index *fileIndex, formats types.Types,
 			}
 		}
 	}()
-}
-
-func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
-	index.clear()
-
-	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
-}
-
-func importIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
-	if IndexFile != "" {
-		index.Import(IndexFile, errorChannel)
-	}
-
-	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
 }
