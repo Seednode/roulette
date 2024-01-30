@@ -188,6 +188,38 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
+func registerIndexInterval(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, quit <-chan struct{}, errorChannel chan<- error) {
+	interval, err := time.ParseDuration(IndexInterval)
+	if err != nil {
+		errorChannel <- err
+
+		return
+	}
+	ticker := time.NewTicker(interval)
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				startTime := time.Now()
+
+				rebuildIndex(args, index, formats, encoder, errorChannel)
+
+				if Verbose {
+					fmt.Printf("%s | INDEX: Automatic rebuild took %s\n",
+						startTime.Format(logDate),
+						time.Since(startTime).Round(time.Microsecond),
+					)
+				}
+			case <-quit:
+				ticker.Stop()
+
+				return
+			}
+		}
+	}()
+}
+
 func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	index.clear()
 

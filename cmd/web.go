@@ -52,21 +52,6 @@ func newPage(title, body string) string {
 	return htmlBody.String()
 }
 
-func noFiles(w http.ResponseWriter, r *http.Request) {
-	startTime := time.Now()
-
-	w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
-
-	w.Write([]byte("No files found in the specified path(s).\n"))
-
-	if Verbose {
-		fmt.Printf("%s | SERVE: Empty path notification to %s\n",
-			startTime.Format(logDate),
-			r.RemoteAddr,
-		)
-	}
-}
-
 func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		prefix := Prefix + sourcePrefix
@@ -221,7 +206,18 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 			path, err = newFile(list, sortOrder, filename, formats)
 			switch {
 			case path == "":
-				noFiles(w, r)
+				startTime := time.Now()
+
+				w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+				w.Write([]byte("No files found in the specified path(s).\n"))
+
+				if Verbose {
+					fmt.Printf("%s | SERVE: Empty path notification to %s\n",
+						startTime.Format(logDate),
+						r.RemoteAddr,
+					)
+				}
 
 				return
 			case err != nil && err == ErrNoMediaFound:
@@ -458,9 +454,10 @@ func redirectRoot() httprouter.Handle {
 }
 
 func ServePage(args []string) error {
+	var err error
+
 	timeZone := os.Getenv("TZ")
 	if timeZone != "" {
-		var err error
 		time.Local, err = time.LoadLocation(timeZone)
 		if err != nil {
 			return err
@@ -593,34 +590,7 @@ func ServePage(args []string) error {
 		importIndex(paths, index, formats, encoder, errorChannel)
 
 		if IndexInterval != "" {
-			interval, err := time.ParseDuration(IndexInterval)
-			if err != nil {
-				return err
-			}
-
-			ticker := time.NewTicker(interval)
-
-			go func() {
-				for {
-					select {
-					case <-ticker.C:
-						startTime := time.Now()
-
-						rebuildIndex(args, index, formats, encoder, errorChannel)
-
-						if Verbose {
-							fmt.Printf("%s | INDEX: Automatic rebuild took %s\n",
-								startTime.Format(logDate),
-								time.Since(startTime).Round(time.Microsecond),
-							)
-						}
-					case <-quit:
-						ticker.Stop()
-
-						return
-					}
-				}
-			}()
+			registerIndexInterval(args, index, formats, encoder, quit, errorChannel)
 		}
 	}
 
