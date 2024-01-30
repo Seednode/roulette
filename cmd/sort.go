@@ -147,7 +147,7 @@ func paginate(path, first, last, queryParams string, filename *regexp.Regexp, fo
 
 	var html strings.Builder
 
-	html.WriteString(`<table style="margin-left:auto;margin-right:auto;"><tr><td>`)
+	html.WriteString(`<table><tr><td>`)
 
 	html.WriteString(fmt.Sprintf(`<button onclick="window.location.href = '%s%s%s%s';"%s>First</button>`,
 		Prefix,

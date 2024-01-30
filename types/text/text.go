@@ -30,6 +30,7 @@ func (t Format) CSS() string {
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
 	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;overflow:hidden;}`)
+	css.WriteString(`table{margin-left:auto;margin-right:auto;}`)
 	css.WriteString(`textarea{border:none;caret-color:transparent;outline:none;margin:.5rem;`)
 	css.WriteString(`height:99%;width:99%;white-space:pre;overflow:auto;}`)
 

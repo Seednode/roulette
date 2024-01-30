@@ -23,6 +23,7 @@ func (t Format) CSS() string {
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
 	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+	css.WriteString(`table{margin-left:auto;margin-right:auto;}`)
 
 	return css.String()
 }

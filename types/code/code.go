@@ -64,8 +64,9 @@ func (t Format) CSS() string {
 
 	css.Write(b)
 
-	css.WriteString("html{height:100%;width:100%;}\n")
-	css.WriteString("a{bottom:0;left:0;position:absolute;right:0;top:0;margin:1rem;padding:0;height:99%;width:99%;color:inherit;text-decoration:none;}\n")
+	css.WriteString("html{height:100%;width:100%;}")
+	css.WriteString("a{bottom:0;left:0;position:absolute;right:0;top:0;margin:1rem;padding:0;height:99%;width:99%;color:inherit;text-decoration:none;}")
+	css.WriteString(`table{margin-left:auto;margin-right:auto;}`)
 	if t.Fun {
 		css.WriteString("body{font-family: \"Comic Sans MS\", cursive, \"Brush Script MT\", sans-serif;}\n")
 	}

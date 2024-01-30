@@ -28,6 +28,7 @@ func (t Format) CSS() string {
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
 	css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
+	css.WriteString(`table{margin-left:auto;margin-right:auto;}`)
 	css.WriteString(`video{margin:auto;display:block;max-width:97%;max-height:97%;`)
 	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);}`)
 
