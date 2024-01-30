@@ -251,8 +251,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 		if Verbose {
 			fmt.Printf("%s | SERVE: Index rebuild requested by %s\n",
 				time.Now().Format(logDate),
-				realIP(r),
-			)
+				realIP(r))
 		}
 
 		w.Header().Add("Content-Security-Policy", "default-src 'self';")
@@ -285,9 +284,7 @@ func registerIndexInterval(args []string, index *fileIndex, formats types.Types,
 			select {
 			case <-ticker.C:
 				if Verbose {
-					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n",
-						time.Now().Format(logDate),
-					)
+					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n", time.Now().Format(logDate))
 				}
 
 				rebuildIndex(args, index, formats, encoder, errorChannel)

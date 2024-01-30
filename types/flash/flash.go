@@ -15,11 +15,7 @@ import (
 type Format struct{}
 
 func (t Format) CSP(w http.ResponseWriter) string {
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s'; script-src 'self' 'unsafe-inline'", nonce))
-
-	return nonce
+	return ""
 }
 
 func (t Format) CSS() string {
@@ -38,8 +34,14 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
 	var html strings.Builder
 
-	html.WriteString(fmt.Sprintf(`<script nonce=%q src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, nonce, fileUri))
-	html.WriteString(fmt.Sprintf(`<br /><button onclick="window.location.href = '%s';">Next</button>`, rootUrl))
+	html.WriteString(fmt.Sprintf(`<script nonce=%q src="https://unpkg.com/@ruffle-rs/ruffle"></script><script nonce=%q>window.RufflePlayer.config = {autoplay:"on"};</script><embed nonce=%qsrc="%s"></embed>`,
+		nonce,
+		nonce,
+		nonce,
+		fileUri),
+	)
+	html.WriteString(`<br /><button id="next">Next</button>`)
+	html.WriteString(fmt.Sprintf(`<script nonce=%q>window.addEventListener("load", function () { document.getElementById("next").addEventListener("click", function () { window.location.href = '%s'; }) }); </script>`, nonce, rootUrl))
 
 	return html.String(), nil
 }

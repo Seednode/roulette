@@ -47,7 +47,8 @@ func humanReadableSize(bytes int) string {
 	}
 
 	return fmt.Sprintf("%.1f %cB",
-		float64(bytes)/float64(div), "kMGTPE"[exp])
+		float64(bytes)/float64(div),
+		"kMGTPE"[exp])
 }
 
 func kill(path string, index *fileIndex) error {
@@ -136,7 +137,10 @@ func tryExtensions(splitPath *splitPath, formats types.Types) (string, error) {
 	var path string
 
 	for extension := range formats {
-		path = fmt.Sprintf("%s%s%s", splitPath.base, splitPath.number, extension)
+		path = fmt.Sprintf("%s%s%s",
+			splitPath.base,
+			splitPath.number,
+			extension)
 
 		exists, err := fileExists(path)
 		if err != nil {
@@ -178,8 +182,7 @@ func pathIsValid(path string, paths []string) bool {
 	case Verbose && !matchesPrefix:
 		fmt.Printf("%s | ERROR: File outside specified path(s): %s\n",
 			time.Now().Format(logDate),
-			path,
-		)
+			path)
 
 		return false
 	case !matchesPrefix:
@@ -423,8 +426,7 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 			filesMatched+filesSkipped,
 			directoriesMatched,
 			directoriesMatched+directoriesSkipped,
-			time.Since(startTime).Round(time.Microsecond),
-		)
+			time.Since(startTime).Round(time.Microsecond))
 	}
 
 	slices.Sort(list)
@@ -478,7 +480,9 @@ func pickFile(list []string) (string, error) {
 
 func preparePath(prefix, path string) string {
 	if runtime.GOOS == "windows" {
-		return fmt.Sprintf("%s/%s", prefix, filepath.ToSlash(path))
+		return fmt.Sprintf("%s/%s",
+			prefix,
+			filepath.ToSlash(path))
 	}
 
 	return prefix + path
@@ -530,8 +534,7 @@ func validatePaths(args []string, formats types.Types) ([]string, error) {
 			if Verbose {
 				fmt.Printf("%s | PATHS: Added %s\n",
 					time.Now().Format(logDate),
-					args[i],
-				)
+					args[i])
 			}
 
 			paths = append(paths, path)
@@ -540,8 +543,7 @@ func validatePaths(args []string, formats types.Types) ([]string, error) {
 				fmt.Printf("%s | PATHS: Added %s [resolved to %s]\n",
 					time.Now().Format(logDate),
 					args[i],
-					path,
-				)
+					path)
 			}
 
 			paths = append(paths, path)
@@ -549,16 +551,14 @@ func validatePaths(args []string, formats types.Types) ([]string, error) {
 			if Verbose {
 				fmt.Printf("%s | PATHS: Skipped %s (No supported files found)\n",
 					time.Now().Format(logDate),
-					args[i],
-				)
+					args[i])
 			}
 		case !pathMatches && !hasSupportedFiles:
 			if Verbose {
 				fmt.Printf("%s | PATHS: Skipped %s [resolved to %s] (No supported files found)\n",
 					time.Now().Format(logDate),
 					args[i],
-					path,
-				)
+					path)
 			}
 		}
 	}

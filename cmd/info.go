@@ -40,8 +40,7 @@ func serveExtensions(formats types.Types, available bool, errorChannel chan<- er
 				startTime.Format(logDate),
 				humanReadableSize(written),
 				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
+				time.Since(startTime).Round(time.Microsecond))
 		}
 	}
 }
@@ -72,8 +71,7 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 				startTime.Format(logDate),
 				humanReadableSize(written),
 				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
+				time.Since(startTime).Round(time.Microsecond))
 		}
 	}
 }

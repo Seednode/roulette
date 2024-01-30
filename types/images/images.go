@@ -136,9 +136,11 @@ func ImageDimensions(path string) (*dimensions, error) {
 	switch {
 	case errors.Is(err, os.ErrNotExist):
 		fmt.Printf("File %s does not exist\n", path)
+
 		return &dimensions{}, nil
 	case err != nil:
 		fmt.Printf("File %s open returned error: %s\n", path, err)
+
 		return &dimensions{}, err
 	}
 	defer file.Close()
@@ -147,9 +149,11 @@ func ImageDimensions(path string) (*dimensions, error) {
 	switch {
 	case errors.Is(err, image.ErrFormat):
 		fmt.Printf("File %s has invalid image format\n", path)
+
 		return &dimensions{width: 0, height: 0}, nil
 	case err != nil:
 		fmt.Printf("File %s decode returned error: %s\n", path, err)
+
 		return &dimensions{}, err
 	}
 

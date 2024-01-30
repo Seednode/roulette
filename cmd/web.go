@@ -617,8 +617,7 @@ func ServePage(args []string) error {
 		fmt.Printf("%s | SERVE: Listening on http://%s%s/\n",
 			time.Now().Format(logDate),
 			listenHost,
-			Prefix,
-		)
+			Prefix)
 	}
 
 	err = srv.ListenAndServe()

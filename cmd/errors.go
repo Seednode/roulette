@@ -54,7 +54,6 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	startTime := time.Now()
 
-	w.WriteHeader(http.StatusInternalServerError)
 	w.Header().Add("Content-Type", "text/html")
 
 	nonce := types.GetNonce()
@@ -67,8 +66,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
 			startTime.Format(logDate),
 			r.URL.Path,
-			r.RemoteAddr,
-		)
+			r.RemoteAddr)
 	}
 }
 
