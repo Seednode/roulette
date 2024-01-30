@@ -73,16 +73,16 @@ You can combine these two parameters, with exclusions taking priority over inclu
 Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
 
 ## Ignoring directories
-If the `--ignore` flag is passed, any directory containing a file named `.roulette-ignore` (configurable with `--ignore-file`) will be skipped during the scanning stage.
+If the `--ignore <filename>` flag is passed, any directory containing a file with the specified name will be skipped during the scanning stage.
 
 ## Indexing
 If the `-i|--index` flag is passed, all specified paths will be indexed on start.
 
 This will slightly increase the delay before the application begins responding to requests, but should significantly speed up subsequent requests.
 
-Automatic index rebuilds can be enabled via the `--index-interval` flag, which accepts [time.Duration](https://pkg.go.dev/time#ParseDuration) strings.
+Automatic index rebuilds can be enabled via the `--index-interval <duration>` flag, which accepts [time.Duration](https://pkg.go.dev/time#ParseDuration) strings.
 
-If `--index-file` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
+If `--index-file <filename>` is set, the index will be loaded from the specified file on start, and written to the file whenever it is re-generated.
 
 The index file consists of [zstd](https://facebook.github.io/zstd/)-compressed [gobs](https://pkg.go.dev/encoding/gob).
 
@@ -132,7 +132,7 @@ Note: These options require sequentially-numbered files matching the following p
 ## Themes
 The `--code` handler provides syntax highlighting via [alecthomas/chroma](https://github.com/alecthomas/chroma).
 
-Any [supported theme](https://pkg.go.dev/github.com/alecthomas/chroma/v2@v2.9.1/styles#pkg-variables) can be passed via the `--theme` flag.
+Any [supported theme](https://pkg.go.dev/github.com/alecthomas/chroma/v2@v2.9.1/styles#pkg-variables) can be passed via the `--code-theme` flag.
 
 By default, [`solarized-dark256`](https://xyproto.github.io/splash/docs/solarized-dark256.html) is used.
 
@@ -149,13 +149,12 @@ Flags:
       --allow-empty             allow specifying paths containing no supported files
       --api                     expose REST API
       --audio                   enable support for audio files
-      --binary-prefix           use IEC binary prefixes instead of SI decimal prefixes
   -b, --bind string             address to bind to (default "0.0.0.0")
       --case-insensitive        use case-insensitive matching for filters
       --code                    enable support for source code files
       --code-theme string       theme for source code syntax highlighting (default "solarized-dark256")
       --concurrency int         maximum concurrency for scan threads (default 1024)
-  -d, --debug                   display even more verbose logs
+  -d, --debug                   log file permission errors instead of simply skipping the files
       --disable-buttons         disable first/prev/next/last buttons
       --exit-on-error           shut down webserver on error, instead of just printing error
       --fallback                serve files as application/octet-stream if no matching format is registered
@@ -165,7 +164,7 @@ Flags:
   -h, --help                    help for roulette
       --ignore string           filename used to indicate directory should be skipped
       --images                  enable support for image files
-      --index                   generate index of supported file paths at startup
+  -i, --index                   generate index of supported file paths at startup
       --index-file string       path to optional persistent index file
       --index-interval string   interval at which to regenerate index (e.g. "5m" or "1h")
       --max-file-count int      skip directories with file counts above this value (default 2147483647)

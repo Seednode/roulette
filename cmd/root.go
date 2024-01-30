@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "7.0.0"
+	ReleaseVersion    string = "8.0.0"
 )
 
 var (
@@ -26,7 +26,6 @@ var (
 	AllowEmpty      bool
 	API             bool
 	Audio           bool
-	BinaryPrefix    bool
 	Bind            string
 	CaseInsensitive bool
 	Code            bool
@@ -119,13 +118,12 @@ func init() {
 	rootCmd.Flags().BoolVar(&AllowEmpty, "allow-empty", false, "allow specifying paths containing no supported files")
 	rootCmd.Flags().BoolVar(&API, "api", false, "expose REST API")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
-	rootCmd.Flags().BoolVar(&BinaryPrefix, "binary-prefix", false, "use IEC binary prefixes instead of SI decimal prefixes")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
 	rootCmd.Flags().BoolVar(&CaseInsensitive, "case-insensitive", false, "use case-insensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 1024, "maximum concurrency for scan threads")
-	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "display even more verbose logs")
+	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "log file permission errors instead of simply skipping the files")
 	rootCmd.Flags().BoolVar(&DisableButtons, "disable-buttons", false, "disable first/prev/next/last buttons")
 	rootCmd.Flags().BoolVar(&ExitOnError, "exit-on-error", false, "shut down webserver on error, instead of just printing error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
@@ -134,7 +132,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
 	rootCmd.Flags().StringVar(&Ignore, "ignore", "", "filename used to indicate directory should be skipped")
 	rootCmd.Flags().BoolVar(&Images, "images", false, "enable support for image files")
-	rootCmd.Flags().BoolVar(&Index, "index", false, "generate index of supported file paths at startup")
+	rootCmd.Flags().BoolVarP(&Index, "index", "i", false, "generate index of supported file paths at startup")
 	rootCmd.Flags().StringVar(&IndexFile, "index-file", "", "path to optional persistent index file")
 	rootCmd.Flags().StringVar(&IndexInterval, "index-interval", "", "interval at which to regenerate index (e.g. \"5m\" or \"1h\")")
 	rootCmd.Flags().IntVar(&MaxFileCount, "max-file-count", math.MaxInt32, "skip directories with file counts above this value")

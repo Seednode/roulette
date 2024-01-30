@@ -33,19 +33,7 @@ type scanStats struct {
 }
 
 func humanReadableSize(bytes int) string {
-	var unit int
-	var suffix string
-	var prefixes string
-
-	if BinaryPrefix {
-		unit = 1024
-		prefixes = "KMGTPE"
-		suffix = "iB"
-	} else {
-		unit = 1000
-		prefixes = "kMGTPE"
-		suffix = "B"
-	}
+	unit := 1000
 
 	if bytes < unit {
 		return fmt.Sprintf("%d B", bytes)
@@ -58,8 +46,8 @@ func humanReadableSize(bytes int) string {
 		exp++
 	}
 
-	return fmt.Sprintf("%.1f %c%s",
-		float64(bytes)/float64(div), prefixes[exp], suffix)
+	return fmt.Sprintf("%.1f %cB",
+		float64(bytes)/float64(div), "kMGTPE"[exp])
 }
 
 func kill(path string, index *fileIndex) error {
