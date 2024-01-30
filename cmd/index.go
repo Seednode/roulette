@@ -195,6 +195,7 @@ func registerIndexInterval(args []string, index *fileIndex, formats types.Types,
 
 		return
 	}
+
 	ticker := time.NewTicker(interval)
 
 	go func() {
