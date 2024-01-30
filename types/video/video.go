@@ -16,7 +16,11 @@ import (
 type Format struct{}
 
 func (t Format) CSP(w http.ResponseWriter) string {
-	return ""
+	nonce := types.GetNonce(6)
+
+	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
+
+	return nonce
 }
 
 func (t Format) CSS() string {
@@ -35,8 +39,9 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 }
 
 func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
-	return fmt.Sprintf(`<a href="%s"><video controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
+	return fmt.Sprintf(`<a href="%s"><video nonce=%q controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the video tag.</video></a>`,
 		rootUrl,
+		nonce,
 		fileUri,
 		mime,
 		fileName), nil

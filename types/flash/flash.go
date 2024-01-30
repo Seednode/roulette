@@ -15,7 +15,11 @@ import (
 type Format struct{}
 
 func (t Format) CSP(w http.ResponseWriter) string {
-	return ""
+	nonce := types.GetNonce(6)
+
+	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s'; script-src 'self' 'unsafe-inline'", nonce))
+
+	return nonce
 }
 
 func (t Format) CSS() string {

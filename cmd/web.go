@@ -55,6 +55,8 @@ func newPage(title, body, nonce string) string {
 
 func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
 		prefix := Prefix + sourcePrefix
 
 		path := strings.TrimPrefix(r.URL.Path, prefix)
@@ -157,6 +159,8 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 
 func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
 			errorChannel <- err
@@ -422,6 +426,8 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 		startTime := time.Now()
 
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
+
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 

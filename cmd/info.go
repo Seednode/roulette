@@ -21,6 +21,8 @@ func serveExtensions(formats types.Types, available bool, errorChannel chan<- er
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
 		var extensions string
@@ -51,13 +53,15 @@ func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) http
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
+
+		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
+
 		indexDump := index.List()
 
 		sort.SliceStable(indexDump, func(p, q int) bool {
 			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
 		})
-
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
 		response, err := json.MarshalIndent(indexDump, "", "    ")
 		if err != nil {
@@ -90,9 +94,11 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
-		rebuildIndex(args, index, formats, encoder, errorChannel)
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		rebuildIndex(args, index, formats, encoder, errorChannel)
 
 		_, err := w.Write([]byte("Ok\n"))
 		if err != nil {
@@ -114,6 +120,8 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
+
+		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
