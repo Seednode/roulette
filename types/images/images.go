@@ -50,7 +50,7 @@ func (t Format) CSS() string {
 		css.WriteString(`a{color:inherit;display:block;height:97%;width:100%;text-decoration:none;}`)
 	}
 
-	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;color:transparent;`)
+	css.WriteString(`img{margin:auto;display:block;max-width:97%;max-height:97%;`)
 	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`)
 	if t.Fun {
 		rotate := rand.Intn(360)
@@ -86,7 +86,7 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce s
 
 	var w strings.Builder
 
-	w.WriteString(fmt.Sprintf(`<a href="%s"><img nonce=%q id="main" src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+	w.WriteString(fmt.Sprintf(`<a href="%s"><img nonce=%q src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 		rootUrl,
 		nonce,
 		fileUri,
@@ -94,8 +94,6 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce s
 		dimensions.height,
 		mime,
 		fileName))
-
-	w.WriteString(fmt.Sprintf(`<script nonce=%q>window.addEventListener("load", function (){ document.getElementById("main").style.color='inherit' });</script>`, nonce))
 
 	return w.String(), nil
 }
