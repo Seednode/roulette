@@ -76,10 +76,10 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 	}
 }
 
-func registerAPIHandlers(mux *httprouter.Router, args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func registerAPIHandlers(mux *httprouter.Router, paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	if Index {
-		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(args, index, errorChannel))
-		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(args, index, formats, encoder, errorChannel))
+		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(index, errorChannel))
+		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(paths, index, formats, encoder, errorChannel))
 	}
 
 	mux.GET(Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))

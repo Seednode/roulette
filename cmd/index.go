@@ -191,21 +191,21 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
-func rebuildIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func rebuildIndex(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	index.clear()
 
-	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+	fileList(paths, &filters{}, "", index, formats, encoder, errorChannel)
 }
 
-func importIndex(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func importIndex(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
 	if IndexFile != "" {
 		index.Import(IndexFile, errorChannel)
 	}
 
-	fileList(args, &filters{}, "", index, formats, encoder, errorChannel)
+	fileList(paths, &filters{}, "", index, formats, encoder, errorChannel)
 }
 
-func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
+func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
@@ -246,7 +246,7 @@ func serveIndex(args []string, index *fileIndex, errorChannel chan<- error) http
 	}
 }
 
-func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if Verbose {
 			fmt.Printf("%s | SERVE: Index rebuild requested by %s\n",
@@ -258,7 +258,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
-		rebuildIndex(args, index, formats, encoder, errorChannel)
+		rebuildIndex(paths, index, formats, encoder, errorChannel)
 
 		_, err := w.Write([]byte("Ok\n"))
 		if err != nil {
@@ -269,7 +269,7 @@ func serveIndexRebuild(args []string, index *fileIndex, formats types.Types, enc
 	}
 }
 
-func registerIndexInterval(args []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, quit <-chan struct{}, errorChannel chan<- error) {
+func registerIndexInterval(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, quit <-chan struct{}, errorChannel chan<- error) {
 	interval, err := time.ParseDuration(IndexInterval)
 	if err != nil {
 		errorChannel <- err
@@ -287,7 +287,7 @@ func registerIndexInterval(args []string, index *fileIndex, formats types.Types,
 					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n", time.Now().Format(logDate))
 				}
 
-				rebuildIndex(args, index, formats, encoder, errorChannel)
+				rebuildIndex(paths, index, formats, encoder, errorChannel)
 			case <-quit:
 				ticker.Stop()
 

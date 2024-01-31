@@ -594,14 +594,14 @@ func ServePage(args []string) error {
 	defer close(quit)
 
 	if API {
-		registerAPIHandlers(mux, args, index, formats, encoder, errorChannel)
+		registerAPIHandlers(mux, paths, index, formats, encoder, errorChannel)
 	}
 
 	if Index {
 		importIndex(paths, index, formats, encoder, errorChannel)
 
 		if IndexInterval != "" {
-			registerIndexInterval(args, index, formats, encoder, quit, errorChannel)
+			registerIndexInterval(paths, index, formats, encoder, quit, errorChannel)
 		}
 	}
 

@@ -26,9 +26,16 @@ var (
 )
 
 func notFound(w http.ResponseWriter, r *http.Request, path string) error {
-	startTime := time.Now()
+	if Verbose {
+		fmt.Printf("%s | ERROR: Unavailable file %s requested by %s\n",
+			time.Now().Format(logDate),
+			path,
+			r.RemoteAddr,
+		)
+	}
 
 	w.WriteHeader(http.StatusNotFound)
+
 	w.Header().Add("Content-Type", "text/html")
 
 	nonce := types.GetNonce()
@@ -40,19 +47,16 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 		return err
 	}
 
-	if Verbose {
-		fmt.Printf("%s | ERROR: Unavailable file %s requested by %s\n",
-			startTime.Format(logDate),
-			path,
-			r.RemoteAddr,
-		)
-	}
-
 	return nil
 }
 
 func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
-	startTime := time.Now()
+	if Verbose {
+		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
+			time.Now().Format(logDate),
+			r.URL.Path,
+			r.RemoteAddr)
+	}
 
 	w.Header().Add("Content-Type", "text/html")
 
@@ -62,12 +66,6 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 
 	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.", nonce)))
 
-	if Verbose {
-		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
-			startTime.Format(logDate),
-			r.URL.Path,
-			r.RemoteAddr)
-	}
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {

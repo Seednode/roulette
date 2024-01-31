@@ -522,7 +522,7 @@ func validatePaths(args []string, formats types.Types) ([]string, error) {
 			return nil, err
 		}
 
-		pathMatches := (args[i] == path)
+		pathMatches := args[i] == path
 
 		hasSupportedFiles, err := hasSupportedFiles(path, formats)
 		if err != nil {
