@@ -147,7 +147,7 @@ func (index *fileIndex) Export(path string, errorChannel chan<- error) {
 	}
 	defer encoder.Close()
 
-	enc := gob.NewEncoder(file)
+	enc := gob.NewEncoder(encoder)
 
 	index.mutex.RLock()
 	err = enc.Encode(&index.list)
