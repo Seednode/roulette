@@ -357,7 +357,7 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 			}
 		}
 
-		if Index && !DisableButtons && sortOrder != "" {
+		if Index && !NoButtons && sortOrder != "" {
 			paginated, err := paginate(path, first, last, queryParams, filename, formats)
 			if err != nil {
 				errorChannel <- err
@@ -512,7 +512,7 @@ func ServePage(args []string) error {
 	}
 
 	if Images || All {
-		formats.Add(images.Format{DisableButtons: DisableButtons, Fun: Fun})
+		formats.Add(images.Format{NoButtons: NoButtons, Fun: Fun})
 	}
 
 	paths, err := validatePaths(args, formats)
@@ -548,7 +548,7 @@ func ServePage(args []string) error {
 	go func() {
 		for err := range errorChannel {
 			switch {
-			case ExitOnError:
+			case ErrorExit:
 				fmt.Printf("%s | FATAL: %v\n", time.Now().Format(logDate), err)
 			case Debug && errors.Is(err, os.ErrNotExist) || errors.Is(err, os.ErrPermission):
 				fmt.Printf("%s | DEBUG: %v\n", time.Now().Format(logDate), err)

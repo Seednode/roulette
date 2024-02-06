@@ -27,8 +27,8 @@ type dimensions struct {
 }
 
 type Format struct {
-	DisableButtons bool
-	Fun            bool
+	NoButtons bool
+	Fun       bool
 }
 
 func (t Format) CSP(w http.ResponseWriter) string {
@@ -43,7 +43,7 @@ func (t Format) CSS() string {
 	var css strings.Builder
 
 	css.WriteString(`html,body{margin:0;padding:0;height:100%;}`)
-	if t.DisableButtons {
+	if t.NoButtons {
 		css.WriteString(`a{color:inherit;display:block;height:100%;width:100%;text-decoration:none;}`)
 	} else {
 		css.WriteString(`a{color:inherit;display:block;height:97%;width:100%;text-decoration:none;}`)

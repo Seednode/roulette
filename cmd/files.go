@@ -258,7 +258,7 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 
 	var skipFiles = false
 
-	if files > MaxFileCount || files < MinFileCount || skipDir {
+	if files > MaxFiles || files < MinFiles || skipDir {
 		stats.filesSkipped <- files
 		stats.directoriesSkipped <- 1
 
