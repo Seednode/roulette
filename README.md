@@ -155,8 +155,7 @@ Flags:
       --code-theme string       theme for source code syntax highlighting (default "solarized-dark256")
       --concurrency int         maximum concurrency for scan threads (default 1024)
   -d, --debug                   log file permission errors instead of simply skipping the files
-      --disable-buttons         disable first/prev/next/last buttons
-      --exit-on-error           shut down webserver on error, instead of just printing error
+      --error-exit              shut down webserver on error, instead of just printing error
       --fallback                serve files as application/octet-stream if no matching format is registered
   -f, --filter                  enable filtering
       --flash                   enable support for shockwave flash files (via ruffle.rs)
@@ -167,8 +166,9 @@ Flags:
   -i, --index                   generate index of supported file paths at startup
       --index-file string       path to optional persistent index file
       --index-interval string   interval at which to regenerate index (e.g. "5m" or "1h")
-      --max-file-count int      skip directories with file counts above this value (default 2147483647)
-      --min-file-count int      skip directories with file counts below this value
+      --max-files int           skip directories with file counts above this value (default 2147483647)
+      --min-files int           skip directories with file counts below this value
+      --no-buttons              disable first/prev/next/last buttons
   -p, --port int                port to listen on (default 8080)
       --prefix string           root path for http handlers (for reverse proxying) (default "/")
       --profile                 register net/http/pprof handlers
