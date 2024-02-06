@@ -25,13 +25,56 @@ type fileIndex struct {
 	list  []string
 }
 
+func makeTree(list []string) ([]byte, error) {
+	tree := make(map[string]any)
+
+	cur := tree
+
+	for _, entry := range list {
+		if len(entry) > 0 && entry[0] == '/' {
+			entry = entry[1:]
+		}
+
+		path := strings.Split(entry, string(os.PathSeparator))
+
+		for i, last := 0, len(path)-1; i < len(path); i++ {
+			if i == last {
+				cur[path[i]] = nil
+
+				break
+			}
+
+			v, ok := cur[path[i]].(map[string]any)
+			if !ok || v == nil {
+				v = make(map[string]any)
+				cur[path[i]] = v
+			}
+
+			cur = v
+		}
+
+		cur = tree
+	}
+
+	resp, err := json.MarshalIndent(tree, "", "  ")
+	if err != nil {
+		return []byte{}, err
+	}
+
+	return resp, nil
+}
+
 func (index *fileIndex) List() []string {
 	index.mutex.RLock()
-	val := make([]string, len(index.list))
-	copy(val, index.list)
+	list := make([]string, len(index.list))
+	copy(list, index.list)
 	index.mutex.RUnlock()
 
-	return val
+	sort.SliceStable(list, func(p, q int) bool {
+		return strings.ToLower(list[p]) < strings.ToLower(list[q])
+	})
+
+	return list
 }
 
 func (index *fileIndex) remove(path string) {
@@ -217,13 +260,7 @@ func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 
 		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-		indexDump := index.List()
-
-		sort.SliceStable(indexDump, func(p, q int) bool {
-			return strings.ToLower(indexDump[p]) < strings.ToLower(indexDump[q])
-		})
-
-		response, err := json.MarshalIndent(indexDump, "", "    ")
+		response, err := makeTree(index.List())
 		if err != nil {
 			errorChannel <- err
 
