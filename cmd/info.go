@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/klauspost/compress/zstd"
 	"seedno.de/seednode/roulette/types"
 )
 
@@ -76,10 +75,10 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 	}
 }
 
-func registerAPIHandlers(mux *httprouter.Router, paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func registerAPIHandlers(mux *httprouter.Router, paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
 		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(index, errorChannel))
-		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(paths, index, formats, encoder, errorChannel))
+		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(paths, index, formats, errorChannel))
 	}
 
 	mux.GET(Prefix+AdminPrefix+"/extensions/available", serveExtensions(formats, true, errorChannel))

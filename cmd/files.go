@@ -21,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/klauspost/compress/zstd"
 	"seedno.de/seednode/roulette/types"
 )
 
@@ -434,18 +433,18 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	return list
 }
 
-func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) []string {
+func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	switch {
 	case Index && !index.isEmpty() && filters.isEmpty():
 		return index.List()
 	case Index && !index.isEmpty() && !filters.isEmpty():
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && !filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel), encoder, errorChannel)
+		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
 
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel), encoder, errorChannel)
+		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
 
 		return index.List()
 	case !Index && !filters.isEmpty():

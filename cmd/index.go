@@ -58,7 +58,7 @@ func (index *fileIndex) remove(path string) {
 	index.mutex.Unlock()
 }
 
-func (index *fileIndex) set(val []string, encoder *zstd.Encoder, errorChannel chan<- error) {
+func (index *fileIndex) set(val []string, errorChannel chan<- error) {
 	length := len(val)
 
 	if length < 1 {
@@ -71,7 +71,7 @@ func (index *fileIndex) set(val []string, encoder *zstd.Encoder, errorChannel ch
 	index.mutex.Unlock()
 
 	if Index && IndexFile != "" {
-		index.Export(IndexFile, encoder, errorChannel)
+		index.Export(IndexFile, errorChannel)
 	}
 }
 
@@ -89,7 +89,7 @@ func (index *fileIndex) isEmpty() bool {
 	return length == 0
 }
 
-func (index *fileIndex) Export(path string, encoder *zstd.Encoder, errorChannel chan<- error) {
+func (index *fileIndex) Export(path string, errorChannel chan<- error) {
 	startTime := time.Now()
 
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
@@ -100,11 +100,15 @@ func (index *fileIndex) Export(path string, encoder *zstd.Encoder, errorChannel 
 	}
 	defer file.Close()
 
-	encoder.Reset(file)
+	encoder, err := zstd.NewWriter(file, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
+	if err != nil {
+		errorChannel <- err
 
+		return
+	}
 	defer encoder.Close()
 
-	enc := gob.NewEncoder(encoder)
+	enc := gob.NewEncoder(file)
 
 	index.mutex.RLock()
 	err = enc.Encode(&index.list)
@@ -191,18 +195,18 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 	}
 }
 
-func rebuildIndex(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func rebuildIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	index.clear()
 
-	fileList(paths, &filters{}, "", index, formats, encoder, errorChannel)
+	fileList(paths, &filters{}, "", index, formats, errorChannel)
 }
 
-func importIndex(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) {
+func importIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if IndexFile != "" {
 		index.Import(IndexFile, errorChannel)
 	}
 
-	fileList(paths, &filters{}, "", index, formats, encoder, errorChannel)
+	fileList(paths, &filters{}, "", index, formats, errorChannel)
 }
 
 func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
@@ -246,7 +250,7 @@ func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	}
 }
 
-func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
+func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		if Verbose {
 			fmt.Printf("%s | SERVE: Index rebuild requested by %s\n",
@@ -258,7 +262,7 @@ func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, en
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
-		rebuildIndex(paths, index, formats, encoder, errorChannel)
+		rebuildIndex(paths, index, formats, errorChannel)
 
 		_, err := w.Write([]byte("Ok\n"))
 		if err != nil {
@@ -269,7 +273,7 @@ func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, en
 	}
 }
 
-func registerIndexInterval(paths []string, index *fileIndex, formats types.Types, encoder *zstd.Encoder, quit <-chan struct{}, errorChannel chan<- error) {
+func registerIndexInterval(paths []string, index *fileIndex, formats types.Types, quit <-chan struct{}, errorChannel chan<- error) {
 	interval, err := time.ParseDuration(IndexInterval)
 	if err != nil {
 		errorChannel <- err
@@ -287,7 +291,7 @@ func registerIndexInterval(paths []string, index *fileIndex, formats types.Types
 					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n", time.Now().Format(logDate))
 				}
 
-				rebuildIndex(paths, index, formats, encoder, errorChannel)
+				rebuildIndex(paths, index, formats, errorChannel)
 			case <-quit:
 				ticker.Stop()
 

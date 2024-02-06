@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/klauspost/compress/zstd"
 	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
 	"seedno.de/seednode/roulette/types/audio"
@@ -157,7 +156,7 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 	}
 }
 
-func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, encoder *zstd.Encoder, errorChannel chan<- error) httprouter.Handle {
+func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
@@ -194,7 +193,7 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 			}
 		}
 
-		list := fileList(paths, filters, sortOrder, index, formats, encoder, errorChannel)
+		list := fileList(paths, filters, sortOrder, index, formats, errorChannel)
 
 	loop:
 		for timeout := time.After(timeout); ; {
@@ -561,18 +560,13 @@ func ServePage(args []string) error {
 		}
 	}()
 
-	encoder, err := zstd.NewWriter(nil, zstd.WithEncoderLevel(zstd.SpeedBestCompression))
-	if err != nil {
-		return err
-	}
-
 	filename := regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
 
 	if !strings.HasSuffix(Prefix, "/") {
 		Prefix = Prefix + "/"
 	}
 
-	mux.GET(Prefix, serveRoot(paths, index, filename, formats, encoder, errorChannel))
+	mux.GET(Prefix, serveRoot(paths, index, filename, formats, errorChannel))
 
 	Prefix = strings.TrimSuffix(Prefix, "/")
 
@@ -594,14 +588,14 @@ func ServePage(args []string) error {
 	defer close(quit)
 
 	if API {
-		registerAPIHandlers(mux, paths, index, formats, encoder, errorChannel)
+		registerAPIHandlers(mux, paths, index, formats, errorChannel)
 	}
 
 	if Index {
-		importIndex(paths, index, formats, encoder, errorChannel)
+		importIndex(paths, index, formats, errorChannel)
 
 		if IndexInterval != "" {
-			registerIndexInterval(paths, index, formats, encoder, quit, errorChannel)
+			registerIndexInterval(paths, index, formats, quit, errorChannel)
 		}
 	}
 
