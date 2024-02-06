@@ -28,32 +28,28 @@ type fileIndex struct {
 func makeTree(list []string) ([]byte, error) {
 	tree := make(map[string]any)
 
-	cur := tree
+	current := tree
 
 	for _, entry := range list {
-		if len(entry) > 0 && entry[0] == '/' {
-			entry = entry[1:]
-		}
-
 		path := strings.Split(entry, string(os.PathSeparator))
 
 		for i, last := 0, len(path)-1; i < len(path); i++ {
 			if i == last {
-				cur[path[i]] = nil
+				current[path[i]] = nil
 
 				break
 			}
 
-			v, ok := cur[path[i]].(map[string]any)
+			v, ok := current[path[i]].(map[string]any)
 			if !ok || v == nil {
 				v = make(map[string]any)
-				cur[path[i]] = v
+				current[path[i]] = v
 			}
 
-			cur = v
+			current = v
 		}
 
-		cur = tree
+		current = tree
 	}
 
 	resp, err := json.MarshalIndent(tree, "", "  ")
