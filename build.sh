@@ -35,7 +35,6 @@ platforms=(
   "openbsd/amd64"
   "openbsd/arm"
   "openbsd/arm64"
-  "openbsd/mips64"
   "wasip1/wasm"
   "windows/386"
   "windows/amd64"

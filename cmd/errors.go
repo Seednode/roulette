@@ -65,7 +65,6 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
 
 	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.", nonce)))
-
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
