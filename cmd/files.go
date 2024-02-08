@@ -8,15 +8,11 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"math/big"
-	"regexp"
-	"runtime"
-	"slices"
-
-	"crypto/rand"
+	"math/rand/v2"
 	"os"
 	"path/filepath"
-	"strconv"
+	"runtime"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -462,19 +458,9 @@ func pickFile(list []string) (string, error) {
 		return "", nil
 	case fileCount < 1:
 		return "", ErrNoMediaFound
-	}
+	}	
 
-	r, err := rand.Int(rand.Reader, big.NewInt(int64(fileCount)))
-	if err != nil {
-		return "", err
-	}
-
-	val, err := strconv.Atoi(strconv.FormatInt(r.Int64(), 10))
-	if err != nil {
-		return "", err
-	}
-
-	return list[val], nil
+	return list[rand.IntN(fileCount)], nil
 }
 
 func preparePath(prefix, path string) string {
