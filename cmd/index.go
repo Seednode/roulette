@@ -5,6 +5,7 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package cmd
 
 import (
+	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
@@ -57,7 +58,7 @@ func makeTree(list []string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return resp, nil
+	return bytes.ReplaceAll(resp, []byte(": null"), []byte{}), nil
 }
 
 func (index *fileIndex) List() []string {
