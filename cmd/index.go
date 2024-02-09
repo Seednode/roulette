@@ -5,7 +5,6 @@ Copyright © 2024 Seednode <seednode@seedno.de>
 package cmd
 
 import (
-	"bytes"
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
