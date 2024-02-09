@@ -312,7 +312,11 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 			return
 		}
 
-		nonce := format.CSP(w)
+		// Temporarily disabled until I figure out how to make things
+		// work properly with inline event handlers.
+		// nonce := format.CSP(w)
+		nonce := ""
+
 
 		mediaType := format.MediaType(filepath.Ext(path))
 
