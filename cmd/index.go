@@ -58,7 +58,7 @@ func makeTree(list []string) ([]byte, error) {
 		return []byte{}, err
 	}
 
-	return bytes.ReplaceAll(resp, []byte(": null"), []byte{}), nil
+	return resp, nil
 }
 
 func (index *fileIndex) List() []string {
