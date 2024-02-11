@@ -75,13 +75,13 @@ func (index *fileIndex) List() []string {
 
 func (index *fileIndex) remove(path string) {
 	index.mutex.RLock()
-	tempIndex := make([]string, len(index.list))
-	copy(tempIndex, index.list)
+	t := make([]string, len(index.list))
+	copy(t, index.list)
 	index.mutex.RUnlock()
 
 	var position int
 
-	for k, v := range tempIndex {
+	for k, v := range t {
 		if path == v {
 			position = k
 
@@ -89,11 +89,11 @@ func (index *fileIndex) remove(path string) {
 		}
 	}
 
-	tempIndex[position] = tempIndex[len(tempIndex)-1]
+	t[position] = t[len(t)-1]
 
 	index.mutex.Lock()
-	index.list = make([]string, len(tempIndex)-1)
-	copy(index.list, tempIndex[:len(tempIndex)-1])
+	index.list = make([]string, len(t)-1)
+	copy(index.list, t[:len(t)-1])
 	index.mutex.Unlock()
 }
 
