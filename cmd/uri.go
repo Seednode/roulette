@@ -47,12 +47,12 @@ func generateQueryParams(filters *filters, sortOrder, refreshInterval string) st
 	if Filtering {
 		queryParams.WriteString("include=")
 		if filters.hasIncludes() {
-			queryParams.WriteString(filters.includes())
+			queryParams.WriteString(strings.Join(filters.included, ","))
 		}
 
 		queryParams.WriteString("&exclude=")
 		if filters.hasExcludes() {
-			queryParams.WriteString(filters.excludes())
+			queryParams.WriteString(strings.Join(filters.excluded, ","))
 		}
 
 		hasParams = true

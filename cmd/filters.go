@@ -23,16 +23,8 @@ func (filters *filters) hasIncludes() bool {
 	return len(filters.included) != 0 && Filtering
 }
 
-func (filters *filters) includes() string {
-	return strings.Join(filters.included, ",")
-}
-
 func (filters *filters) hasExcludes() bool {
 	return len(filters.excluded) != 0 && Filtering
-}
-
-func (filters *filters) excludes() string {
-	return strings.Join(filters.excluded, ",")
 }
 
 func (filters *filters) apply(fileList []string) []string {
