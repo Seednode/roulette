@@ -316,15 +316,26 @@ func registerIndexInterval(paths []string, index *fileIndex, formats types.Types
 
 	ticker := time.NewTicker(interval)
 
+	if Verbose {
+		next := time.Now().Add(interval).Truncate(time.Second)
+		fmt.Printf("%s | INDEX: Next scheduled rebuild will run at %s\n", time.Now().Format(logDate), next.Format(logDate))
+	}
+
 	go func() {
 		for {
 			select {
 			case <-ticker.C:
+				next := time.Now().Add(interval).Truncate(time.Second)
+
 				if Verbose {
 					fmt.Printf("%s | INDEX: Started scheduled index rebuild\n", time.Now().Format(logDate))
 				}
 
 				rebuildIndex(paths, index, formats, errorChannel)
+
+				if Verbose {
+					fmt.Printf("%s | INDEX: Next scheduled rebuild will run at %s\n", time.Now().Format(logDate), next.Format(logDate))
+				}
 			case <-quit:
 				ticker.Stop()
 

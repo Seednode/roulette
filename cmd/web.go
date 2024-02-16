@@ -317,7 +317,6 @@ func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, forma
 		// nonce := format.CSP(w)
 		nonce := ""
 
-
 		mediaType := format.MediaType(filepath.Ext(path))
 
 		fileUri := Prefix + generateFileUri(path)
