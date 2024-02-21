@@ -182,7 +182,7 @@ Flags:
       --video                   enable support for video files
 ```
 
-## Building the Docker container
+## Building the Docker image
 From inside the cloned repository, build the image using the following command:
 
 `REGISTRY=<registry url> LATEST=yes TAG=alpine ./build-docker.sh`
