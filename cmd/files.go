@@ -306,7 +306,7 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 	wg2.Wait()
 }
 
-func scanPaths(paths []string, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
+func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) []string {
 	startTime := time.Now()
 
 	var filesMatched, filesSkipped int
@@ -430,24 +430,24 @@ func scanPaths(paths []string, sort string, index *fileIndex, formats types.Type
 	return list
 }
 
-func fileList(paths []string, filters *filters, sort string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
+func fileList(paths []string, filters *filters, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	switch {
 	case Index && !index.isEmpty() && filters.isEmpty():
 		return index.List()
 	case Index && !index.isEmpty() && !filters.isEmpty():
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && !filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
+		index.set(scanPaths(paths, formats, errorChannel), errorChannel)
 
 		return filters.apply(index.List())
 	case Index && index.isEmpty() && filters.isEmpty():
-		index.set(scanPaths(paths, sort, index, formats, errorChannel), errorChannel)
+		index.set(scanPaths(paths, formats, errorChannel), errorChannel)
 
 		return index.List()
 	case !Index && !filters.isEmpty():
-		return filters.apply(scanPaths(paths, sort, index, formats, errorChannel))
+		return filters.apply(scanPaths(paths, formats, errorChannel))
 	default:
-		return scanPaths(paths, sort, index, formats, errorChannel)
+		return scanPaths(paths, formats, errorChannel)
 	}
 }
 
@@ -459,7 +459,7 @@ func pickFile(list []string) (string, error) {
 		return "", nil
 	case fileCount < 1:
 		return "", ErrNoMediaFound
-	}	
+	}
 
 	return list[rand.IntN(fileCount)], nil
 }

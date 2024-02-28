@@ -237,7 +237,7 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 func rebuildIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	index.clear()
 
-	fileList(paths, &filters{}, "", index, formats, errorChannel)
+	fileList(paths, &filters{}, index, formats, errorChannel)
 }
 
 func importIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
@@ -245,7 +245,7 @@ func importIndex(paths []string, index *fileIndex, formats types.Types, errorCha
 		index.Import(IndexFile, errorChannel)
 	}
 
-	fileList(paths, &filters{}, "", index, formats, errorChannel)
+	fileList(paths, &filters{}, index, formats, errorChannel)
 }
 
 func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {

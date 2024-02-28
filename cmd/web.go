@@ -193,7 +193,7 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 			}
 		}
 
-		list := fileList(paths, filters, sortOrder, index, formats, errorChannel)
+		list := fileList(paths, filters, index, formats, errorChannel)
 
 	loop:
 		for timeout := time.After(timeout); ; {
@@ -249,7 +249,7 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 	}
 }
 
-func serveMedia(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
+func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
@@ -581,7 +581,7 @@ func ServePage(args []string) error {
 
 	mux.GET(Prefix+"/favicon.ico", serveFavicons(errorChannel))
 
-	mux.GET(Prefix+mediaPrefix+"/*media", serveMedia(paths, index, filename, formats, errorChannel))
+	mux.GET(Prefix+mediaPrefix+"/*media", serveMedia(index, filename, formats, errorChannel))
 
 	mux.GET(Prefix+sourcePrefix+"/*static", serveStaticFile(paths, index, errorChannel))
 
