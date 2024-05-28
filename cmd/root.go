@@ -17,7 +17,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "8.8.3"
+	ReleaseVersion    string = "8.8.4"
 )
 
 var (

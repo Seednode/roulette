@@ -49,7 +49,7 @@ func (t Format) CSS() string {
 		css.WriteString(`a{color:inherit;display:block;height:97%;width:100%;text-decoration:none;}`)
 	}
 	css.WriteString(`table{margin-left:auto;margin-right:auto;}`)
-	css.WriteString(`img{margin:auto;display:block;max-width:96%;max-height:96%;`)
+	css.WriteString(`img{margin:auto;display:block;max-width:96%;max-height:95%;`)
 	css.WriteString(`object-fit:scale-down;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)`)
 	if t.Fun {
 		rotate := rand.Intn(360)
