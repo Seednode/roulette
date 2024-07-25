@@ -4,7 +4,7 @@ github.com/alecthomas/chroma/v2
 github.com/alecthomas/chroma/v2/formatters/html
 github.com/alecthomas/chroma/v2/lexers
 github.com/alecthomas/chroma/v2/styles
-# github.com/dlclark/regexp2 v1.11.0
+# github.com/dlclark/regexp2 v1.11.2
 ## explicit; go 1.13
 github.com/dlclark/regexp2
 github.com/dlclark/regexp2/syntax
@@ -39,7 +39,7 @@ golang.org/x/image/riff
 golang.org/x/image/vp8
 golang.org/x/image/vp8l
 golang.org/x/image/webp
-# golang.org/x/net v0.26.0
+# golang.org/x/net v0.27.0
 ## explicit; go 1.18
 golang.org/x/net/html
 golang.org/x/net/html/atom
