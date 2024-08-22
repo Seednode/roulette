@@ -13,11 +13,9 @@ Static binary builds available [here](https://cdn.seedno.de/builds/roulette).
 
 I only test the linux/amd64, linux/arm64, and windows/amd64 builds, the rest are all best-effort™.
 
-x86_64 and ARM Docker images of latest version: `oci.seedno.de/seednode/roulette:latest`.
+Dockerfile available [here](https://raw.githubusercontent.com/Seednode/roulette/master/docker/Dockerfile).
 
-Dockerfile available [here](https://git.seedno.de/seednode/roulette/raw/branch/master/docker/Dockerfile).
-
-An example instance with most features enabled can be found [here](https://nature.seedno.de/).
+An example instance with most features enabled can be found [here](https://cdn.seedno.de/random).
 
 ## Admin prefix
 You can restrict access to certain functionality (the REST API and profiling endpoints) by prepending a secret string to the paths.
