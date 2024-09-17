@@ -21,7 +21,6 @@ An example instance with most features enabled can be found [here](https://cdn.s
 The following configuration methods are accepted, in order of highest to lowest priority:
 - Command-line flags
 - Environment variables
-- Config files
 
 ## Admin prefix
 You can restrict access to certain functionality (the REST API and profiling endpoints) by prepending a secret string to the paths.
@@ -139,22 +138,6 @@ The `--code` handler provides syntax highlighting via [alecthomas/chroma](https:
 Any [supported theme](https://pkg.go.dev/github.com/alecthomas/chroma/v2@v2.9.1/styles#pkg-variables) can be passed via the `--code-theme` flag.
 
 By default, [`solarized-dark256`](https://xyproto.github.io/splash/docs/solarized-dark256.html) is used.
-
-### Config files
-Almost all options configurable via flags can also be configured via YAML files. Roulette looks for config files in the following paths:
-- `/etc/roulette/config.yaml`
-- `$HOME/.config/roulette/config.yaml`
-- `./config.yaml`
-
-All key names are case-insensitive, and a value of `true` can be used for boolean flags.
-
-For example, the file `~/.config/roulette/config.yaml` might contain the following lines:
-```
-AUDIO: true
-DEBUG: true
-PREFIX: /random/
-VERBOSE: true
-```
 
 ### Environment variables
 Almost all options configurable via flags can also be configured via environment variables. 

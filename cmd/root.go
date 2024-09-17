@@ -18,7 +18,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "9.0.0"
+	ReleaseVersion    string = "9.1.0"
 )
 
 var (
@@ -75,8 +75,8 @@ func NewRootCommand() *cobra.Command {
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
-		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
-			return initializeConfig(cmd)
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			initializeConfig(cmd)
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
@@ -99,12 +99,7 @@ func NewRootCommand() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := ServePage(args)
-			if err != nil {
-				return err
-			}
-
-			return nil
+			return ServePage(args)
 		},
 	}
 
@@ -165,22 +160,8 @@ func NewRootCommand() *cobra.Command {
 	return rootCmd
 }
 
-func initializeConfig(cmd *cobra.Command) error {
+func initializeConfig(cmd *cobra.Command) {
 	v := viper.New()
-
-	v.SetConfigName("config")
-
-	v.SetConfigType("yaml")
-
-	v.AddConfigPath("/etc/roulette/")
-	v.AddConfigPath("$HOME/.config/roulette")
-	v.AddConfigPath(".")
-
-	if err := v.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
-			return err
-		}
-	}
 
 	v.SetEnvPrefix("roulette")
 
@@ -189,8 +170,6 @@ func initializeConfig(cmd *cobra.Command) error {
 	v.AutomaticEnv()
 
 	bindFlags(cmd, v)
-
-	return nil
 }
 
 func bindFlags(cmd *cobra.Command, v *viper.Viper) {
