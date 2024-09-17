@@ -8,16 +8,17 @@ import (
 	"fmt"
 	"log"
 	"math"
-	"os"
 	"regexp"
-	"time"
+	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+	"github.com/spf13/viper"
 )
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "8.8.4"
+	ReleaseVersion    string = "9.0.0"
 )
 
 var (
@@ -67,11 +68,16 @@ var (
 		"text",
 		"video",
 	}
+)
 
-	rootCmd = &cobra.Command{
+func NewRootCommand() *cobra.Command {
+	rootCmd := &cobra.Command{
 		Use:   "roulette <path> [path]...",
 		Short: "Serves random media from the specified directories.",
 		Args:  cobra.MinimumNArgs(1),
+		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			return initializeConfig(cmd)
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case MaxFiles < 0 || MinFiles < 0 || MaxFiles > math.MaxInt32 || MinFiles > math.MaxInt32:
@@ -101,18 +107,7 @@ var (
 			return nil
 		},
 	}
-)
 
-func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		fmt.Printf("%s | ERROR: %v\n", time.Now().Format(logDate), err)
-
-		os.Exit(1)
-	}
-}
-
-func init() {
 	rootCmd.Flags().StringVar(&AdminPrefix, "admin-prefix", "", "string to prepend to administrative paths")
 	rootCmd.Flags().BoolVarP(&All, "all", "a", false, "enable all supported file types")
 	rootCmd.Flags().BoolVar(&AllowEmpty, "allow-empty", false, "allow specifying paths containing no supported files")
@@ -166,4 +161,45 @@ func init() {
 	rootCmd.Version = ReleaseVersion
 
 	log.SetFlags(0)
+
+	return rootCmd
+}
+
+func initializeConfig(cmd *cobra.Command) error {
+	v := viper.New()
+
+	v.SetConfigName("config")
+
+	v.SetConfigType("yaml")
+
+	v.AddConfigPath("/etc/roulette/")
+	v.AddConfigPath("$HOME/.config/roulette")
+	v.AddConfigPath(".")
+
+	if err := v.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			return err
+		}
+	}
+
+	v.SetEnvPrefix("roulette")
+
+	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	v.AutomaticEnv()
+
+	bindFlags(cmd, v)
+
+	return nil
+}
+
+func bindFlags(cmd *cobra.Command, v *viper.Viper) {
+	cmd.Flags().VisitAll(func(f *pflag.Flag) {
+		configName := strings.ReplaceAll(f.Name, "-", "_")
+
+		if !f.Changed && v.IsSet(configName) {
+			val := v.Get(configName)
+			cmd.Flags().Set(f.Name, fmt.Sprintf("%v", val))
+		}
+	})
 }
