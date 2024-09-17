@@ -43,7 +43,7 @@ func newPage(title, body, nonce string) string {
 	var htmlBody strings.Builder
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
-	htmlBody.WriteString(getFavicon(nonce))
+	htmlBody.WriteString(getFavicon())
 	htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>`, nonce))
 	htmlBody.WriteString(`html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
@@ -333,7 +333,7 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
-		htmlBody.WriteString(getFavicon(nonce))
+		htmlBody.WriteString(getFavicon())
 		htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>%s</style>`, nonce, format.CSS()))
 
 		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mediaType)
