@@ -9,7 +9,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"strings"
 
@@ -23,14 +22,6 @@ import (
 type Format struct {
 	Fun   bool
 	Theme string
-}
-
-func (t Format) CSP(w http.ResponseWriter) string {
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';", nonce))
-
-	return nonce
 }
 
 func (t Format) CSS() string {
@@ -78,7 +69,7 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	contents, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", err

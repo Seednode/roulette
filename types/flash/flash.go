@@ -6,17 +6,12 @@ package flash
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"seedno.de/seednode/roulette/types"
 )
 
 type Format struct{}
-
-func (t Format) CSP(w http.ResponseWriter) string {
-	return ""
-}
 
 func (t Format) CSS() string {
 	var css strings.Builder
@@ -32,17 +27,12 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	var html strings.Builder
 
-	html.WriteString(fmt.Sprintf(`<script nonce=%q src="https://unpkg.com/@ruffle-rs/ruffle"></script><script nonce=%q>window.RufflePlayer.config = {autoplay:"on"};</script><embed nonce=%qsrc="%s"></embed>`,
-		nonce,
-		nonce,
-		nonce,
-		fileUri),
-	)
+	html.WriteString(fmt.Sprintf(`<script src="https://unpkg.com/@ruffle-rs/ruffle"></script><script>window.RufflePlayer.config = {autoplay:"on"};</script><embed src="%s"></embed>`, fileUri))
 	html.WriteString(`<br /><button id="next">Next</button>`)
-	html.WriteString(fmt.Sprintf(`<script nonce=%q>window.addEventListener("load", function () { document.getElementById("next").addEventListener("click", function () { window.location.href = '%s'; }) }); </script>`, nonce, rootUrl))
+	html.WriteString(fmt.Sprintf(`<script>window.addEventListener("load", function () { document.getElementById("next").addEventListener("click", function () { window.location.href = '%s'; }) }); </script>`, rootUrl))
 
 	return html.String(), nil
 }

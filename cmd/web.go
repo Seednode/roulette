@@ -39,12 +39,12 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
-func newPage(title, body, nonce string) string {
+func newPage(title, body string) string {
 	var htmlBody strings.Builder
 
 	htmlBody.WriteString(`<!DOCTYPE html><html lang="en"><head>`)
 	htmlBody.WriteString(getFavicon())
-	htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>`, nonce))
+	htmlBody.WriteString(`<style>`)
 	htmlBody.WriteString(`html,body,a{display:block;height:100%;width:100%;text-decoration:none;color:inherit;cursor:auto;}</style>`)
 	htmlBody.WriteString(fmt.Sprintf("<title>%s</title></head>", title))
 	htmlBody.WriteString(fmt.Sprintf("<body><a href=\"/\">%s</a></body></html>", body))
@@ -54,8 +54,6 @@ func newPage(title, body, nonce string) string {
 
 func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
-
 		prefix := Prefix + sourcePrefix
 
 		path := strings.TrimPrefix(r.URL.Path, prefix)
@@ -158,8 +156,6 @@ func serveStaticFile(paths []string, index *fileIndex, errorChannel chan<- error
 
 func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
-
 		refererUri, err := stripQueryParams(refererToUri(r.Referer()))
 		if err != nil {
 			errorChannel <- err
@@ -312,11 +308,6 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 			return
 		}
 
-		// Temporarily disabled until I figure out how to make things
-		// work properly with inline event handlers.
-		// nonce := format.CSP(w)
-		nonce := ""
-
 		mediaType := format.MediaType(filepath.Ext(path))
 
 		fileUri := Prefix + generateFileUri(path)
@@ -334,7 +325,7 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 		var htmlBody strings.Builder
 		htmlBody.WriteString(`<!DOCTYPE html><html class="bg" lang="en"><head>`)
 		htmlBody.WriteString(getFavicon())
-		htmlBody.WriteString(fmt.Sprintf(`<style nonce=%q>%s</style>`, nonce, format.CSS()))
+		htmlBody.WriteString(fmt.Sprintf(`<style>%s</style>`, format.CSS()))
 
 		title, err := format.Title(rootUrl, fileUri, path, fileName, Prefix, mediaType)
 		if err != nil {
@@ -374,10 +365,10 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 		}
 
 		if refreshInterval != "0ms" {
-			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer, nonce))
+			htmlBody.WriteString(refreshFunction(rootUrl, refreshTimer))
 		}
 
-		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mediaType, nonce)
+		body, err := format.Body(rootUrl, fileUri, path, fileName, Prefix, mediaType)
 		if err != nil {
 			errorChannel <- err
 
@@ -428,8 +419,6 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 		startTime := time.Now()
 
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
-
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 

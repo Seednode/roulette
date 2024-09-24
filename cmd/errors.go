@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/yosssi/gohtml"
-	"seedno.de/seednode/roulette/types"
 )
 
 var (
@@ -38,11 +37,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 
 	w.Header().Add("Content-Type", "text/html")
 
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
-
-	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found", nonce)))
+	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found")))
 	if err != nil {
 		return err
 	}
@@ -60,11 +55,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 
 	w.Header().Add("Content-Type", "text/html")
 
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
-
-	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.", nonce)))
+	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.")))
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {

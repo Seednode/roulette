@@ -12,7 +12,6 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"math/rand"
-	"net/http"
 	"os"
 	"strings"
 
@@ -29,14 +28,6 @@ type dimensions struct {
 type Format struct {
 	NoButtons bool
 	Fun       bool
-}
-
-func (t Format) CSP(w http.ResponseWriter) string {
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
-
-	return nonce
 }
 
 func (t Format) CSS() string {
@@ -77,7 +68,7 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 		dimensions.height), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	dimensions, err := ImageDimensions(filePath)
 	if err != nil {
 		return "", err
@@ -85,9 +76,8 @@ func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce s
 
 	var w strings.Builder
 
-	w.WriteString(fmt.Sprintf(`<a href="%s"><img nonce=%q src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
+	w.WriteString(fmt.Sprintf(`<a href="%s"><img src="%s" width="%d" height="%d" type="%s" alt="Roulette selected: %s"></a>`,
 		rootUrl,
-		nonce,
 		fileUri,
 		dimensions.width,
 		dimensions.height,

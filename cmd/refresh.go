@@ -26,11 +26,10 @@ func refreshInterval(r *http.Request) (int64, string) {
 	}
 }
 
-func refreshFunction(rootUrl string, refreshTimer int64, nonce string) string {
+func refreshFunction(rootUrl string, refreshTimer int64) string {
 	var htmlBody strings.Builder
 
-	htmlBody.WriteString(fmt.Sprintf(`<script nonce=%q>window.addEventListener("load", function(){ clear = setInterval(function() {window.location.href = '%s';}, %d)});`,
-		nonce,
+	htmlBody.WriteString(fmt.Sprintf(`<script>window.addEventListener("load", function(){ clear = setInterval(function() {window.location.href = '%s';}, %d)});`,
 		rootUrl,
 		refreshTimer))
 	htmlBody.WriteString("document.body.onkeyup = function(e) { ")

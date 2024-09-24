@@ -7,7 +7,6 @@ package text
 import (
 	"errors"
 	"fmt"
-	"net/http"
 	"os"
 	"strings"
 	"unicode/utf8"
@@ -16,14 +15,6 @@ import (
 )
 
 type Format struct{}
-
-func (t Format) CSP(w http.ResponseWriter) string {
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
-
-	return nonce
-}
 
 func (t Format) CSS() string {
 	var css strings.Builder
@@ -41,7 +32,7 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
 	body, err := os.ReadFile(filePath)
 	if err != nil {
 		body = []byte{}

@@ -6,21 +6,12 @@ package audio
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
 	"seedno.de/seednode/roulette/types"
 )
 
 type Format struct{}
-
-func (t Format) CSP(w http.ResponseWriter) string {
-	nonce := types.GetNonce()
-
-	w.Header().Add("Content-Security-Policy", fmt.Sprintf("default-src 'self' 'nonce-%s';", nonce))
-
-	return nonce
-}
 
 func (t Format) CSS() string {
 	var css strings.Builder
@@ -36,10 +27,9 @@ func (t Format) Title(rootUrl, fileUri, filePath, fileName, prefix, mime string)
 	return fmt.Sprintf(`<title>%s</title>`, fileName), nil
 }
 
-func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime, nonce string) (string, error) {
-	return fmt.Sprintf(`<a href="%s"><audio nonce=%q controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the audio tag.</audio></a>`,
+func (t Format) Body(rootUrl, fileUri, filePath, fileName, prefix, mime string) (string, error) {
+	return fmt.Sprintf(`<a href="%s"><audio controls autoplay loop preload="auto"><source src="%s" type="%s" alt="Roulette selected: %s">Your browser does not support the audio tag.</audio></a>`,
 		rootUrl,
-		nonce,
 		fileUri,
 		mime,
 		fileName), nil
