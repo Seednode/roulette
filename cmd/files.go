@@ -242,6 +242,7 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 	var files = 0
 
 	var skipDir = false
+	var overrideDir = false
 
 	for _, node := range nodes {
 		if !node.IsDir() {
@@ -250,12 +251,16 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 			if Ignore != "" && node.Name() == Ignore {
 				skipDir = true
 			}
+
+			if Override != "" && node.Name() == Override {
+				overrideDir = true
+			}
 		}
 	}
 
 	var skipFiles = false
 
-	if files > MaxFiles || files < MinFiles || skipDir {
+	if !overrideDir && (files > MaxFiles || files < MinFiles || skipDir) {
 		stats.filesSkipped <- files
 		stats.directoriesSkipped <- 1
 

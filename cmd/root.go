@@ -18,7 +18,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "9.2.0"
+	ReleaseVersion    string = "9.3.0"
 )
 
 var (
@@ -46,6 +46,7 @@ var (
 	MaxFiles        int
 	MinFiles        int
 	NoButtons       bool
+	Override        string
 	Port            int
 	Prefix          string
 	Profile         bool
@@ -127,6 +128,7 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.Flags().IntVar(&MaxFiles, "max-files", math.MaxInt32, "skip directories with file counts above this value")
 	rootCmd.Flags().IntVar(&MinFiles, "min-files", 0, "skip directories with file counts below this value")
 	rootCmd.Flags().BoolVar(&NoButtons, "no-buttons", false, "disable first/prev/next/last buttons")
+	rootCmd.Flags().StringVar(&Override, "override", "", "filename used to indicate directory should be scanned no matter what")
 	rootCmd.Flags().IntVarP(&Port, "port", "p", 8080, "port to listen on")
 	rootCmd.Flags().StringVar(&Prefix, "prefix", "/", "root path for http handlers (for reverse proxying)")
 	rootCmd.Flags().BoolVar(&Profile, "profile", false, "register net/http/pprof handlers")
