@@ -18,7 +18,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "9.3.0"
+	ReleaseVersion    string = "9.3.1"
 )
 
 var (
@@ -91,6 +91,8 @@ func NewRootCommand() *cobra.Command {
 				return ErrInvalidConcurrency
 			case Ignore != "" && !regexp.MustCompile(AllowedCharacters).MatchString(Ignore):
 				return ErrInvalidIgnoreFile
+			case Override != "" && !regexp.MustCompile(AllowedCharacters).MatchString(Override):
+				return ErrInvalidOverrideFile
 			case AdminPrefix != "" && !regexp.MustCompile(AllowedCharacters).MatchString(AdminPrefix):
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
