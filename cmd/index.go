@@ -8,8 +8,11 @@ import (
 	"encoding/gob"
 	"encoding/json"
 	"fmt"
+	"math/rand/v2"
 	"net/http"
 	"os"
+	"path"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -21,8 +24,10 @@ import (
 )
 
 type fileIndex struct {
-	mutex *sync.RWMutex
-	list  []string
+	mutex     *sync.RWMutex
+	pathMap   map[string][]string
+	pathIndex []string
+	list      []string
 }
 
 func makeTree(list []string) ([]byte, error) {
@@ -60,11 +65,12 @@ func makeTree(list []string) ([]byte, error) {
 	return resp, nil
 }
 
-func (index *fileIndex) List() []string {
-	index.mutex.RLock()
-	list := make([]string, len(index.list))
-	copy(list, index.list)
-	index.mutex.RUnlock()
+func (index *fileIndex) List(directory string) []string {
+	if directory == "" {
+		directory = index.getDirectory()
+	}
+
+	list := index.pathMap[directory]
 
 	sort.SliceStable(list, func(p, q int) bool {
 		return strings.ToLower(list[p]) < strings.ToLower(list[q])
@@ -97,6 +103,36 @@ func (index *fileIndex) remove(path string) {
 	index.mutex.Unlock()
 }
 
+func (index *fileIndex) getDirectory() string {
+	index.mutex.RLock()
+	retVal := index.pathIndex[rand.IntN(len(index.pathIndex))]
+	index.mutex.RUnlock()
+
+	return retVal
+}
+
+func (index *fileIndex) generate() {
+	i := make([]string, 0)
+	d := make(map[string][]string)
+
+	index.mutex.RLock()
+	for _, v := range index.list {
+		dir, _ := path.Split(v)
+
+		d[dir] = append(d[dir], v)
+
+		if !slices.Contains(i, dir) {
+			i = append(i, dir)
+		}
+	}
+	index.mutex.RUnlock()
+
+	index.mutex.Lock()
+	index.pathMap = d
+	index.pathIndex = i
+	index.mutex.Unlock()
+}
+
 func (index *fileIndex) set(val []string, errorChannel chan<- error) {
 	length := len(val)
 
@@ -108,6 +144,8 @@ func (index *fileIndex) set(val []string, errorChannel chan<- error) {
 	index.list = make([]string, length)
 	copy(index.list, val)
 	index.mutex.Unlock()
+
+	index.generate()
 
 	if Index && IndexFile != "" {
 		index.Export(IndexFile, errorChannel)
@@ -211,17 +249,21 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 
 	dec := gob.NewDecoder(reader)
 
-	index.mutex.Lock()
-	err = dec.Decode(&index.list)
-	if err != nil {
-		index.mutex.Unlock()
+	list := make([]string, 0)
 
+	err = dec.Decode(&list)
+	if err != nil {
 		errorChannel <- err
 
 		return
 	}
+
+	index.mutex.Lock()
+	index.list = list
 	length := len(index.list)
 	index.mutex.Unlock()
+
+	index.generate()
 
 	if Verbose {
 		fmt.Printf("%s | INDEX: Imported %d entries from %s (%s) in %s\n",
@@ -237,7 +279,7 @@ func (index *fileIndex) Import(path string, errorChannel chan<- error) {
 func rebuildIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	index.clear()
 
-	fileList(paths, &filters{}, index, formats, errorChannel)
+	fileList(paths, index, formats, errorChannel)
 }
 
 func importIndex(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
@@ -245,7 +287,7 @@ func importIndex(paths []string, index *fileIndex, formats types.Types, errorCha
 		index.Import(IndexFile, errorChannel)
 	}
 
-	fileList(paths, &filters{}, index, formats, errorChannel)
+	fileList(paths, index, formats, errorChannel)
 }
 
 func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
@@ -256,7 +298,7 @@ func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
 
 		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
 
-		response, err := makeTree(index.List())
+		response, err := makeTree(index.List(""))
 		if err != nil {
 			errorChannel <- err
 

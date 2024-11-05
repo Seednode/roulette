@@ -167,11 +167,6 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 
 		strippedRefererUri := strings.TrimPrefix(refererUri, Prefix+mediaPrefix)
 
-		filters := &filters{
-			included: splitQueryParams(r.URL.Query().Get("include")),
-			excluded: splitQueryParams(r.URL.Query().Get("exclude")),
-		}
-
 		sortOrder := sortOrder(r)
 
 		_, refreshInterval := refreshInterval(r)
@@ -189,7 +184,7 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 			}
 		}
 
-		list := fileList(paths, filters, index, formats, errorChannel)
+		list := fileList(paths, index, formats, errorChannel)
 
 	loop:
 		for timeout := time.After(timeout); ; {
@@ -233,7 +228,7 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 			}
 		}
 
-		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+		queryParams := generateQueryParams(sortOrder, refreshInterval)
 
 		newUrl := fmt.Sprintf("http://%s%s%s%s",
 			r.Host,
@@ -248,11 +243,6 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, errorChannel chan<- error) httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
-
-		filters := &filters{
-			included: splitQueryParams(r.URL.Query().Get("include")),
-			excluded: splitQueryParams(r.URL.Query().Get("exclude")),
-		}
 
 		sortOrder := sortOrder(r)
 
@@ -288,7 +278,7 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 					r.Host,
 					Prefix,
 					preparePath(sourcePrefix, path),
-					generateQueryParams(filters, sortOrder, refreshInterval),
+					generateQueryParams(sortOrder, refreshInterval),
 				)
 
 				http.Redirect(w, r, newUrl, redirectStatusCode)
@@ -318,7 +308,7 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 
 		refreshTimer, refreshInterval := refreshInterval(r)
 
-		queryParams := generateQueryParams(filters, sortOrder, refreshInterval)
+		queryParams := generateQueryParams(sortOrder, refreshInterval)
 
 		rootUrl := Prefix + "/" + queryParams
 

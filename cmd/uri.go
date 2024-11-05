@@ -21,42 +21,28 @@ func sortOrder(r *http.Request) string {
 	return ""
 }
 
-func splitQueryParams(query string) []string {
-	results := []string{}
+// func splitQueryParams(query string) []string {
+// 	results := []string{}
 
-	if query == "" {
-		return results
-	}
+// 	if query == "" {
+// 		return results
+// 	}
 
-	params := strings.Split(query, ",")
+// 	params := strings.Split(query, ",")
 
-	for i := 0; i < len(params); i++ {
-		results = append(results, params[i])
-	}
+// 	for i := 0; i < len(params); i++ {
+// 		results = append(results, params[i])
+// 	}
 
-	return results
-}
+// 	return results
+// }
 
-func generateQueryParams(filters *filters, sortOrder, refreshInterval string) string {
+func generateQueryParams(sortOrder, refreshInterval string) string {
 	var hasParams bool
 
 	var queryParams strings.Builder
 
 	queryParams.WriteString("?")
-
-	if Filtering {
-		queryParams.WriteString("include=")
-		if filters.hasIncludes() {
-			queryParams.WriteString(strings.Join(filters.included, ","))
-		}
-
-		queryParams.WriteString("&exclude=")
-		if filters.hasExcludes() {
-			queryParams.WriteString(strings.Join(filters.excluded, ","))
-		}
-
-		hasParams = true
-	}
 
 	if Sorting {
 		if hasParams {

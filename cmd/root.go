@@ -18,46 +18,44 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "9.3.1"
+	ReleaseVersion    string = "10.0.0"
 )
 
 var (
-	AdminPrefix     string
-	All             bool
-	AllowEmpty      bool
-	API             bool
-	Audio           bool
-	Bind            string
-	CaseInsensitive bool
-	Code            bool
-	CodeTheme       string
-	Concurrency     int
-	Debug           bool
-	ErrorExit       bool
-	Fallback        bool
-	Filtering       bool
-	Flash           bool
-	Fun             bool
-	Ignore          string
-	Images          bool
-	Index           bool
-	IndexFile       string
-	IndexInterval   string
-	MaxFiles        int
-	MinFiles        int
-	NoButtons       bool
-	Override        string
-	Port            int
-	Prefix          string
-	Profile         bool
-	Recursive       bool
-	Refresh         bool
-	Russian         bool
-	Sorting         bool
-	Text            bool
-	Verbose         bool
-	Version         bool
-	Videos          bool
+	AdminPrefix   string
+	All           bool
+	AllowEmpty    bool
+	API           bool
+	Audio         bool
+	Bind          string
+	Code          bool
+	CodeTheme     string
+	Concurrency   int
+	Debug         bool
+	ErrorExit     bool
+	Fallback      bool
+	Flash         bool
+	Fun           bool
+	Ignore        string
+	Images        bool
+	Index         bool
+	IndexFile     string
+	IndexInterval string
+	MaxFiles      int
+	MinFiles      int
+	NoButtons     bool
+	Override      string
+	Port          int
+	Prefix        string
+	Profile       bool
+	Recursive     bool
+	Refresh       bool
+	Russian       bool
+	Sorting       bool
+	Text          bool
+	Verbose       bool
+	Version       bool
+	Videos        bool
 
 	RequiredArgs = []string{
 		"all",
@@ -112,14 +110,12 @@ func NewRootCommand() *cobra.Command {
 	rootCmd.Flags().BoolVar(&API, "api", false, "expose REST API")
 	rootCmd.Flags().BoolVar(&Audio, "audio", false, "enable support for audio files")
 	rootCmd.Flags().StringVarP(&Bind, "bind", "b", "0.0.0.0", "address to bind to")
-	rootCmd.Flags().BoolVar(&CaseInsensitive, "case-insensitive", false, "use case-insensitive matching for filters")
 	rootCmd.Flags().BoolVar(&Code, "code", false, "enable support for source code files")
 	rootCmd.Flags().StringVar(&CodeTheme, "code-theme", "solarized-dark256", "theme for source code syntax highlighting")
 	rootCmd.Flags().IntVar(&Concurrency, "concurrency", 1024, "maximum concurrency for scan threads")
 	rootCmd.Flags().BoolVarP(&Debug, "debug", "d", false, "log file permission errors instead of simply skipping the files")
 	rootCmd.Flags().BoolVar(&ErrorExit, "error-exit", false, "shut down webserver on error, instead of just printing error")
 	rootCmd.Flags().BoolVar(&Fallback, "fallback", false, "serve files as application/octet-stream if no matching format is registered")
-	rootCmd.Flags().BoolVarP(&Filtering, "filter", "f", false, "enable filtering")
 	rootCmd.Flags().BoolVar(&Flash, "flash", false, "enable support for shockwave flash files (via ruffle.rs)")
 	rootCmd.Flags().BoolVar(&Fun, "fun", false, "add a bit of excitement to your day")
 	rootCmd.Flags().StringVar(&Ignore, "ignore", "", "filename used to indicate directory should be skipped")

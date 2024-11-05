@@ -435,22 +435,14 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 	return list
 }
 
-func fileList(paths []string, filters *filters, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
+func fileList(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	switch {
-	case Index && !index.isEmpty() && filters.isEmpty():
-		return index.List()
-	case Index && !index.isEmpty() && !filters.isEmpty():
-		return filters.apply(index.List())
-	case Index && index.isEmpty() && !filters.isEmpty():
+	case Index && !index.isEmpty():
+		return index.List("")
+	case Index && index.isEmpty():
 		index.set(scanPaths(paths, formats, errorChannel), errorChannel)
 
-		return filters.apply(index.List())
-	case Index && index.isEmpty() && filters.isEmpty():
-		index.set(scanPaths(paths, formats, errorChannel), errorChannel)
-
-		return index.List()
-	case !Index && !filters.isEmpty():
-		return filters.apply(scanPaths(paths, formats, errorChannel))
+		return index.List("")
 	default:
 		return scanPaths(paths, formats, errorChannel)
 	}

@@ -6,8 +6,9 @@ package cmd
 
 import (
 	"fmt"
+	"path/filepath"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 
 	"strconv"
@@ -61,16 +62,16 @@ func getRange(path string, index *fileIndex, filename *regexp.Regexp) (string, s
 		return "", "", err
 	}
 
-	list := index.List()
+	dir, _ := filepath.Split(path)
 
-	sort.Slice(list, func(i, j int) bool {
-		return list[i] <= list[j]
-	})
+	list := index.List(dir)
+
+	slices.Sort(list)
 
 	var first, last, previous string
 
 Loop:
-	for _, val := range list {
+	for i, val := range list {
 		splitVal, err := split(val, filename)
 		if err != nil {
 			return "", "", err
@@ -81,6 +82,10 @@ Loop:
 			first = val
 		case splitVal.base != splitPath.base && first != "":
 			last = previous
+
+			break Loop
+		case splitVal.base == splitPath.base && i == len(list)-1:
+			last = val
 
 			break Loop
 		}

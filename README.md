@@ -62,19 +62,6 @@ The remaining four endpoints respond to GET requests with information about the 
 - `/types/available`
 - `/types/enabled`
 
-## Filtering
-You can provide a comma-delimited string of alphanumeric patterns to match via the `include=` query parameter, assuming the `-f|--filter` flag is enabled.
-
-Only filenames matching one or more of the patterns will be served.
-
-You can also provide a comma-delimited string of alphanumeric patterns to exclude, via the `exclude=` query parameter.
-
-Filenames matching any of these patterns will not be served.
-
-You can combine these two parameters, with exclusions taking priority over inclusions.
-
-Both filtering parameters ignore the file extension and full path; they only compare against the bare filename.
-
 ## Ignoring directories
 If the `--ignore <filename>` flag is passed, any directory containing a file with the specified name will be skipped during the scanning stage.
 
@@ -166,14 +153,12 @@ Flags:
       --api                     expose REST API
       --audio                   enable support for audio files
   -b, --bind string             address to bind to (default "0.0.0.0")
-      --case-insensitive        use case-insensitive matching for filters
       --code                    enable support for source code files
       --code-theme string       theme for source code syntax highlighting (default "solarized-dark256")
       --concurrency int         maximum concurrency for scan threads (default 1024)
   -d, --debug                   log file permission errors instead of simply skipping the files
       --error-exit              shut down webserver on error, instead of just printing error
       --fallback                serve files as application/octet-stream if no matching format is registered
-  -f, --filter                  enable filtering
       --flash                   enable support for shockwave flash files (via ruffle.rs)
       --fun                     add a bit of excitement to your day
   -h, --help                    help for roulette
