@@ -55,6 +55,7 @@ func kill(path string, index *fileIndex) error {
 
 	if Index {
 		index.remove(path)
+		index.generate()
 	}
 
 	return nil
