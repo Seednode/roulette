@@ -21,22 +21,6 @@ func sortOrder(r *http.Request) string {
 	return ""
 }
 
-// func splitQueryParams(query string) []string {
-// 	results := []string{}
-
-// 	if query == "" {
-// 		return results
-// 	}
-
-// 	params := strings.Split(query, ",")
-
-// 	for i := 0; i < len(params); i++ {
-// 		results = append(results, params[i])
-// 	}
-
-// 	return results
-// }
-
 func generateQueryParams(sortOrder, refreshInterval string) string {
 	var hasParams bool
 

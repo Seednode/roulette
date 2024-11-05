@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/yosssi/gohtml"
 	"seedno.de/seednode/roulette/types"
 	"seedno.de/seednode/roulette/types/audio"
 	"seedno.de/seednode/roulette/types/code"
@@ -370,7 +369,7 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 
 		htmlBody.WriteString(`</body></html>`)
 
-		formattedPage := gohtml.Format(htmlBody.String())
+		formattedPage := htmlBody.String()
 
 		written, err := io.WriteString(w, formattedPage+"\n")
 		if err != nil {

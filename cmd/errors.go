@@ -10,8 +10,6 @@ import (
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/yosssi/gohtml"
 )
 
 var (
@@ -38,7 +36,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 
 	w.Header().Add("Content-Type", "text/html")
 
-	_, err := io.WriteString(w, gohtml.Format(newPage("Not Found", "404 Page not found")))
+	_, err := io.WriteString(w, newPage("Not Found", "404 Page not found"))
 	if err != nil {
 		return err
 	}
@@ -56,7 +54,7 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 
 	w.Header().Add("Content-Type", "text/html")
 
-	io.WriteString(w, gohtml.Format(newPage("Server Error", "An error has occurred. Please try again.")))
+	io.WriteString(w, newPage("Server Error", "An error has occurred. Please try again."))
 }
 
 func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
