@@ -77,7 +77,6 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 
 func registerAPIHandlers(mux *httprouter.Router, paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) {
 	if Index {
-		mux.GET(Prefix+AdminPrefix+"/index", serveIndex(index, errorChannel))
 		mux.POST(Prefix+AdminPrefix+"/index/rebuild", serveIndexRebuild(paths, index, formats, errorChannel))
 	}
 

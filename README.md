@@ -50,8 +50,6 @@ While this might thwart very basic attacks, the proper solution for most use cas
 ## API
 If the `--api` flag is passed, a number of REST endpoints are registered.
 
-The first of these—`/index/`—responds to GET requests with the contents of the index, in JSON format.
-
 The second—`/index/rebuild`—responds to POST requests by rebuilding the index.
 
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.

@@ -438,11 +438,11 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 func fileList(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) []string {
 	switch {
 	case Index && !index.isEmpty():
-		return index.List("")
+		return index.pathMap[index.getDirectory()]
 	case Index && index.isEmpty():
 		index.set(scanPaths(paths, formats, errorChannel), errorChannel)
 
-		return index.List("")
+		return index.pathMap[index.getDirectory()]
 	default:
 		return scanPaths(paths, formats, errorChannel)
 	}

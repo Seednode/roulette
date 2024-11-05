@@ -6,15 +6,12 @@ package cmd
 
 import (
 	"encoding/gob"
-	"encoding/json"
 	"fmt"
 	"math/rand/v2"
 	"net/http"
 	"os"
 	"path"
 	"slices"
-	"sort"
-	"strings"
 	"sync"
 	"time"
 
@@ -28,55 +25,6 @@ type fileIndex struct {
 	pathMap   map[string][]string
 	pathIndex []string
 	list      []string
-}
-
-func makeTree(list []string) ([]byte, error) {
-	tree := make(map[string]any)
-
-	current := tree
-
-	for _, entry := range list {
-		path := strings.Split(entry, string(os.PathSeparator))
-
-		for i, last := 0, len(path)-1; i < len(path); i++ {
-			if i == last {
-				current[path[i]] = nil
-
-				break
-			}
-
-			v, ok := current[path[i]].(map[string]any)
-			if !ok || v == nil {
-				v = make(map[string]any)
-				current[path[i]] = v
-			}
-
-			current = v
-		}
-
-		current = tree
-	}
-
-	resp, err := json.MarshalIndent(tree, "", "  ")
-	if err != nil {
-		return []byte{}, err
-	}
-
-	return resp, nil
-}
-
-func (index *fileIndex) List(directory string) []string {
-	if directory == "" {
-		directory = index.getDirectory()
-	}
-
-	list := index.pathMap[directory]
-
-	sort.SliceStable(list, func(p, q int) bool {
-		return strings.ToLower(list[p]) < strings.ToLower(list[q])
-	})
-
-	return list
 }
 
 func (index *fileIndex) remove(path string) {
@@ -126,6 +74,12 @@ func (index *fileIndex) generate() {
 		}
 	}
 	index.mutex.RUnlock()
+
+	for k := range d {
+		slices.Sort(d[k])
+	}
+
+	slices.Sort(i)
 
 	index.mutex.Lock()
 	index.pathMap = d
@@ -288,41 +242,6 @@ func importIndex(paths []string, index *fileIndex, formats types.Types, errorCha
 	}
 
 	fileList(paths, index, formats, errorChannel)
-}
-
-func serveIndex(index *fileIndex, errorChannel chan<- error) httprouter.Handle {
-	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		startTime := time.Now()
-
-		w.Header().Add("Content-Security-Policy", "default-src 'self';")
-
-		w.Header().Set("Content-Type", "application/json;charset=UTF-8")
-
-		response, err := makeTree(index.List(""))
-		if err != nil {
-			errorChannel <- err
-
-			serverError(w, r, nil)
-
-			return
-		}
-
-		response = append(response, []byte("\n")...)
-
-		written, err := w.Write(response)
-		if err != nil {
-			errorChannel <- err
-		}
-
-		if Verbose {
-			fmt.Printf("%s | SERVE: JSON index page (%s) to %s in %s\n",
-				startTime.Format(logDate),
-				humanReadableSize(written),
-				realIP(r),
-				time.Since(startTime).Round(time.Microsecond),
-			)
-		}
-	}
 }
 
 func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, errorChannel chan<- error) httprouter.Handle {

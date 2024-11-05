@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
-	"slices"
 	"strings"
 
 	"strconv"
@@ -64,9 +63,7 @@ func getRange(path string, index *fileIndex, filename *regexp.Regexp) (string, s
 
 	dir, _ := filepath.Split(path)
 
-	list := index.List(dir)
-
-	slices.Sort(list)
+	list := index.pathMap[dir]
 
 	var first, last, previous string
 
