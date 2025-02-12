@@ -1,6 +1,6 @@
 module seedno.de/seednode/roulette
 
-go 1.23
+go 1.24
 
 require (
 	github.com/alecthomas/chroma/v2 v2.15.0
