@@ -2,26 +2,27 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build go1.18
-// +build go1.18
-
 package vulncheck
 
 import (
 	"context"
 	"fmt"
-	"sort"
 
 	"golang.org/x/tools/go/packages"
 	"golang.org/x/vuln/internal"
 	"golang.org/x/vuln/internal/buildinfo"
 	"golang.org/x/vuln/internal/client"
 	"golang.org/x/vuln/internal/govulncheck"
+	"golang.org/x/vuln/internal/semver"
 )
 
 // Bin is an abstraction of Go binary containing
 // minimal information needed by govulncheck.
 type Bin struct {
+	// Path of the main package.
+	Path string `json:"path,omitempty"`
+	// Main module. When present, it never has empty information.
+	Main       *packages.Module   `json:"main,omitempty"`
 	Modules    []*packages.Module `json:"modules,omitempty"`
 	PkgSymbols []buildinfo.Symbol `json:"pkgSymbols,omitempty"`
 	GoVersion  string             `json:"goVersion,omitempty"`
@@ -47,8 +48,21 @@ func Binary(ctx context.Context, handler govulncheck.Handler, bin *Bin, cfg *gov
 // info in Result will be empty.
 func binary(ctx context.Context, handler govulncheck.Handler, bin *Bin, cfg *govulncheck.Config, client *client.Client) (*Result, error) {
 	graph := NewPackageGraph(bin.GoVersion)
-	graph.AddModules(bin.Modules...)
 	mods := append(bin.Modules, graph.GetModule(internal.GoStdModulePath))
+
+	if bin.Main != nil {
+		mods = append(mods, bin.Main)
+	}
+
+	graph.AddModules(mods...)
+
+	if err := handler.SBOM(bin.SBOM()); err != nil {
+		return nil, err
+	}
+
+	if err := handler.Progress(&govulncheck.Progress{Message: fetchingVulnsMessage}); err != nil {
+		return nil, err
+	}
 
 	mv, err := FetchVulnerabilities(ctx, client, mods)
 	if err != nil {
@@ -60,8 +74,24 @@ func binary(ctx context.Context, handler govulncheck.Handler, bin *Bin, cfg *gov
 		return nil, err
 	}
 
+	if err := handler.Progress(&govulncheck.Progress{Message: checkingBinVulnsMessage}); err != nil {
+		return nil, err
+	}
+
+	// Emit warning message for ancient Go binaries, defined as binaries
+	// built with Go version without support for debug.BuildInfo (< go1.18).
+	if semver.Valid(bin.GoVersion) && semver.Less(bin.GoVersion, "go1.18") {
+		p := &govulncheck.Progress{Message: fmt.Sprintf("warning: binary built with Go version %s, only standard library vulnerabilities will be checked", bin.GoVersion)}
+		if err := handler.Progress(p); err != nil {
+			return nil, err
+		}
+	}
+
 	if bin.GOOS == "" || bin.GOARCH == "" {
-		fmt.Printf("warning: failed to extract build system specification GOOS: %s GOARCH: %s\n", bin.GOOS, bin.GOARCH)
+		p := &govulncheck.Progress{Message: fmt.Sprintf("warning: failed to extract build system specification GOOS: %s GOARCH: %s\n", bin.GOOS, bin.GOARCH)}
+		if err := handler.Progress(p); err != nil {
+			return nil, err
+		}
 	}
 	affVulns := affectingVulnerabilities(mv, bin.GOOS, bin.GOARCH)
 	if err := emitModuleFindings(handler, affVulns); err != nil {
@@ -80,10 +110,7 @@ func binary(ctx context.Context, handler govulncheck.Handler, bin *Bin, cfg *gov
 		// vulnerabilities at the go.mod-level precision.
 		pkgSymbols = allKnownVulnerableSymbols(affVulns)
 	} else {
-		pkgSymbols = make(map[string][]string)
-		for _, sym := range bin.PkgSymbols {
-			pkgSymbols[sym.Pkg] = append(pkgSymbols[sym.Pkg], sym.Name)
-		}
+		pkgSymbols = packagesAndSymbols(bin)
 	}
 
 	impVulns := binImportedVulnPackages(graph, pkgSymbols, affVulns)
@@ -103,10 +130,24 @@ func binary(ctx context.Context, handler govulncheck.Handler, bin *Bin, cfg *gov
 	return &Result{Vulns: symVulns}, nil
 }
 
+func packagesAndSymbols(bin *Bin) map[string][]string {
+	pkgSymbols := make(map[string][]string)
+	for _, sym := range bin.PkgSymbols {
+		// If the name of the package is main, we need to expand
+		// it to its full path as that is what vuln db uses.
+		if sym.Pkg == "main" && bin.Path != "" {
+			pkgSymbols[bin.Path] = append(pkgSymbols[bin.Path], sym.Name)
+		} else {
+			pkgSymbols[sym.Pkg] = append(pkgSymbols[sym.Pkg], sym.Name)
+		}
+	}
+	return pkgSymbols
+}
+
 func binImportedVulnPackages(graph *PackageGraph, pkgSymbols map[string][]string, affVulns affectingVulns) []*Vuln {
 	var vulns []*Vuln
 	for pkg := range pkgSymbols {
-		for _, osv := range affVulns.ForPackage(pkg) {
+		for _, osv := range affVulns.ForPackage(internal.UnknownModulePath, pkg) {
 			vuln := &Vuln{
 				OSV:     osv,
 				Package: graph.GetPackage(pkg),
@@ -120,10 +161,8 @@ func binImportedVulnPackages(graph *PackageGraph, pkgSymbols map[string][]string
 func binVulnSymbols(graph *PackageGraph, pkgSymbols map[string][]string, affVulns affectingVulns) []*Vuln {
 	var vulns []*Vuln
 	for pkg, symbols := range pkgSymbols {
-		// sort symbols for deterministic results
-		sort.SliceStable(symbols, func(i, j int) bool { return symbols[i] < symbols[j] })
 		for _, symbol := range symbols {
-			for _, osv := range affVulns.ForSymbol(pkg, symbol) {
+			for _, osv := range affVulns.ForSymbol(internal.UnknownModulePath, pkg, symbol) {
 				vuln := &Vuln{
 					OSV:     osv,
 					Symbol:  symbol,
@@ -165,4 +204,34 @@ func allKnownVulnerableSymbols(affVulns affectingVulns) map[string][]string {
 		}
 	}
 	return pkgSymbols
+}
+
+func (bin *Bin) SBOM() (sbom *govulncheck.SBOM) {
+	sbom = &govulncheck.SBOM{}
+	if bin.Main != nil {
+		sbom.Roots = []string{bin.Main.Path}
+		sbom.Modules = append(sbom.Modules, &govulncheck.Module{
+			Path:    bin.Main.Path,
+			Version: bin.Main.Version,
+		})
+	}
+
+	sbom.GoVersion = bin.GoVersion
+	for _, mod := range bin.Modules {
+		if mod.Replace != nil {
+			mod = mod.Replace
+		}
+		sbom.Modules = append(sbom.Modules, &govulncheck.Module{
+			Path:    mod.Path,
+			Version: mod.Version,
+		})
+	}
+
+	// add stdlib to mirror source mode output
+	sbom.Modules = append(sbom.Modules, &govulncheck.Module{
+		Path:    internal.GoStdModulePath,
+		Version: bin.GoVersion,
+	})
+
+	return sbom
 }

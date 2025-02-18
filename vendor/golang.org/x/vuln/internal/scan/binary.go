@@ -2,19 +2,16 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-//go:build go1.18
-// +build go1.18
-
 package scan
 
 import (
 	"context"
 	"encoding/json"
 	"errors"
-	"io"
 	"os"
 	"runtime/debug"
 
+	"golang.org/x/tools/go/packages"
 	"golang.org/x/vuln/internal/buildinfo"
 	"golang.org/x/vuln/internal/client"
 	"golang.org/x/vuln/internal/derrors"
@@ -39,19 +36,23 @@ func runBinary(ctx context.Context, handler govulncheck.Handler, cfg *config, cl
 }
 
 func createBin(path string) (*vulncheck.Bin, error) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
 	// First check if the path points to a Go binary. Otherwise, blob
 	// parsing might json decode a Go binary which takes time.
 	//
 	// TODO(#64716): use fingerprinting to make this precise, clean, and fast.
-	mods, packageSymbols, bi, err := buildinfo.ExtractPackagesAndSymbols(f)
+	mods, packageSymbols, bi, err := buildinfo.ExtractPackagesAndSymbols(path)
 	if err == nil {
+		var main *packages.Module
+		if bi.Main.Path != "" {
+			main = &packages.Module{
+				Path:    bi.Main.Path,
+				Version: bi.Main.Version,
+			}
+		}
+
 		return &vulncheck.Bin{
+			Path:       bi.Path,
+			Main:       main,
 			Modules:    mods,
 			PkgSymbols: packageSymbols,
 			GoVersion:  bi.GoVersion,
@@ -61,7 +62,7 @@ func createBin(path string) (*vulncheck.Bin, error) {
 	}
 
 	// Otherwise, see if the path points to a valid blob.
-	bin := parseBlob(f)
+	bin := parseBlob(path)
 	if bin != nil {
 		return bin, nil
 	}
@@ -69,9 +70,15 @@ func createBin(path string) (*vulncheck.Bin, error) {
 	return nil, errors.New("unrecognized binary format")
 }
 
-// parseBlob extracts vulncheck.Bin from a valid blob. If it
-// cannot recognize a valid blob, returns nil.
-func parseBlob(from io.Reader) *vulncheck.Bin {
+// parseBlob extracts vulncheck.Bin from a valid blob at path.
+// If it cannot recognize a valid blob, returns nil.
+func parseBlob(path string) *vulncheck.Bin {
+	from, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer from.Close()
+
 	dec := json.NewDecoder(from)
 
 	var h header

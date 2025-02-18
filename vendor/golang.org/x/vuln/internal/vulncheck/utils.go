@@ -16,8 +16,8 @@ import (
 	"golang.org/x/tools/go/callgraph/cha"
 	"golang.org/x/tools/go/callgraph/vta"
 	"golang.org/x/tools/go/packages"
-	"golang.org/x/tools/go/ssa/ssautil"
 	"golang.org/x/tools/go/types/typeutil"
+	"golang.org/x/vuln/internal"
 	"golang.org/x/vuln/internal/osv"
 	"golang.org/x/vuln/internal/semver"
 
@@ -70,12 +70,8 @@ func callGraph(ctx context.Context, prog *ssa.Program, entries []*ssa.Function) 
 		return nil, err
 	}
 	initial := cha.CallGraph(prog)
-	allFuncs := ssautil.AllFunctions(prog)
 
 	fslice := forwardSlice(entrySlice, initial)
-	// Keep only actually linked functions.
-	pruneSet(fslice, allFuncs)
-
 	if err := ctx.Err(); err != nil { // cancelled?
 		return nil, err
 	}
@@ -84,8 +80,6 @@ func callGraph(ctx context.Context, prog *ssa.Program, entries []*ssa.Function) 
 	// Repeat the process once more, this time using
 	// the produced VTA call graph as the base graph.
 	fslice = forwardSlice(entrySlice, vtaCg)
-	pruneSet(fslice, allFuncs)
-
 	if err := ctx.Err(); err != nil { // cancelled?
 		return nil, err
 	}
@@ -314,4 +308,39 @@ func modVersion(mod *packages.Module) string {
 		return mod.Replace.Version
 	}
 	return mod.Version
+}
+
+// pkgPath returns the path of the f's enclosing package, if any.
+// Otherwise, returns internal.UnknownPackagePath.
+func pkgPath(f *ssa.Function) string {
+	g := f
+	if f.Origin() != nil {
+		// Instantiations of generics do not have
+		// an associated package. We hence look up
+		// the original function for the package.
+		g = f.Origin()
+	}
+	if g.Package() != nil && g.Package().Pkg != nil {
+		return g.Package().Pkg.Path()
+	}
+	return internal.UnknownPackagePath
+}
+
+func pkgModPath(pkg *packages.Package) string {
+	if pkg != nil && pkg.Module != nil {
+		return pkg.Module.Path
+	}
+	return internal.UnknownModulePath
+}
+
+func IsStdPackage(pkg string) bool {
+	if pkg == "" || pkg == internal.UnknownPackagePath {
+		return false
+	}
+	// std packages do not have a "." in their path. For instance, see
+	// Contains in pkgsite/+/refs/heads/master/internal/stdlbib/stdlib.go.
+	if i := strings.IndexByte(pkg, '/'); i != -1 {
+		pkg = pkg[:i]
+	}
+	return !strings.Contains(pkg, ".")
 }
