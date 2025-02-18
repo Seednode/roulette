@@ -1,8 +1,8 @@
 /*
-Copyright © 2024 Seednode <seednode@seedno.de>
+Copyright © 2025 Seednode <seednode@seedno.de>
 */
 
-package cmd
+package main
 
 import (
 	"errors"
@@ -20,14 +20,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Seednode/roulette/types"
+	"github.com/Seednode/roulette/types/audio"
+	"github.com/Seednode/roulette/types/code"
+	"github.com/Seednode/roulette/types/flash"
+	"github.com/Seednode/roulette/types/images"
+	"github.com/Seednode/roulette/types/text"
+	"github.com/Seednode/roulette/types/video"
 	"github.com/julienschmidt/httprouter"
-	"seedno.de/seednode/roulette/types"
-	"seedno.de/seednode/roulette/types/audio"
-	"seedno.de/seednode/roulette/types/code"
-	"seedno.de/seednode/roulette/types/flash"
-	"seedno.de/seednode/roulette/types/images"
-	"seedno.de/seednode/roulette/types/text"
-	"seedno.de/seednode/roulette/types/video"
 )
 
 const (

@@ -1,8 +1,8 @@
 /*
-Copyright © 2024 Seednode <seednode@seedno.de>
+Copyright © 2025 Seednode <seednode@seedno.de>
 */
 
-package cmd
+package main
 
 import (
 	"encoding/gob"
@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Seednode/roulette/types"
 	"github.com/julienschmidt/httprouter"
 	"github.com/klauspost/compress/zstd"
-	"seedno.de/seednode/roulette/types"
 )
 
 type fileIndex struct {

@@ -11,7 +11,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"seedno.de/seednode/roulette/types"
+	"github.com/Seednode/roulette/types"
 )
 
 type Format struct{}

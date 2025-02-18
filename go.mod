@@ -1,4 +1,4 @@
-module seedno.de/seednode/roulette
+module github.com/Seednode/roulette
 
 go 1.24
 

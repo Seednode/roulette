@@ -12,11 +12,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Seednode/roulette/types"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/alecthomas/chroma/v2/styles"
-	"seedno.de/seednode/roulette/types"
 )
 
 type Format struct {

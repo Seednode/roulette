@@ -1,8 +1,8 @@
 /*
-Copyright © 2024 Seednode <seednode@seedno.de>
+Copyright © 2025 Seednode <seednode@seedno.de>
 */
 
-package cmd
+package main
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 
 	"strconv"
 
-	"seedno.de/seednode/roulette/types"
+	"github.com/Seednode/roulette/types"
 )
 
 type splitPath struct {

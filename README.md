@@ -40,7 +40,6 @@ The restricted paths are:
 - `/debug/pprof/trace`
 - `/extensions/available`
 - `/extensions/enabled`
-- `/index/`
 - `/index/rebuild`
 - `/types/available`
 - `/types/enabled`
@@ -50,7 +49,7 @@ While this might thwart very basic attacks, the proper solution for most use cas
 ## API
 If the `--api` flag is passed, a number of REST endpoints are registered.
 
-The second—`/index/rebuild`—responds to POST requests by rebuilding the index.
+The first—`/index/rebuild`—responds to POST requests by rebuilding the index.
 
 This can prove useful when confirming whether the index is generated successfully, or whether a given file is in the index.
 

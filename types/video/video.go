@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"seedno.de/seednode/roulette/types"
+	"github.com/Seednode/roulette/types"
 )
 
 type Format struct{}

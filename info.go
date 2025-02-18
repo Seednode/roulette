@@ -1,16 +1,16 @@
 /*
-Copyright © 2024 Seednode <seednode@seedno.de>
+Copyright © 2025 Seednode <seednode@seedno.de>
 */
 
-package cmd
+package main
 
 import (
 	"fmt"
 	"net/http"
 	"time"
 
+	"github.com/Seednode/roulette/types"
 	"github.com/julienschmidt/httprouter"
-	"seedno.de/seednode/roulette/types"
 )
 
 func serveExtensions(formats types.Types, available bool, errorChannel chan<- error) httprouter.Handle {

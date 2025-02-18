@@ -15,9 +15,9 @@ import (
 	"os"
 	"strings"
 
+	"github.com/Seednode/roulette/types"
 	_ "golang.org/x/image/bmp"
 	_ "golang.org/x/image/webp"
-	"seedno.de/seednode/roulette/types"
 )
 
 type dimensions struct {
