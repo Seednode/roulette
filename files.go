@@ -167,7 +167,7 @@ func fileExists(path string) (bool, error) {
 func pathIsValid(path string, paths []string) bool {
 	var matchesPrefix = false
 
-	for i := 0; i < len(paths); i++ {
+	for i := range paths {
 		if strings.HasPrefix(path, paths[i]) {
 			matchesPrefix = true
 
