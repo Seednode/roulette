@@ -119,7 +119,7 @@ func realIP(r *http.Request) string {
 
 		requestor = cfIp + ":" + remotePort
 	case xRealIp != "":
-		if net.ParseIP(cfIp).To4() == nil {
+		if net.ParseIP(xRealIp).To4() == nil {
 			xRealIp = "[" + xRealIp + "]"
 		}
 
