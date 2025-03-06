@@ -13,7 +13,6 @@ platforms=(
   "freebsd/arm"
   "freebsd/arm64"
   "freebsd/riscv64"
-  "js/wasm"
   "linux/386"
   "linux/amd64"
   "linux/arm"
@@ -35,10 +34,8 @@ platforms=(
   "openbsd/amd64"
   "openbsd/arm"
   "openbsd/arm64"
-  "wasip1/wasm"
   "windows/386"
   "windows/amd64"
-  "windows/arm"
   "windows/arm64"
 )
 
