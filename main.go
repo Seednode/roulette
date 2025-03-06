@@ -19,7 +19,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "12.1.2"
+	ReleaseVersion    string = "12.1.3"
 )
 
 var (
@@ -52,6 +52,7 @@ var (
 	Recursive     bool
 	Refresh       bool
 	Russian       bool
+	Scheme        string = "http"
 	Sorting       bool
 	Text          bool
 	TLSCert       string
@@ -100,6 +101,10 @@ func main() {
 				return ErrInvalidAdminPrefix
 			case AdminPrefix != "":
 				AdminPrefix = "/" + AdminPrefix
+			}
+
+			if TLSCert != "" && TLSKey != "" {
+				Scheme = "https"
 			}
 
 			return nil
