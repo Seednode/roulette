@@ -167,6 +167,7 @@ Flags:
       --max-files int           skip directories with file counts above this value (default 2147483647)
       --min-files int           skip directories with file counts below this value
       --no-buttons              disable first/prev/next/last buttons
+      --override string         filename used to indicate directory should be scanned no matter what
   -p, --port int                port to listen on (default 8080)
       --prefix string           root path for http handlers (for reverse proxying) (default "/")
       --profile                 register net/http/pprof handlers
@@ -175,6 +176,8 @@ Flags:
       --russian                 remove selected images after serving
   -s, --sort                    enable sorting
       --text                    enable support for text files
+      --tls-cert string         path to TLS certificate
+      --tls-key string          path to TLS keyfile
   -v, --verbose                 log accessed files and other information to stdout
   -V, --version                 display version and exit
       --video                   enable support for video files

@@ -229,7 +229,8 @@ func serveRoot(paths []string, index *fileIndex, filename *regexp.Regexp, format
 
 		queryParams := generateQueryParams(sortOrder, refreshInterval)
 
-		newUrl := fmt.Sprintf("http://%s%s%s%s",
+		newUrl := fmt.Sprintf("%s://%s%s%s%s",
+			r.URL.Scheme,
 			r.Host,
 			Prefix,
 			preparePath(mediaPrefix, path),
@@ -273,7 +274,8 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 				_, refreshInterval := refreshInterval(r)
 
 				// redirect to static url for file
-				newUrl := fmt.Sprintf("http://%s%s%s%s",
+				newUrl := fmt.Sprintf("%s://%s%s%s%s",
+					r.URL.Scheme,
 					r.Host,
 					Prefix,
 					preparePath(sourcePrefix, path),
@@ -433,7 +435,8 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 
 func redirectRoot() httprouter.Handle {
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-		newUrl := fmt.Sprintf("http://%s%s",
+		newUrl := fmt.Sprintf("%s://%s%s",
+			r.URL.Scheme,
 			r.Host,
 			Prefix,
 		)
@@ -589,13 +592,21 @@ func ServePage(args []string) error {
 	}
 
 	if Verbose {
-		fmt.Printf("%s | SERVE: Listening on http://%s%s/\n",
-			time.Now().Format(logDate),
-			listenHost,
-			Prefix)
+		if TLSKey != "" && TLSCert != "" {
+			fmt.Printf("%s | Listening on https://%s/\n",
+				time.Now().Format(logDate),
+				srv.Addr)
+
+			err = srv.ListenAndServeTLS(TLSCert, TLSKey)
+		} else {
+			fmt.Printf("%s | Listening on http://%s/\n",
+				time.Now().Format(logDate),
+				srv.Addr)
+
+			err = srv.ListenAndServe()
+		}
 	}
 
-	err = srv.ListenAndServe()
 	if !errors.Is(err, http.ErrServerClosed) {
 		return err
 	}

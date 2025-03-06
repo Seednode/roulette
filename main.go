@@ -5,6 +5,7 @@ Copyright © 2025 Seednode <seednode@seedno.de>
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -18,7 +19,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "12.0.0"
+	ReleaseVersion    string = "12.1.0"
 )
 
 var (
@@ -53,6 +54,8 @@ var (
 	Russian       bool
 	Sorting       bool
 	Text          bool
+	TLSCert       string
+	TLSKey        string
 	Verbose       bool
 	Version       bool
 	Videos        bool
@@ -79,6 +82,8 @@ func main() {
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
+			case TLSCert == "" && TLSKey != "" || TLSCert != "" && TLSKey == "":
+				return errors.New("TLS certificate and keyfile must both be specified to enable HTTPS")
 			case MaxFiles < 0 || MinFiles < 0 || MaxFiles > math.MaxInt32 || MinFiles > math.MaxInt32:
 				return ErrInvalidFileCountValue
 			case MinFiles > MaxFiles:
@@ -135,6 +140,8 @@ func main() {
 	cmd.Flags().BoolVar(&Russian, "russian", false, "remove selected images after serving")
 	cmd.Flags().BoolVarP(&Sorting, "sort", "s", false, "enable sorting")
 	cmd.Flags().BoolVar(&Text, "text", false, "enable support for text files")
+	cmd.Flags().StringVar(&TLSCert, "tls-cert", "", "path to TLS certificate")
+	cmd.Flags().StringVar(&TLSKey, "tls-key", "", "path to TLS keyfile")
 	cmd.Flags().BoolVarP(&Verbose, "verbose", "v", false, "log accessed files and other information to stdout")
 	cmd.Flags().BoolVarP(&Version, "version", "V", false, "display version and exit")
 	cmd.Flags().BoolVar(&Videos, "video", false, "enable support for video files")

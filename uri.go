@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -108,12 +109,24 @@ func realIP(r *http.Request) string {
 	cfIp := r.Header.Get("Cf-Connecting-Ip")
 	xRealIp := r.Header.Get("X-Real-Ip")
 
+	requestor := ""
+
 	switch {
 	case cfIp != "":
-		return cfIp + ":" + remotePort
+		if net.ParseIP(cfIp).To4() == nil {
+			cfIp = "[" + cfIp + "]"
+		}
+
+		requestor = cfIp + ":" + remotePort
 	case xRealIp != "":
-		return xRealIp + ":" + remotePort
+		if net.ParseIP(cfIp).To4() == nil {
+			xRealIp = "[" + xRealIp + "]"
+		}
+
+		requestor = xRealIp + ":" + remotePort
 	default:
-		return r.RemoteAddr
+		requestor = r.RemoteAddr
 	}
+
+	return requestor
 }
