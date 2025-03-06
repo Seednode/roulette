@@ -560,7 +560,7 @@ func ServePage(args []string) error {
 
 	mux.GET(Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
 
-	mux.GET(Prefix+"/favicon.ico", serveFavicons(errorChannel))
+	mux.GET(Prefix+"/favicon.webp", serveFavicons(errorChannel))
 
 	mux.GET(Prefix+mediaPrefix+"/*media", serveMedia(index, filename, formats, errorChannel))
 
