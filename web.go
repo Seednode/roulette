@@ -38,6 +38,17 @@ const (
 	timeout            time.Duration = 10 * time.Second
 )
 
+func securityHeaders(w http.ResponseWriter) {
+	w.Header().Set("Cross-Origin-Embedder-Policy", "require-corp")
+	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+	w.Header().Set("Cross-Origin-Resource-Policy", "same-site")
+	w.Header().Set("Permissions-Policy", "geolocation=(), midi=(), sync-xhr=(), microphone=(), camera=(), magnetometer=(), gyroscope=(), fullscreen=(), payment=()")
+	w.Header().Set("Referrer-Policy", "strict-origin-when-cross-origin")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("X-Xss-Protection", "1; mode=block")
+}
+
 func newPage(title, body string) string {
 	var htmlBody strings.Builder
 
@@ -244,6 +255,8 @@ func serveMedia(index *fileIndex, filename *regexp.Regexp, formats types.Types, 
 	return func(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 		startTime := time.Now()
 
+		securityHeaders(w)
+
 		sortOrder := sortOrder(r)
 
 		path := strings.TrimPrefix(strings.TrimPrefix(r.URL.Path, Prefix), mediaPrefix)
@@ -412,6 +425,8 @@ func serveVersion(errorChannel chan<- error) httprouter.Handle {
 		data := []byte(fmt.Sprintf("roulette v%s\n", ReleaseVersion))
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		securityHeaders(w)
 
 		w.Header().Set("Content-Length", strconv.Itoa(len(data)))
 

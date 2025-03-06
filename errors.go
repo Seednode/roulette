@@ -37,6 +37,8 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 
 	w.Header().Add("Content-Type", "text/html")
 
+	securityHeaders(w)
+
 	_, err := io.WriteString(w, newPage("Not Found", "404 Page not found"))
 	if err != nil {
 		return err
@@ -54,6 +56,8 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	}
 
 	w.Header().Add("Content-Type", "text/html")
+
+	securityHeaders(w)
 
 	io.WriteString(w, newPage("Server Error", "An error has occurred. Please try again."))
 }

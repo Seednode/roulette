@@ -256,6 +256,8 @@ func serveIndexRebuild(paths []string, index *fileIndex, formats types.Types, er
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
+		securityHeaders(w)
+
 		rebuildIndex(paths, index, formats, errorChannel)
 
 		_, err := w.Write([]byte("Ok\n"))

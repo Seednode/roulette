@@ -21,6 +21,8 @@ func serveExtensions(formats types.Types, available bool, errorChannel chan<- er
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
 
+		securityHeaders(w)
+
 		var extensions string
 
 		if available {
@@ -51,6 +53,8 @@ func serveMediaTypes(formats types.Types, available bool, errorChannel chan<- er
 		w.Header().Add("Content-Security-Policy", "default-src 'self';")
 
 		w.Header().Set("Content-Type", "text/plain;charset=UTF-8")
+
+		securityHeaders(w)
 
 		var mediaTypes string
 
