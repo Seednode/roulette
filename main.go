@@ -5,7 +5,6 @@ Copyright © 2025 Seednode <seednode@seedno.de>
 package main
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -19,7 +18,7 @@ import (
 
 const (
 	AllowedCharacters string = `^[A-z0-9.\-_]+$`
-	ReleaseVersion    string = "12.1.3"
+	ReleaseVersion    string = "12.1.4"
 )
 
 var (
@@ -84,7 +83,7 @@ func main() {
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			switch {
 			case TLSCert == "" && TLSKey != "" || TLSCert != "" && TLSKey == "":
-				return errors.New("TLS certificate and keyfile must both be specified to enable HTTPS")
+				return ErrInvalidTLSConfig
 			case MaxFiles < 0 || MinFiles < 0 || MaxFiles > math.MaxInt32 || MinFiles > math.MaxInt32:
 				return ErrInvalidFileCountValue
 			case MinFiles > MaxFiles:

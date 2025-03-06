@@ -20,6 +20,7 @@ var (
 	ErrInvalidIgnoreFile     = errors.New("ignore filename must match the pattern " + AllowedCharacters)
 	ErrInvalidOverrideFile   = errors.New("override filename must match the pattern " + AllowedCharacters)
 	ErrInvalidPort           = errors.New("listen port must be an integer between 1 and 65535 inclusive")
+	ErrInvalidTLSConfig      = errors.New("TLS certificate and keyfile must both be specified to enable HTTPS")
 	ErrNoMediaFound          = errors.New("no supported media formats found which match all criteria")
 )
 
