@@ -608,14 +608,14 @@ func ServePage(args []string) error {
 
 	if Verbose {
 		if TLSKey != "" && TLSCert != "" {
-			fmt.Printf("%s | Listening on %s://%s/\n",
+			fmt.Printf("%s | SERVE: Listening on %s://%s/\n",
 				time.Now().Format(logDate),
 				Scheme,
 				srv.Addr)
 
 			err = srv.ListenAndServeTLS(TLSCert, TLSKey)
 		} else {
-			fmt.Printf("%s | Listening on %s://%s/\n",
+			fmt.Printf("%s | SERVE: Listening on %s://%s/\n",
 				time.Now().Format(logDate),
 				Scheme,
 				srv.Addr)
