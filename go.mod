@@ -3,7 +3,7 @@ module github.com/Seednode/roulette
 go 1.24
 
 require (
-	github.com/alecthomas/chroma/v2 v2.17.0
+	github.com/alecthomas/chroma/v2 v2.17.2
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.0
 	github.com/spf13/cobra v1.9.1
