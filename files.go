@@ -178,8 +178,8 @@ func pathIsValid(path string, paths []string) bool {
 	switch {
 	case Verbose && !matchesPrefix:
 		fmt.Printf("%s | ERROR: File outside specified path(s): %s\n",
-			time.Now().Format(logDate),
-			path)
+					time.Now().Format(logDate),
+								path)
 
 		return false
 	case !matchesPrefix:
@@ -405,7 +405,7 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 
 	var wg1 sync.WaitGroup
 
-	for i := 0; i < len(paths); i++ {
+	for i := range paths {
 		wg1.Add(1)
 
 		go func(i int) {
@@ -500,7 +500,7 @@ func normalizePath(path string) (string, error) {
 func validatePaths(args []string, formats types.Types) ([]string, error) {
 	var paths []string
 
-	for i := 0; i < len(args); i++ {
+	for i := range args {
 		path, err := normalizePath(args[i])
 		if err != nil {
 			return nil, err
