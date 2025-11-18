@@ -562,16 +562,16 @@ func ServePage(args []string) error {
 	filename := regexp.MustCompile(`(.+?)([0-9]*)(\..+)`)
 
 	if !strings.HasSuffix(Prefix, "/") {
-		Prefix = Prefix + "/"
-	}
+			Prefix = Prefix + "/"
+				}
 
-	mux.GET(Prefix, serveRoot(paths, index, filename, formats, errorChannel))
+					mux.GET(Prefix, serveRoot(paths, index, filename, formats, errorChannel))
 
-	Prefix = strings.TrimSuffix(Prefix, "/")
+						Prefix = strings.TrimSuffix(Prefix, "/")
 
-	if Prefix != "" {
-		mux.GET("/", redirectRoot())
-	}
+							if Prefix != "" {
+									mux.GET("/", redirectRoot())
+										}
 
 	mux.GET(Prefix+"/favicons/*favicon", serveFavicons(errorChannel))
 
