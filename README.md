@@ -119,7 +119,7 @@ Note: These options require sequentially-numbered files matching the following p
 ## Themes
 The `--code` handler provides syntax highlighting via [alecthomas/chroma](https://github.com/alecthomas/chroma).
 
-Any [supported theme](https://pkg.go.dev/github.com/alecthomas/chroma/v2@v2.9.1/styles#pkg-variables) can be passed via the `--code-theme` flag.
+Any [supported theme](https://github.com/alecthomas/chroma/tree/master/styles) can be passed via the `-theme` flag.
 
 By default, [`solarized-dark256`](https://xyproto.github.io/splash/docs/solarized-dark256.html) is used.
 
