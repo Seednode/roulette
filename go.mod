@@ -4,6 +4,9 @@ go 1.25
 
 require (
 	github.com/alecthomas/chroma/v2 v2.23.0
+	github.com/gen2brain/avif v0.4.4
+	github.com/gen2brain/heic v0.4.9
+	github.com/gen2brain/jpegxl v0.4.5
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.3
 	github.com/spf13/cobra v1.10.2
@@ -14,6 +17,7 @@ require (
 
 require (
 	github.com/dlclark/regexp2 v1.11.5 // indirect
+	github.com/ebitengine/purego v0.9.1 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
@@ -23,6 +27,7 @@ require (
 	github.com/spf13/afero v1.15.0 // indirect
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
+	github.com/tetratelabs/wazero v1.9.0 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
 	golang.org/x/sys v0.40.0 // indirect
 	golang.org/x/text v0.33.0 // indirect

@@ -11,12 +11,18 @@ import (
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
+	"io"
 	"math/rand"
 	"os"
 	"strings"
 
+	avif "github.com/gen2brain/avif"
+	heic "github.com/gen2brain/heic"
+	jpegxl "github.com/gen2brain/jpegxl"
+
 	"github.com/Seednode/roulette/types"
 	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/vp8l"
 	_ "golang.org/x/image/webp"
 )
 
@@ -93,12 +99,15 @@ func (t Format) Extensions() map[string]string {
 		`.avif`:  `image/avif`,
 		`.bmp`:   `image/bmp`,
 		`.gif`:   `image/gif`,
+		`.heic`:  `image/heic`,
 		`.jpg`:   `image/jpeg`,
 		`.jpeg`:  `image/jpeg`,
 		`.jfif`:  `image/jpeg`,
+		`.jxl`:   `image/jxl`,
 		`.pjp`:   `image/jpeg`,
 		`.pjpeg`: `image/jpeg`,
 		`.png`:   `image/png`,
+		`.vp8l`:  `image/webp`,
 		`.webp`:  `image/webp`,
 	}
 }
@@ -132,19 +141,32 @@ func ImageDimensions(path string) (*dimensions, error) {
 	}
 	defer file.Close()
 
-	decodedConfig, _, err := image.DecodeConfig(file)
-	switch {
-	case errors.Is(err, image.ErrFormat):
-		fmt.Printf("File %s has invalid image format\n", path)
-
-		return &dimensions{width: 0, height: 0}, nil
-	case err != nil:
-		fmt.Printf("File %s decode returned error: %s\n", path, err)
-
-		return &dimensions{}, err
+	cfg, _, err := image.DecodeConfig(file)
+	if err == nil {
+		return &dimensions{width: cfg.Width, height: cfg.Height}, nil
 	}
 
-	return &dimensions{width: decodedConfig.Width, height: decodedConfig.Height}, nil
+	if errors.Is(err, image.ErrFormat) {
+		if _, seekErr := file.Seek(0, io.SeekStart); seekErr != nil {
+			return &dimensions{}, err
+		}
+
+		jxlCfg, err := jpegxl.DecodeConfig(file)
+		if err == nil {
+			return &dimensions{width: jxlCfg.Width, height: jxlCfg.Height}, nil
+		}
+
+		avifCfg, err := avif.DecodeConfig(file)
+		if err == nil {
+			return &dimensions{width: avifCfg.Width, height: avifCfg.Height}, nil
+		}
+
+		heicCfg, err := heic.DecodeConfig(file)
+		if err == nil {
+			return &dimensions{width: heicCfg.Width, height: heicCfg.Height}, nil
+		}
+	}
+	return &dimensions{}, err
 }
 
 func (t Format) Type() string {
