@@ -48,5 +48,5 @@ for platform in "${platforms[@]}"; do
   if [ "${GOOS}" == "windows" ]; then
     output_name+=".exe"
   fi
-  env GOOS="${GOOS}" GOARCH="${GOARCH}" CC="musl-gcc" CGO_ENABLED=0 go build -trimpath -ldflags "${ld_flags}" -tags "netgo timetzdata" -o "builds/${output_name}"
+  env GOOS="${GOOS}" GOARCH="${GOARCH}" GOEXPERIMENT=greenteagc CC="musl-gcc" CGO_ENABLED=0 go build -trimpath -ldflags "${ld_flags}" -tags "netgo nodynamic timetzdata" -o "builds/${output_name}"
 done
