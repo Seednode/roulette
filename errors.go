@@ -47,7 +47,7 @@ func notFound(w http.ResponseWriter, r *http.Request, path string) error {
 	return nil
 }
 
-func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
+func serverError(w http.ResponseWriter, r *http.Request, i any) {
 	if Verbose {
 		fmt.Printf("%s | ERROR: Invalid request for %s from %s\n",
 			time.Now().Format(logDate),
@@ -62,6 +62,6 @@ func serverError(w http.ResponseWriter, r *http.Request, i interface{}) {
 	io.WriteString(w, newPage("Server Error", "An error has occurred. Please try again."))
 }
 
-func serverErrorHandler() func(http.ResponseWriter, *http.Request, interface{}) {
+func serverErrorHandler() func(http.ResponseWriter, *http.Request, any) {
 	return serverError
 }

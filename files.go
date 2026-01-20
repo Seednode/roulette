@@ -178,8 +178,8 @@ func pathIsValid(path string, paths []string) bool {
 	switch {
 	case Verbose && !matchesPrefix:
 		fmt.Printf("%s | ERROR: File outside specified path(s): %s\n",
-					time.Now().Format(logDate),
-								path)
+			time.Now().Format(logDate),
+			path)
 
 		return false
 	case !matchesPrefix:
@@ -282,13 +282,11 @@ func walkPath(path string, fileChannel chan<- string, wg1 *sync.WaitGroup, stats
 
 			switch {
 			case node.IsDir() && Recursive:
-				wg1.Add(1)
 
-				go func() {
-					defer wg1.Done()
+				wg1.Go(func() {
 
 					walkPath(fullPath, fileChannel, wg1, stats, limit, formats, errorChannel)
-				}()
+				})
 
 			case !node.IsDir() && !skipFiles:
 				path, err := normalizePath(fullPath)
@@ -332,9 +330,7 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 
 	var wg0 sync.WaitGroup
 
-	wg0.Add(1)
-	go func() {
-		defer wg0.Done()
+	wg0.Go(func() {
 		for {
 			select {
 			case path := <-fileChannel:
@@ -343,11 +339,9 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 				return
 			}
 		}
-	}()
+	})
 
-	wg0.Add(1)
-	go func() {
-		defer wg0.Done()
+	wg0.Go(func() {
 
 		for {
 			select {
@@ -357,11 +351,9 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 				return
 			}
 		}
-	}()
+	})
 
-	wg0.Add(1)
-	go func() {
-		defer wg0.Done()
+	wg0.Go(func() {
 
 		for {
 			select {
@@ -371,11 +363,9 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 				return
 			}
 		}
-	}()
+	})
 
-	wg0.Add(1)
-	go func() {
-		defer wg0.Done()
+	wg0.Go(func() {
 
 		for {
 			select {
@@ -385,11 +375,9 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 				return
 			}
 		}
-	}()
+	})
 
-	wg0.Add(1)
-	go func() {
-		defer wg0.Done()
+	wg0.Go(func() {
 
 		for {
 			select {
@@ -399,7 +387,7 @@ func scanPaths(paths []string, formats types.Types, errorChannel chan<- error) [
 				return
 			}
 		}
-	}()
+	})
 
 	limit := make(chan struct{}, Concurrency)
 
