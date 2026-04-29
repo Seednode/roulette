@@ -3,7 +3,7 @@ module github.com/Seednode/roulette
 go 1.26
 
 require (
-	github.com/alecthomas/chroma/v2 v2.23.1
+	github.com/alecthomas/chroma/v2 v2.24.0
 	github.com/gen2brain/avif v0.4.4
 	github.com/gen2brain/heic v0.4.9
 	github.com/gen2brain/jpegxl v0.4.5
