@@ -1,3 +1,5 @@
+//go:build !wasm2go
+
 package avif
 
 import (
@@ -11,40 +13,38 @@ import (
 	"image"
 	"image/color"
 	"io"
+	"math"
 	"os"
 	"runtime"
 	"sync"
-	"unsafe"
 
 	"github.com/tetratelabs/wazero"
+	"github.com/tetratelabs/wazero/api"
+	"github.com/tetratelabs/wazero/experimental"
 	"github.com/tetratelabs/wazero/imports/wasi_snapshot_preview1"
 )
 
-//go:embed lib/decode.wasm.gz
-var decodeWasm []byte
-
-//go:embed lib/encode.wasm.gz
-var encodeWasm []byte
+//go:embed lib/avif.wasm.gz
+var avifWasm []byte
 
 func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error) {
-	initDecoderOnce()
+	initOnce()
 
 	var cfg image.Config
-	var data []byte
 
 	ctx := context.Background()
-	dec, err := rtd.InstantiateModule(ctx, cmd, mc)
+	mod, err := rt.InstantiateModule(ctx, cm, mc)
 	if err != nil {
 		return nil, cfg, err
 	}
 
-	defer dec.Close(ctx)
+	defer mod.Close(ctx)
 
-	_alloc := dec.ExportedFunction("malloc")
-	_free := dec.ExportedFunction("free")
-	_decode := dec.ExportedFunction("decode")
+	_alloc := mod.ExportedFunction("malloc")
+	_free := mod.ExportedFunction("free")
+	_decode := mod.ExportedFunction("decode")
 
-	data, err = io.ReadAll(r)
+	data, err := io.ReadAll(r)
 	if err != nil {
 		return nil, cfg, fmt.Errorf("read: %w", err)
 	}
@@ -58,7 +58,7 @@ func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error
 	inPtr := res[0]
 	defer _free.Call(ctx, inPtr)
 
-	ok := dec.Memory().Write(uint32(inPtr), data)
+	ok := mod.Memory().Write(uint32(inPtr), data)
 	if !ok {
 		return nil, cfg, ErrMemWrite
 	}
@@ -83,22 +83,22 @@ func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error
 		return nil, cfg, ErrDecode
 	}
 
-	width, ok := dec.Memory().ReadUint32Le(uint32(widthPtr))
+	width, ok := mod.Memory().ReadUint32Le(uint32(widthPtr))
 	if !ok {
 		return nil, cfg, ErrMemRead
 	}
 
-	height, ok := dec.Memory().ReadUint32Le(uint32(heightPtr))
+	height, ok := mod.Memory().ReadUint32Le(uint32(heightPtr))
 	if !ok {
 		return nil, cfg, ErrMemRead
 	}
 
-	depth, ok := dec.Memory().ReadUint32Le(uint32(depthPtr))
+	depth, ok := mod.Memory().ReadUint32Le(uint32(depthPtr))
 	if !ok {
 		return nil, cfg, ErrMemRead
 	}
 
-	count, ok := dec.Memory().ReadUint32Le(uint32(countPtr))
+	count, ok := mod.Memory().ReadUint32Le(uint32(countPtr))
 	if !ok {
 		return nil, cfg, ErrMemRead
 	}
@@ -162,22 +162,19 @@ func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error
 	images := make([]image.Image, 0)
 
 	for i := 0; i < int(count); i++ {
-		out, ok := dec.Memory().Read(uint32(outPtr)+uint32(i*size), uint32(size))
+		out, ok := mod.Memory().Read(uint32(outPtr)+uint32(i*size), uint32(size))
 		if !ok {
 			return nil, cfg, ErrMemRead
 		}
 
 		if depth > 8 {
-			var b bytes.Buffer
-			pix := unsafe.Slice((*uint16)(unsafe.Pointer(&out[0])), size/2)
-
-			err = binary.Write(&b, binary.BigEndian, pix)
-			if err != nil {
-				return nil, cfg, nil
+			pix := make([]byte, size)
+			for j := 0; j < size; j += 2 {
+				binary.BigEndian.PutUint16(pix[j:], binary.LittleEndian.Uint16(out[j:]))
 			}
 
 			img := image.NewRGBA64(image.Rect(0, 0, cfg.Width, cfg.Height))
-			img.Pix = b.Bytes()
+			img.Pix = pix
 			images = append(images, img)
 		} else {
 			img := image.NewRGBA(image.Rect(0, 0, cfg.Width, cfg.Height))
@@ -185,12 +182,12 @@ func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error
 			images = append(images, img)
 		}
 
-		d, ok := dec.Memory().ReadFloat64Le(uint32(delayPtr) + uint32(i*8))
+		d, ok := mod.Memory().ReadUint64Le(uint32(delayPtr) + uint32(i*8))
 		if !ok {
 			return nil, cfg, ErrMemRead
 		}
 
-		delay = append(delay, d)
+		delay = append(delay, math.Float64frombits(d))
 
 		if !decodeAll {
 			break
@@ -205,21 +202,20 @@ func decode(r io.Reader, configOnly, decodeAll bool) (*AVIF, image.Config, error
 	return ret, cfg, nil
 }
 
-func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsampleRatio image.YCbCrSubsampleRatio) error {
-	initEncoderOnce()
+func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsampleRatio image.YCbCrSubsampleRatio, lossless bool) error {
+	initOnce()
 
 	ctx := context.Background()
-
-	enc, err := rte.InstantiateModule(ctx, cme, mc)
+	mod, err := rt.InstantiateModule(ctx, cm, mc)
 	if err != nil {
 		return err
 	}
 
-	defer enc.Close(ctx)
+	defer mod.Close(ctx)
 
-	_alloc := enc.ExportedFunction("malloc")
-	_free := enc.ExportedFunction("free")
-	_encode := enc.ExportedFunction("encode")
+	_alloc := mod.ExportedFunction("malloc")
+	_free := mod.ExportedFunction("free")
+	_encode := mod.ExportedFunction("encode")
 
 	img := imageToRGBA(m)
 
@@ -242,7 +238,7 @@ func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsam
 	inPtr := res[0]
 	defer _free.Call(ctx, inPtr)
 
-	ok := enc.Memory().Write(uint32(inPtr), img.Pix)
+	ok := mod.Memory().Write(uint32(inPtr), img.Pix)
 	if !ok {
 		return ErrMemWrite
 	}
@@ -254,13 +250,18 @@ func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsam
 	sizePtr := res[0]
 	defer _free.Call(ctx, sizePtr)
 
-	res, err = _encode.Call(ctx, inPtr, uint64(img.Bounds().Dx()), uint64(img.Bounds().Dy()), sizePtr, uint64(quality),
-		uint64(qualityAlpha), uint64(speed), uint64(chroma))
+	ll := uint64(0)
+	if lossless {
+		ll = 1
+	}
+
+	res, err = _encode.Call(ctx, inPtr, uint64(img.Bounds().Dx()), uint64(img.Bounds().Dy()), sizePtr,
+		uint64(quality), uint64(qualityAlpha), uint64(speed), uint64(chroma), ll)
 	if err != nil {
 		return fmt.Errorf("encode: %w", err)
 	}
 
-	size, ok := enc.Memory().ReadUint64Le(uint32(sizePtr))
+	size, ok := mod.Memory().ReadUint64Le(uint32(sizePtr))
 	if !ok {
 		return ErrMemRead
 	}
@@ -271,7 +272,7 @@ func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsam
 
 	defer _free.Call(ctx, res[0])
 
-	out, ok := enc.Memory().Read(uint32(res[0]), uint32(size))
+	out, ok := mod.Memory().Read(uint32(res[0]), uint32(size))
 	if !ok {
 		return ErrMemRead
 	}
@@ -285,21 +286,20 @@ func encode(w io.Writer, m image.Image, quality, qualityAlpha, speed int, subsam
 }
 
 var (
-	rtd wazero.Runtime
-	rte wazero.Runtime
-	cmd wazero.CompiledModule
-	cme wazero.CompiledModule
-	mc  wazero.ModuleConfig
+	rt wazero.Runtime
+	cm wazero.CompiledModule
+	mc wazero.ModuleConfig
 
-	initDecoderOnce = sync.OnceFunc(initializeDecoder)
-	initEncoderOnce = sync.OnceFunc(initializeEncoder)
+	initOnce = sync.OnceFunc(initialize)
 )
 
-func initializeDecoder() {
+func initialize() {
 	ctx := context.Background()
-	rtd = wazero.NewRuntime(ctx)
 
-	r, err := gzip.NewReader(bytes.NewReader(decodeWasm))
+	cfg := wazero.NewRuntimeConfig().WithCoreFeatures(api.CoreFeaturesV2 | experimental.CoreFeaturesThreads)
+	rt = wazero.NewRuntimeWithConfig(ctx, cfg)
+
+	r, err := gzip.NewReader(bytes.NewReader(avifWasm))
 	if err != nil {
 		panic(err)
 	}
@@ -311,42 +311,12 @@ func initializeDecoder() {
 		panic(err)
 	}
 
-	cmd, err = rtd.CompileModule(ctx, data.Bytes())
+	cm, err = rt.CompileModule(ctx, data.Bytes())
 	if err != nil {
 		panic(err)
 	}
 
-	wasi_snapshot_preview1.MustInstantiate(ctx, rtd)
-
-	if runtime.GOOS == "windows" && isWindowsGUI() {
-		mc = wazero.NewModuleConfig().WithStderr(io.Discard).WithStdout(io.Discard)
-	} else {
-		mc = wazero.NewModuleConfig().WithStderr(os.Stderr).WithStdout(os.Stdout)
-	}
-}
-
-func initializeEncoder() {
-	ctx := context.Background()
-	rte = wazero.NewRuntime(ctx)
-
-	r, err := gzip.NewReader(bytes.NewReader(encodeWasm))
-	if err != nil {
-		panic(err)
-	}
-	defer r.Close()
-
-	var data bytes.Buffer
-	_, err = data.ReadFrom(r)
-	if err != nil {
-		panic(err)
-	}
-
-	cme, err = rte.CompileModule(ctx, data.Bytes())
-	if err != nil {
-		panic(err)
-	}
-
-	wasi_snapshot_preview1.MustInstantiate(ctx, rte)
+	wasi_snapshot_preview1.MustInstantiate(ctx, rt)
 
 	if runtime.GOOS == "windows" && isWindowsGUI() {
 		mc = wazero.NewModuleConfig().WithStderr(io.Discard).WithStdout(io.Discard)

@@ -4,15 +4,15 @@ go 1.26
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
-	github.com/gen2brain/avif v0.4.4
-	github.com/gen2brain/heic v0.4.9
-	github.com/gen2brain/jpegxl v0.4.5
+	github.com/gen2brain/avif v0.5.1
+	github.com/gen2brain/heic v0.5.0
+	github.com/gen2brain/jpegxl v0.5.1
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.18.6
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	golang.org/x/image v0.42.0
+	golang.org/x/image v0.43.0
 )
 
 require (
@@ -21,7 +21,7 @@ require (
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/pelletier/go-toml/v2 v2.4.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.4.2 // indirect
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
