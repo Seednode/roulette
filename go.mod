@@ -4,11 +4,11 @@ go 1.26
 
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
-	github.com/gen2brain/avif v0.5.1
-	github.com/gen2brain/heic v0.5.0
-	github.com/gen2brain/jpegxl v0.5.1
+	github.com/gen2brain/avif v0.5.2
+	github.com/gen2brain/heic v0.6.1
+	github.com/gen2brain/jpegxl v0.5.2
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/klauspost/compress v1.18.6
+	github.com/klauspost/compress v1.18.7
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
