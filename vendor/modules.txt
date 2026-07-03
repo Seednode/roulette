@@ -4,6 +4,11 @@ github.com/alecthomas/chroma/v2
 github.com/alecthomas/chroma/v2/formatters/html
 github.com/alecthomas/chroma/v2/lexers
 github.com/alecthomas/chroma/v2/styles
+# github.com/andybalholm/brotli v1.2.2
+## explicit; go 1.22
+github.com/andybalholm/brotli
+github.com/andybalholm/brotli/flate
+github.com/andybalholm/brotli/matchfinder
 # github.com/dlclark/regexp2/v2 v2.2.2
 ## explicit; go 1.25
 github.com/dlclark/regexp2/v2
@@ -20,13 +25,13 @@ github.com/ebitengine/purego/internal/xreflect
 ## explicit; go 1.23
 github.com/fsnotify/fsnotify
 github.com/fsnotify/fsnotify/internal
-# github.com/gen2brain/avif v0.5.2
+# github.com/gen2brain/avif v0.5.3
 ## explicit; go 1.25.0
 github.com/gen2brain/avif
 # github.com/gen2brain/heic v0.6.1
 ## explicit; go 1.25.0
 github.com/gen2brain/heic
-# github.com/gen2brain/jpegxl v0.5.2
+# github.com/gen2brain/jpegxl v0.5.3
 ## explicit; go 1.25.0
 github.com/gen2brain/jpegxl
 # github.com/go-viper/mapstructure/v2 v2.5.0
@@ -39,7 +44,7 @@ github.com/inconshreveable/mousetrap
 # github.com/julienschmidt/httprouter v1.3.0
 ## explicit; go 1.7
 github.com/julienschmidt/httprouter
-# github.com/klauspost/compress v1.18.7
+# github.com/klauspost/compress v1.19.0
 ## explicit; go 1.24
 github.com/klauspost/compress
 github.com/klauspost/compress/fse
