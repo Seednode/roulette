@@ -84,42 +84,50 @@ func decode(r io.Reader, configOnly bool) (image.Image, image.Config, error) {
 	return img, cfg, nil
 }
 
-// exifWasm returns the raw TIFF/EXIF bytes from the HEIC data, or nil when absent.
-func exifWasm(data []byte) ([]byte, error) {
+func decodeSequence(annexb []byte) ([][]byte, int, int, error) {
 	mod := modPool.Get().(*module)
 	defer modPool.Put(mod)
 
-	inPtr := mod.Xmalloc(int32(len(data)))
+	inPtr := mod.Xmalloc(int32(len(annexb)))
 	if inPtr == 0 {
-		return nil, ErrMemWrite
+		return nil, 0, 0, ErrMemWrite
 	}
 	defer mod.Xfree(inPtr)
-	if !mod.write(inPtr, data) {
-		return nil, ErrMemWrite
+	if !mod.write(inPtr, annexb) {
+		return nil, 0, 0, ErrMemWrite
 	}
 
-	lenPtr := mod.Xmalloc(4)
-	if lenPtr == 0 {
-		return nil, ErrMemWrite
+	info := mod.Xmalloc(3 * 4)
+	if info == 0 {
+		return nil, 0, 0, ErrMemWrite
 	}
-	defer mod.Xfree(lenPtr)
+	defer mod.Xfree(info)
 
-	out := mod.Xexif(inPtr, int32(len(data)), lenPtr)
-	n := load32(mod.memory[lenPtr:])
-	if out == 0 || n == 0 {
-		return nil, nil
+	out := mod.Xdecode_sequence(inPtr, int32(len(annexb)), info)
+
+	width := load32(mod.memory[info:])
+	height := load32(mod.memory[info+4:])
+	count := load32(mod.memory[info+8:])
+
+	if out == 0 || count == 0 || width == 0 || height == 0 {
+		return nil, 0, 0, ErrDecode
 	}
 	defer mod.Xfree(out)
 
-	b, ok := mod.read(out, int32(n))
+	frameSize := int(width) * int(height) * 4
+	data, ok := mod.read(out, int32(frameSize*int(count)))
 	if !ok {
-		return nil, ErrMemRead
+		return nil, 0, 0, ErrMemRead
 	}
 
-	tiff := make([]byte, len(b))
-	copy(tiff, b)
+	frames := make([][]byte, count)
+	for i := range frames {
+		f := make([]byte, frameSize)
+		copy(f, data[i*frameSize:(i+1)*frameSize])
+		frames[i] = f
+	}
 
-	return tiff, nil
+	return frames, int(width), int(height), nil
 }
 
 func (m *module) write(ptr int32, data []byte) bool {

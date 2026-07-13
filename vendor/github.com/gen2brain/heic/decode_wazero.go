@@ -21,11 +21,11 @@ import (
 var heicWasm []byte
 
 type module struct {
-	mod    api.Module
-	alloc  api.Function
-	free   api.Function
-	decode api.Function
-	exif   api.Function
+	mod       api.Module
+	alloc     api.Function
+	free      api.Function
+	decode    api.Function
+	decodeSeq api.Function
 }
 
 var modPool = sync.Pool{New: func() any { return newModule() }}
@@ -39,65 +39,68 @@ func newModule() *module {
 	}
 
 	return &module{
-		mod:    mod,
-		alloc:  mod.ExportedFunction("malloc"),
-		free:   mod.ExportedFunction("free"),
-		decode: mod.ExportedFunction("decode"),
-		exif:   mod.ExportedFunction("exif"),
+		mod:       mod,
+		alloc:     mod.ExportedFunction("malloc"),
+		free:      mod.ExportedFunction("free"),
+		decode:    mod.ExportedFunction("decode"),
+		decodeSeq: mod.ExportedFunction("decode_sequence"),
 	}
 }
 
-// exifWasm returns the raw TIFF/EXIF bytes from the HEIC data, or nil when absent.
-func exifWasm(data []byte) ([]byte, error) {
+func decodeSequence(annexb []byte) ([][]byte, int, int, error) {
 	m := modPool.Get().(*module)
 	defer modPool.Put(m)
 
 	ctx := context.Background()
 	mem := m.mod.Memory()
 
-	res, err := m.alloc.Call(ctx, uint64(len(data)))
+	res, err := m.alloc.Call(ctx, uint64(len(annexb)))
 	if err != nil {
-		return nil, fmt.Errorf("alloc: %w", err)
+		return nil, 0, 0, fmt.Errorf("alloc: %w", err)
 	}
 	inPtr := res[0]
 	defer m.free.Call(ctx, inPtr)
 
-	if !mem.Write(uint32(inPtr), data) {
-		return nil, ErrMemWrite
+	if !mem.Write(uint32(inPtr), annexb) {
+		return nil, 0, 0, ErrMemWrite
 	}
 
-	res, err = m.alloc.Call(ctx, 4)
+	res, err = m.alloc.Call(ctx, 3*4)
 	if err != nil {
-		return nil, fmt.Errorf("alloc: %w", err)
+		return nil, 0, 0, fmt.Errorf("alloc: %w", err)
 	}
-	lenPtr := res[0]
-	defer m.free.Call(ctx, lenPtr)
+	infoPtr := res[0]
+	defer m.free.Call(ctx, infoPtr)
 
-	res, err = m.exif.Call(ctx, inPtr, uint64(len(data)), lenPtr)
+	res, err = m.decodeSeq.Call(ctx, inPtr, uint64(len(annexb)), infoPtr)
 	if err != nil {
-		return nil, fmt.Errorf("exif: %w", err)
+		return nil, 0, 0, fmt.Errorf("decode_sequence: %w", err)
 	}
-
-	n, ok := mem.ReadUint32Le(uint32(lenPtr))
-	if !ok {
-		return nil, ErrMemRead
-	}
-
 	outPtr := res[0]
-	if outPtr == 0 || n == 0 {
-		return nil, nil
+
+	width, _ := mem.ReadUint32Le(uint32(infoPtr))
+	height, _ := mem.ReadUint32Le(uint32(infoPtr) + 4)
+	count, _ := mem.ReadUint32Le(uint32(infoPtr) + 8)
+
+	if outPtr == 0 || count == 0 || width == 0 || height == 0 {
+		return nil, 0, 0, ErrDecode
 	}
 	defer m.free.Call(ctx, outPtr)
 
-	out, ok := mem.Read(uint32(outPtr), n)
+	frameSize := int(width) * int(height) * 4
+	out, ok := mem.Read(uint32(outPtr), uint32(frameSize*int(count)))
 	if !ok {
-		return nil, ErrMemRead
+		return nil, 0, 0, ErrMemRead
 	}
 
-	tiff := make([]byte, len(out))
-	copy(tiff, out)
+	frames := make([][]byte, count)
+	for i := range frames {
+		f := make([]byte, frameSize)
+		copy(f, out[i*frameSize:(i+1)*frameSize])
+		frames[i] = f
+	}
 
-	return tiff, nil
+	return frames, int(width), int(height), nil
 }
 
 func decode(r io.Reader, configOnly bool) (image.Image, image.Config, error) {

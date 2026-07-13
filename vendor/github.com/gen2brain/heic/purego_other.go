@@ -17,7 +17,7 @@ func decodeDynamic(r io.Reader, configOnly bool) (image.Image, image.Config, err
 	return nil, image.Config{}, dynamicErr
 }
 
-func exifDynamic(data []byte) ([]byte, error) {
+func decodeDynamicAll(r io.Reader) (*HEIC, error) {
 	return nil, dynamicErr
 }
 
