@@ -8,7 +8,7 @@ require (
 	github.com/gen2brain/heic v0.7.1
 	github.com/gen2brain/jpegxl v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/klauspost/compress v1.19.1
+	github.com/klauspost/compress v1.19.2
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
