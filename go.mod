@@ -12,12 +12,12 @@ require (
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
-	golang.org/x/image v0.44.0
+	golang.org/x/image v0.45.0
 )
 
 require (
 	github.com/andybalholm/brotli v1.2.2 // indirect
-	github.com/dlclark/regexp2/v2 v2.6.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.7.1 // indirect
 	github.com/ebitengine/purego v0.10.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
