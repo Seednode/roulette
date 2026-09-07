@@ -8,7 +8,7 @@ github.com/alecthomas/chroma/v2/styles
 ## explicit; go 1.22
 github.com/andybalholm/brotli
 github.com/andybalholm/brotli/matchfinder
-# github.com/dlclark/regexp2/v2 v2.7.1
+# github.com/dlclark/regexp2/v2 v2.7.2
 ## explicit; go 1.25
 github.com/dlclark/regexp2/v2
 github.com/dlclark/regexp2/v2/helpers
