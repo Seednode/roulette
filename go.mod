@@ -5,7 +5,7 @@ go 1.27
 require (
 	github.com/alecthomas/chroma/v2 v2.27.0
 	github.com/gen2brain/avif v0.6.0
-	github.com/gen2brain/heic v0.7.1
+	github.com/gen2brain/heic v0.7.2
 	github.com/gen2brain/jpegxl v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/klauspost/compress v1.20.0
