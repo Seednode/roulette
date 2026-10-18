@@ -8,7 +8,7 @@ require (
 	github.com/gen2brain/heic v0.7.2
 	github.com/gen2brain/jpegxl v0.6.0
 	github.com/julienschmidt/httprouter v1.3.0
-	github.com/klauspost/compress v1.20.1
+	github.com/klauspost/compress v1.20.3
 	github.com/spf13/cobra v1.10.2
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -17,8 +17,8 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.6 // indirect
-	github.com/dlclark/regexp2/v2 v2.8.4 // indirect
-	github.com/ebitengine/purego v0.11.1 // indirect
+	github.com/dlclark/regexp2/v2 v2.9.1 // indirect
+	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
