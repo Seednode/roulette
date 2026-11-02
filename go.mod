@@ -17,7 +17,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.2.7 // indirect
-	github.com/dlclark/regexp2/v2 v2.11.0 // indirect
+	github.com/dlclark/regexp2/v2 v2.12.0 // indirect
 	github.com/ebitengine/purego v0.11.2 // indirect
 	github.com/fsnotify/fsnotify v1.10.1 // indirect
 	github.com/go-viper/mapstructure/v2 v2.5.0 // indirect
@@ -29,7 +29,7 @@ require (
 	github.com/spf13/cast v1.10.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tetratelabs/wazero v1.12.0 // indirect
-	go.yaml.in/yaml/v3 v3.0.5 // indirect
+	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/sys v0.49.0 // indirect
 	golang.org/x/text v0.43.0 // indirect
 )
